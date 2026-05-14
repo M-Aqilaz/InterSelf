@@ -1,3 +1,4 @@
+import 'dotenv/config'
 const requiredKeys = [
   "DB_HOST",
   "DB_USER",
