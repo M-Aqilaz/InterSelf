@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { FadeIn } from "@/components/motion/fade-in";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 
 export function LandingHero() {
   return (
@@ -24,9 +25,11 @@ export function LandingHero() {
             </p>
           </div>
           <div className="flex flex-col gap-4 sm:flex-row">
-            <Button className="h-14 rounded-full text-base">Start Your Journey</Button>
-            <Button variant="secondary" className="h-14 rounded-full text-base">
-              Watch Trailer
+            <Button className="h-14 rounded-full text-base" asChild>
+              <Link href="/register">Start Your Journey</Link>
+            </Button>
+            <Button variant="secondary" className="h-14 rounded-full text-base" asChild>
+              <Link href="#systems">Explore Systems</Link>
             </Button>
           </div>
           <div className="grid grid-cols-3 gap-4 text-center">

@@ -37,10 +37,12 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="hidden items-center gap-3 lg:flex">
-          <Button variant="ghost" className="text-white/70">
-            Login
+          <Button variant="ghost" className="text-white/70" asChild>
+            <Link href="/login">Login</Link>
           </Button>
-          <Button>Start Your Journey</Button>
+          <Button asChild>
+            <Link href="/register">Start Your Journey</Link>
+          </Button>
         </div>
         <button
           className="lg:hidden"
@@ -62,10 +64,12 @@ export function SiteHeader() {
           </a>
         ))}
         <div className="flex flex-col gap-3">
-          <Button variant="ghost" className="w-full">
-            Login
+          <Button variant="ghost" className="w-full" asChild>
+            <Link href="/login">Login</Link>
           </Button>
-          <Button className="w-full">Start Your Journey</Button>
+          <Button className="w-full" asChild>
+            <Link href="/register">Start Your Journey</Link>
+          </Button>
         </div>
       </div>
     </header>
