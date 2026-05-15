@@ -1,5 +1,7 @@
+import { Prisma, TaskCategory, TaskDifficulty } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 
 type RouteContext = {
   params: Promise<{
@@ -16,14 +18,23 @@ const isPrismaNotFoundError = (error: unknown): error is { code: string } => {
   );
 };
 
-type TaskUpdatePayload = {
-  title?: string;
-  description?: string | null;
-  completed?: boolean;
-};
+const isTaskCategory = (value: unknown): value is TaskCategory =>
+  typeof value === "string" && Object.values(TaskCategory).includes(value as TaskCategory);
+
+const isTaskDifficulty = (value: unknown): value is TaskDifficulty =>
+  typeof value === "string" &&
+  Object.values(TaskDifficulty).includes(value as TaskDifficulty);
+
+const toInteger = (value: unknown) =>
+  typeof value === "number" && Number.isFinite(value) ? Math.trunc(value) : null;
 
 // PUT /api/tasks/:id - update an existing task
 export async function PUT(request: NextRequest, { params }: RouteContext) {
+  const user = await getCurrentUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id: idParam } = await params;
   const id = Number(idParam);
 
@@ -33,21 +44,46 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
 
   try {
     const body = await request.json();
-    const { title, description, completed } = body ?? {};
-    const data: TaskUpdatePayload = {};
+    const {
+      title,
+      description,
+      category,
+      difficulty,
+      expReward,
+      coinReward,
+      streakImpact,
+    } = body ?? {};
+    const data: Prisma.TaskUpdateInput = {};
 
     if (typeof title === "string") {
-      data.title = title;
+      data.title = title.trim();
     }
 
     if (typeof description === "string") {
-      data.description = description;
-    } else if (description === null) {
-      data.description = null;
+      data.description = description.trim();
     }
 
-    if (typeof completed === "boolean") {
-      data.completed = completed;
+    if (isTaskCategory(category)) {
+      data.category = category;
+    }
+
+    if (isTaskDifficulty(difficulty)) {
+      data.difficulty = difficulty;
+    }
+
+    const resolvedExp = toInteger(expReward);
+    if (resolvedExp !== null) {
+      data.expReward = resolvedExp;
+    }
+
+    const resolvedCoins = toInteger(coinReward);
+    if (resolvedCoins !== null) {
+      data.coinReward = resolvedCoins;
+    }
+
+    const resolvedStreakImpact = toInteger(streakImpact);
+    if (resolvedStreakImpact !== null) {
+      data.streakImpact = resolvedStreakImpact;
     }
 
     if (Object.keys(data).length === 0) {
@@ -55,6 +91,14 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
         { error: "Provide at least one field to update" },
         { status: 400 }
       );
+    }
+
+    const existingTask = await prisma.task.findFirst({
+      where: { id, createdById: user.id },
+    });
+
+    if (!existingTask) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
     const task = await prisma.task.update({
@@ -78,6 +122,11 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
 
 // DELETE /api/tasks/:id - remove a task
 export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { id: idParam } = await params;
   const id = Number(idParam);
 
@@ -86,6 +135,14 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
   }
 
   try {
+    const existingTask = await prisma.task.findFirst({
+      where: { id, createdById: user.id },
+    });
+
+    if (!existingTask) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
     await prisma.task.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {

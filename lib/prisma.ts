@@ -1,18 +1,18 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 
 // Reuse the Prisma client across hot reloads to avoid exhausting database connections in dev.
 const globalForPrisma = globalThis as unknown as {
-  prisma?: PrismaClient;
+  prisma?: Prisma.DefaultPrismaClient;
 };
 
-export const prisma =
+export const prisma: Prisma.DefaultPrismaClient =
   globalForPrisma.prisma ??
-  new PrismaClient({
+  (new PrismaClient({
     log:
       process.env.NODE_ENV === "development"
         ? ["query", "warn", "error"]
         : ["error"],
-  });
+  }) as Prisma.DefaultPrismaClient);
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
