@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 type RouteContext = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 const isPrismaNotFoundError = (error: unknown): error is { code: string } => {
@@ -23,8 +23,9 @@ type TaskUpdatePayload = {
 };
 
 // PUT /api/tasks/:id - update an existing task
-export async function PUT(request: Request, { params }: RouteContext) {
-  const id = Number(params.id);
+export async function PUT(request: NextRequest, { params }: RouteContext) {
+  const { id: idParam } = await params;
+  const id = Number(idParam);
 
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: "Invalid task id" }, { status: 400 });
@@ -76,8 +77,9 @@ export async function PUT(request: Request, { params }: RouteContext) {
 }
 
 // DELETE /api/tasks/:id - remove a task
-export async function DELETE(_request: Request, { params }: RouteContext) {
-  const id = Number(params.id);
+export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+  const { id: idParam } = await params;
+  const id = Number(idParam);
 
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: "Invalid task id" }, { status: 400 });
