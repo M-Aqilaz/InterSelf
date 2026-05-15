@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { BASE_STAT_TYPES } from "@/lib/constants";
 import { hashPassword, issueSessionCookie, fetchSafeUserById } from "@/lib/auth";
+import { assignInitialBoss } from "@/lib/boss";
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -76,6 +77,8 @@ export async function POST(request: NextRequest) {
           value: 0,
         })),
       });
+
+      await assignInitialBoss(tx, user.id);
 
       return user;
     });

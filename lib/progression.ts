@@ -1,46 +1,21 @@
-import { Prisma, Profile, Stat, TaskCompletionStatus } from "@prisma/client";
+import { Prisma, Stat, TaskCompletionStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-
-const LEVEL_BASE_EXP = 500;
-const LEVEL_GROWTH = 1.2;
-
-export type LevelProgress = {
-  level: number;
-  expIntoLevel: number;
-  expForNextLevel: number;
-  totalExp: number;
-};
+import { calculateLevelFromTotalExp, type LevelProgress } from "@/lib/level";
+import { applyBossDamage, type ProfileWithBoss } from "@/lib/boss";
+import type { BossBattleSummary } from "@/types/boss";
 
 export type TaskCompletionResult = {
   completion: Prisma.TaskCompletionGetPayload<{ include: { task: true } }>;
-  profile: Profile;
+  profile: ProfileWithBoss;
   stats: Stat[];
   levelProgress: LevelProgress;
+  bossBattle?: BossBattleSummary | null;
 };
 
 export class TaskProgressionError extends Error {
   constructor(message: string, public status: number = 400) {
     super(message);
   }
-}
-
-export function calculateLevelFromTotalExp(totalExp: number): LevelProgress {
-  let level = 1;
-  let expForNextLevel = LEVEL_BASE_EXP;
-  let expIntoLevel = totalExp;
-
-  while (expIntoLevel >= expForNextLevel) {
-    expIntoLevel -= expForNextLevel;
-    level += 1;
-    expForNextLevel = Math.floor(expForNextLevel * LEVEL_GROWTH);
-  }
-
-  return {
-    level,
-    expIntoLevel,
-    expForNextLevel,
-    totalExp,
-  };
 }
 
 export async function completeTaskForUser({
@@ -64,7 +39,10 @@ export async function completeTaskForUser({
       throw new TaskProgressionError("You do not have access to this task", 403);
     }
 
-    const profile = await tx.profile.findUnique({ where: { userId } });
+    const profile = await tx.profile.findUnique({
+      where: { userId },
+      include: { currentBoss: { include: { rewardItem: true } } },
+    });
 
     if (!profile) {
       throw new TaskProgressionError("Profile not found", 404);
@@ -112,7 +90,7 @@ export async function completeTaskForUser({
 
     const levelProgress = calculateLevelFromTotalExp(nextTotalExp);
 
-    const updatedProfile = await tx.profile.update({
+    await tx.profile.update({
       where: { userId },
       data: {
         exp: nextTotalExp,
@@ -142,11 +120,41 @@ export async function completeTaskForUser({
       orderBy: { type: "asc" },
     });
 
+    let bossBattle: BossBattleSummary | null = null;
+    let profileWithBoss: ProfileWithBoss | null = null;
+
+    const bossResult = await applyBossDamage({
+      tx,
+      userId,
+      profile,
+      expReward,
+      statIncreases,
+      streak,
+      level: levelProgress.level,
+      taskCategory: task.category,
+      taskDifficulty: task.difficulty,
+    });
+
+    if (bossResult) {
+      bossBattle = bossResult.summary;
+      profileWithBoss = bossResult.profile;
+    } else {
+      profileWithBoss = await tx.profile.findUnique({
+        where: { userId },
+        include: { currentBoss: { include: { rewardItem: true } } },
+      });
+    }
+
+    if (!profileWithBoss) {
+      throw new TaskProgressionError("Unable to load profile after task completion", 500);
+    }
+
     return {
       completion,
-      profile: updatedProfile,
+      profile: profileWithBoss,
       stats,
       levelProgress,
+      bossBattle,
     };
   });
 }
