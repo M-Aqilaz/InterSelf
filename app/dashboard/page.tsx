@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
+import { BossBattlePanel } from "@/components/sections/boss-battle";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -37,6 +38,7 @@ export default async function DashboardPage() {
           )}
         </div>
       </Card>
+      <BossBattlePanel />
     </div>
   );
 }
