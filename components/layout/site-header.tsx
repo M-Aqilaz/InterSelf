@@ -31,13 +31,12 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
   const username = user?.profile?.username ?? user?.name ?? "Explorer";
   const isAuthenticated = Boolean(user);
 
-  const activeSection = useMemo(() => {
-    if (!pathname) return "Profile";
-    const lower = pathname.toLowerCase();
-    if (lower.includes("arena")) return "Arena";
-    if (lower.includes("challenge")) return "Challenges";
-    if (lower.includes("social")) return "Allies";
-    if (lower.includes("system")) return "Sanctum";
+  const activeNav = useMemo(() => {
+    const current = pathname?.toLowerCase() ?? "";
+    if (current.includes("arena")) return "Arena";
+    if (current.includes("challenge")) return "Challenges";
+    if (current.includes("social")) return "Allies";
+    if (current.includes("system")) return "Sanctum";
     return "Profile";
   }, [pathname]);
 
@@ -99,7 +98,7 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
         <nav className="relative hidden items-center gap-6 text-sm font-semibold text-white/70 lg:flex">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeSection === item.label;
+            const isActive = activeNav === item.label;
             return (
               <button
                 key={item.label}
@@ -134,7 +133,7 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
       >
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeSection === item.label;
+          const isActive = activeNav === item.label;
           return (
             <button
               key={item.label}
