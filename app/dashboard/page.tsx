@@ -18,7 +18,7 @@ export default async function DashboardPage() {
   const stats = user.stats ?? [];
 
   return (
-    <div className="grid gap-6">
+    <div className="mx-auto grid w-full max-w-7xl gap-8">
       <Card className="border-white/10 bg-white/5">
         <div className="flex flex-col gap-2">
           <p className="text-sm uppercase tracking-[0.35em] text-white/60">Current Rank</p>
@@ -27,9 +27,11 @@ export default async function DashboardPage() {
         </div>
       </Card>
       <Card className="border-white/10 bg-white/5">
-        <div className="flex flex-wrap gap-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.length === 0 ? (
-            <p className="text-sm text-white/60">Stats will appear once you start completing tasks.</p>
+            <p className="text-sm text-white/60 sm:col-span-2 lg:col-span-4">
+              Stats will appear once you start completing tasks.
+            </p>
           ) : (
             stats.map((stat: { type: string; value: number }) => (
               <div
@@ -43,16 +45,16 @@ export default async function DashboardPage() {
           )}
         </div>
       </Card>
-      <BossBattlePanel />
-      <div className="grid gap-6 lg:grid-cols-3">
-        <AchievementsPanel />
-        <InventoryPanel />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <BossBattlePanel />
         <WeeklyChallengesPanel />
       </div>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-3">
+        <AchievementsPanel />
+        <InventoryPanel />
         <LeaderboardPanel />
-        <FriendsPanel />
       </div>
+      <FriendsPanel />
     </div>
   );
 }
