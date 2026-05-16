@@ -43,7 +43,7 @@ export default async function RootLayout({
         <div className="gradient-grid pointer-events-none" aria-hidden />
         <ToastProvider>
           <main className="relative z-10 flex min-h-screen flex-col">
-            <div className="container mx-auto flex w-full flex-1 flex-col gap-10 px-6 py-10">
+            <div className="container mx-auto flex w-full max-w-full flex-1 flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8 lg:gap-10 lg:py-10">
               <SiteHeader user={headerUser} />
               {children}
             </div>

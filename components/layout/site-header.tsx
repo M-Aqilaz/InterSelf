@@ -89,7 +89,7 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
 
   return (
     <header className="relative z-30 w-full">
-      <FadeIn className="container mx-auto flex items-center justify-between gap-6 rounded-full border border-white/10 bg-white/5 px-6 py-4 backdrop-blur-xl">
+      <FadeIn className="container mx-auto flex w-full items-center justify-between gap-4 rounded-full border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-xl sm:gap-6 sm:px-6 sm:py-4">
         <Link href="/" className="flex items-center gap-3">
           <span className="relative text-xl font-black tracking-[0.2em] text-white">
             INTERSELF
@@ -125,32 +125,30 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
           <Menu className="h-6 w-6 text-white" />
         </button>
       </FadeIn>
-      <div
-        className={cn(
-          "mt-3 flex flex-col gap-4 rounded-3xl border border-white/10 bg-black/80 p-6 text-white backdrop-blur-xl lg:hidden",
-          open ? "opacity-100" : "pointer-events-none opacity-0"
-        )}
-      >
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeNav === item.label;
-          return (
-            <button
-              key={item.label}
-              className={cn(
-                "flex items-center gap-2 text-left text-sm",
-                isActive ? "text-white" : "text-white/70"
-              )}
-              onClick={() => handleNavClick(item)}
-              type="button"
-            >
-              <Icon className="h-4 w-4" />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-        {renderActions(true)}
+      <div className={cn("absolute left-0 right-0 top-full px-4 pt-3 lg:hidden", open ? "block" : "hidden")}> 
+        <div className="mx-auto flex max-w-full flex-col gap-4 rounded-3xl border border-white/10 bg-black/90 p-6 text-white shadow-2xl backdrop-blur-xl">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeNav === item.label;
+            return (
+              <button
+                key={item.label}
+                className={cn(
+                  "flex items-center gap-2 text-left text-sm",
+                  isActive ? "text-white" : "text-white/70"
+                )}
+                onClick={() => handleNavClick(item)}
+                type="button"
+              >
+                <Icon className="h-4 w-4" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+          {renderActions(true)}
+        </div>
       </div>
     </header>
   );
 }
+
