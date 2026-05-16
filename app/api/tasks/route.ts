@@ -32,7 +32,11 @@ export async function GET() {
           { createdById: user.id },
         ],
       },
-      orderBy: { createdAt: "desc" },
+      include: { statRewards: true },
+      orderBy: [
+        { isSystem: "desc" },
+        { createdAt: "desc" },
+      ],
     });
 
     return NextResponse.json(tasks);

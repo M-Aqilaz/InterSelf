@@ -7,6 +7,7 @@ import { InventoryPanel } from "@/components/sections/inventory-panel";
 import { LeaderboardPanel } from "@/components/sections/leaderboard-panel";
 import { FriendsPanel } from "@/components/sections/friends-panel";
 import { WeeklyChallengesPanel } from "@/components/sections/weekly-challenges-panel";
+import { DailyTasksPanel } from "@/components/sections/daily-tasks-panel";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -45,6 +46,7 @@ export default async function DashboardPage() {
           )}
         </div>
       </Card>
+      <DailyTasksPanel />
       <div className="grid gap-6 lg:grid-cols-2">
         <BossBattlePanel />
         <WeeklyChallengesPanel />
