@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import type { BossBattleState, BossBattleSummary } from "@/types/boss";
 import { subscribeToTasksUpdate, subscribeToBossDamage, BossDamagePayload } from "@/lib/events";
+import { useGameAudio } from "@/hooks/use-game-audio";
 
 const formatter = new Intl.NumberFormat();
 
@@ -40,6 +41,8 @@ type SkillButton = {
   description: string;
   cooldown?: number;
   disabled?: boolean;
+  energyCost: number;
+  element: string;
 };
 
 type PlayerInfo = {
@@ -63,13 +66,17 @@ export function BossBattlePanel() {
   const [slashVisible, setSlashVisible] = useState(false);
   const [counterVisible, setCounterVisible] = useState(false);
   const [player, setPlayer] = useState<PlayerInfo | null>(null);
+  const [energy, setEnergy] = useState(70);
+  const [skillCooldowns, setSkillCooldowns] = useState<Record<string, number>>({});
+  const [monsterVariant, setMonsterVariant] = useState<number>(0);
+  const { play } = useGameAudio();
 
   const skills: SkillButton[] = useMemo(
     () => [
-      { id: "basic", label: "Basic Strike", description: "Reliable attack" },
-      { id: "focus", label: "Focus Slash", description: "+15% damage", cooldown: 30 },
-      { id: "discipline", label: "Discipline Break", description: "Shreds defenses", cooldown: 60, disabled: true },
-      { id: "ultimate", label: "Ultimate Awakening", description: "Massive burst", cooldown: 120, disabled: true },
+      { id: "basic", label: "Basic Strike", description: "Reliable attack", energyCost: 10, element: "kinetic" },
+      { id: "focus", label: "Focus Slash", description: "+15% damage", cooldown: 30, energyCost: 20, element: "wind" },
+      { id: "discipline", label: "Discipline Break", description: "Shreds defenses", cooldown: 60, disabled: true, energyCost: 35, element: "holy" },
+      { id: "ultimate", label: "Awakening Nova", description: "Massive burst", cooldown: 120, disabled: true, energyCost: 60, element: "starlight" },
     ],
     []
   );
@@ -84,6 +91,7 @@ export function BossBattlePanel() {
     } else if (!data.boss) {
       setPhase("READY");
     }
+    setMonsterVariant((prev) => (data.boss && prev === 0 ? Math.max(1, data.boss.id % 3) : prev || 1));
   }, []);
 
   useEffect(() => {
@@ -91,6 +99,32 @@ export function BossBattlePanel() {
       await fetchState();
     })();
   }, [fetchState]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setEnergy((prev) => Math.min(100, prev + 2));
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const hasCooldowns = Object.values(skillCooldowns).some((value) => value > 0);
+    if (!hasCooldowns) return;
+    const interval = setInterval(() => {
+      setSkillCooldowns((prev) => {
+        let changed = false;
+        const next: Record<string, number> = {};
+        for (const key of Object.keys(prev)) {
+          const value = prev[key];
+          const nextValue = Math.max(0, value - 1);
+          if (nextValue !== value) changed = true;
+          next[key] = nextValue;
+        }
+        return changed ? next : prev;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [skillCooldowns]);
 
   const pushLog = useCallback((message: string) => {
     setBattleLog((prev) => [message, ...prev].slice(0, 8));
@@ -181,11 +215,27 @@ export function BossBattlePanel() {
         setPhase("COOLDOWN");
         return;
       }
+      if (skillCooldowns[skill.id] && skillCooldowns[skill.id] > 0) {
+        pushLog(`${skill.label} is recharging (${skillCooldowns[skill.id]}s)`);
+        return;
+      }
+      if (energy < skill.energyCost) {
+        pushLog("Not enough energy");
+        return;
+      }
       setActiveSkill(skill.id);
       setSlashVisible(true);
       setTimeout(() => setSlashVisible(false), 500);
       setPhase("PLAYER_ATTACK");
       pushLog(`You used ${skill.label}`);
+      setEnergy((prev) => Math.max(0, prev - skill.energyCost));
+      if (skill.cooldown) {
+        setSkillCooldowns((prev) => ({
+          ...prev,
+          [skill.id]: skill.cooldown ?? 0,
+        }));
+      }
+      void play("attack", 200);
       startTransition(() => {
         void (async () => {
           const res = await fetch("/api/boss/attack", { method: "POST" });
@@ -222,20 +272,37 @@ export function BossBattlePanel() {
         })();
       });
     },
-    [pending, state, pushLog, fetchState, handleDamage]
+    [pending, state, pushLog, fetchState, handleDamage, energy, skillCooldowns, play]
   );
 
-  if (!state || !state.boss) {
+  const boss = state?.boss ?? null;
+  const progress = state?.progress ?? null;
+  const cooldownRemainingMs = state?.cooldownRemainingMs ?? 0;
+  const percentageRemaining = state?.percentageRemaining ?? 0;
+  const phaseLabel = phase === "BOSS_HIT" ? "Player Hit" : phase.replace("_", " ");
+  const monsterVisual = useMemo(() => {
+    if (!boss) {
+      return {
+        aura: "from-rose-500/20 to-purple-500/10",
+        sigil: "★",
+      };
+    }
+    const variants = [
+      { aura: "from-rose-600/40 to-amber-500/20", sigil: "ψ" },
+      { aura: "from-fuchsia-600/40 to-indigo-500/20", sigil: "Ω" },
+      { aura: "from-emerald-500/30 to-cyan-500/20", sigil: "§" },
+    ];
+    return variants[(monsterVariant - 1 + variants.length) % variants.length];
+  }, [boss, monsterVariant]);
+  const isOnCooldown = cooldownRemainingMs > 0;
+
+  if (!state || !boss) {
     return (
       <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-white/70">
         <p>No active boss yet. Complete tasks to unlock boss encounters.</p>
       </div>
     );
   }
-
-  const { boss, progress, cooldownRemainingMs, percentageRemaining } = state;
-  const phaseLabel = phase === "BOSS_HIT" ? "Player Hit" : phase.replace("_", " ");
-  const isOnCooldown = cooldownRemainingMs > 0;
 
   return (
     <motion.div
@@ -256,9 +323,22 @@ export function BossBattlePanel() {
         <div className="absolute -bottom-24 right-0 h-48 w-48 rounded-full bg-rose-500/20 blur-3xl" />
       </div>
       <div className="relative flex flex-col gap-6">
-        <div className="flex flex-wrap items-center justify-between text-xs uppercase tracking-[0.3em] text-white/60">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs uppercase tracking-[0.3em] text-white/60">
           <span>Phase: {phaseLabel}</span>
           <span>Cooldown: {formatMs(cooldownRemainingMs)}</span>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-black/30 p-3">
+          <div className="flex items-center justify-between text-[11px] uppercase text-white/50">
+            <span>Hunter Energy</span>
+            <span>{energy}%</span>
+          </div>
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
+            <motion.div
+              className="h-full bg-gradient-to-r from-cyan-400 to-emerald-300"
+              animate={{ width: `${energy}%` }}
+              transition={{ type: "spring", stiffness: 80, damping: 20 }}
+            />
+          </div>
         </div>
 
         <div className="grid gap-4 items-center lg:grid-cols-[1fr_auto_1fr]">
@@ -281,7 +361,7 @@ export function BossBattlePanel() {
               />
             </div>
           </div>
-          <BossCard boss={boss} progress={progress} counterVisible={counterVisible} />
+          <BossCard boss={boss} progress={progress} counterVisible={counterVisible} visual={monsterVisual} />
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
@@ -291,6 +371,8 @@ export function BossBattlePanel() {
             isOnCooldown={isOnCooldown}
             pending={pending}
             onUseSkill={(skill) => attackBoss(skill)}
+            energy={energy}
+            cooldowns={skillCooldowns}
           />
           <BattleLog entries={battleLog} />
         </div>
@@ -341,19 +423,21 @@ function BossCard({
   boss,
   progress,
   counterVisible,
+  visual,
 }: {
   boss: BossBattleState["boss"];
   progress: BossBattleState["progress"];
   counterVisible: boolean;
+  visual: { aura: string; sigil: string };
 }) {
   return (
     <div className="relative rounded-3xl border border-white/10 bg-gradient-to-br from-rose-900/40 to-black/60 p-4">
       <p className="text-xs uppercase tracking-[0.3em] text-white/50">Boss</p>
       <div className="mt-3 flex items-center gap-4">
-        <div className="relative h-24 w-24 overflow-hidden rounded-2xl border border-rose-400/50 bg-rose-900/40">
-          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-rose-500/20 to-transparent" />
-          <p className="relative z-10 flex h-full items-center justify-center text-5xl font-black text-white/70">
-            {boss?.name.slice(0, 1)}
+        <div className={`relative h-28 w-28 overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br ${visual.aura}`}>
+          <div className="absolute inset-0 opacity-40" style={{ backgroundImage: "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), transparent 60%)" }} />
+          <p className="relative z-10 flex h-full items-center justify-center text-5xl font-black text-white/80">
+            {visual.sigil}
           </p>
         </div>
         <div>
@@ -384,19 +468,23 @@ function SkillBoard({
   isOnCooldown,
   pending,
   onUseSkill,
+  energy,
+  cooldowns,
 }: {
   skills: SkillButton[];
   activeSkill: string | null;
   isOnCooldown: boolean;
   pending: boolean;
   onUseSkill: (skill: SkillButton) => void;
+  energy: number;
+  cooldowns: Record<string, number>;
 }) {
   return (
     <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
       <p className="text-xs uppercase tracking-[0.3em] text-white/50">Skills</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {skills.map((skill) => {
-          const disabled = pending || isOnCooldown || skill.disabled;
+          const disabled = pending || isOnCooldown || skill.disabled || energy < skill.energyCost || (cooldowns[skill.id] ?? 0) > 0;
           return (
             <button
               key={skill.id}
@@ -408,7 +496,13 @@ function SkillBoard({
             >
               <p className="text-sm font-semibold">{skill.label}</p>
               <p className="text-xs text-white/60">{skill.description}</p>
-              {skill.cooldown && <p className="text-[10px] text-white/50">CD {skill.cooldown}s</p>}
+              <div className="mt-1 flex items-center justify-between text-[10px] uppercase text-white/50">
+                {skill.cooldown && <span>CD {skill.cooldown}s</span>}
+                <span>Cost {skill.energyCost}</span>
+              </div>
+              {cooldowns[skill.id] && cooldowns[skill.id] > 0 && (
+                <p className="text-[10px] text-amber-200">Recharging: {cooldowns[skill.id]}s</p>
+              )}
             </button>
           );
         })}
