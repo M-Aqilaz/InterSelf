@@ -8,6 +8,7 @@ import { FriendsPanel } from "@/components/sections/friends-panel";
 import { WeeklyChallengesPanel } from "@/components/sections/weekly-challenges-panel";
 import { DailyTasksPanel } from "@/components/sections/daily-tasks-panel";
 import { CharacterProfilePanel } from "@/components/sections/character-profile-panel";
+import { PvpPreviewPanel } from "@/components/sections/pvp-preview-panel";
 import { prisma } from "@/lib/prisma";
 import { calculateLevelFromTotalExp } from "@/lib/level";
 
@@ -69,9 +70,10 @@ export default async function DashboardPage() {
         <WeeklyChallengesPanel />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-2">
+      <section className="grid gap-6 xl:grid-cols-3">
         <InventoryPanel />
         <AchievementsPanel />
+        <PvpPreviewPanel />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-2">
