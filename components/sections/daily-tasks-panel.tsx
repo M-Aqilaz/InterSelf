@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { emitTasksUpdatedEvent } from "@/lib/events";
 
 const SYSTEM_TASKS = [
   {
@@ -47,6 +48,7 @@ type TaskRecord = {
   streakImpact: number;
   isSystem: boolean;
   statRewards: TaskStatReward[];
+  completedToday?: boolean;
 };
 
 const normalize = (value: string) => value.toLowerCase().trim();
@@ -136,6 +138,7 @@ export function DailyTasksPanel() {
           variant: "success",
         });
         await refreshAll();
+        emitTasksUpdatedEvent();
       });
     },
     [push, refreshAll]
@@ -170,6 +173,7 @@ export function DailyTasksPanel() {
       setFormTitle("");
       setFormDescription("");
       await refreshAll();
+      emitTasksUpdatedEvent();
     });
   }, [formDescription, formTitle, push, refreshAll]);
 
@@ -183,9 +187,13 @@ export function DailyTasksPanel() {
         <p className="text-xs text-white/60">
           {describeRewards(task)} · {formatLabel(task.category)} · {task.difficulty}
         </p>
-        <Button size="sm" disabled={pending} onClick={() => completeTask(task)}>
-          Complete
-        </Button>
+        {task.completedToday ? (
+          <span className="text-xs text-emerald-300">Completed today</span>
+        ) : (
+          <Button size="sm" disabled={pending} onClick={() => completeTask(task)}>
+            Complete
+          </Button>
+        )}
       </div>
     );
   };

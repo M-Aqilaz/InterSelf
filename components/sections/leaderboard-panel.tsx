@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { subscribeToTasksUpdate } from "@/lib/events";
 
 type LeaderboardEntry = {
   rank: number;
@@ -40,6 +41,13 @@ export function LeaderboardPanel() {
     void (async () => {
       await loadLeaderboard();
     })();
+  }, [loadLeaderboard]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToTasksUpdate(() => {
+      void loadLeaderboard();
+    });
+    return unsubscribe;
   }, [loadLeaderboard]);
 
   return (

@@ -3,6 +3,7 @@ import { Orbitron, Inter } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/layout/site-header";
 import { ToastProvider } from "@/components/ui/toast";
+import { getCurrentUser } from "@/lib/auth";
 
 const orbitron = Orbitron({
   subsets: ["latin"],
@@ -21,11 +22,21 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://interself.local"),
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const currentUser = await getCurrentUser();
+  const headerUser = currentUser
+    ? {
+        id: currentUser.id,
+        name: currentUser.name ?? null,
+        profile: {
+          username: currentUser.profile?.username ?? null,
+        },
+      }
+    : null;
   return (
     <html lang="en" className={`${orbitron.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-[#030014] text-white">
@@ -33,7 +44,7 @@ export default function RootLayout({
         <ToastProvider>
           <main className="relative z-10 flex min-h-screen flex-col">
             <div className="container mx-auto flex w-full flex-1 flex-col gap-10 px-6 py-10">
-              <SiteHeader />
+              <SiteHeader user={headerUser} />
               {children}
             </div>
           </main>
