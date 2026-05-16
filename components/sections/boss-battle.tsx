@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import type { BossBattleState, BossBattleSummary } from "@/types/boss";
@@ -26,6 +26,29 @@ type VictoryState = {
   itemName?: string | null;
 };
 
+type BattlePhase =
+  | "READY"
+  | "PLAYER_ATTACK"
+  | "BOSS_HIT"
+  | "BOSS_COUNTER"
+  | "COOLDOWN"
+  | "VICTORY";
+
+type SkillButton = {
+  id: string;
+  label: string;
+  description: string;
+  cooldown?: number;
+  disabled?: boolean;
+};
+
+type PlayerInfo = {
+  username: string;
+  title: string | null;
+  rank: string | null;
+  level: number | null;
+};
+
 export function BossBattlePanel() {
   const [state, setState] = useState<BossBattleState | null>(null);
   const [pending, startTransition] = useTransition();
@@ -34,76 +57,94 @@ export function BossBattlePanel() {
   const [shake, setShake] = useState(false);
   const [victory, setVictory] = useState<VictoryState | null>(null);
   const [showLoot, setShowLoot] = useState<VictoryState | null>(null);
+  const [phase, setPhase] = useState<BattlePhase>("READY");
+  const [activeSkill, setActiveSkill] = useState<string | null>(null);
+  const [flash, setFlash] = useState(false);
+  const [slashVisible, setSlashVisible] = useState(false);
+  const [counterVisible, setCounterVisible] = useState(false);
+  const [player, setPlayer] = useState<PlayerInfo | null>(null);
 
-  async function fetchState() {
+  const skills: SkillButton[] = useMemo(
+    () => [
+      { id: "basic", label: "Basic Strike", description: "Reliable attack" },
+      { id: "focus", label: "Focus Slash", description: "+15% damage", cooldown: 30 },
+      { id: "discipline", label: "Discipline Break", description: "Shreds defenses", cooldown: 60, disabled: true },
+      { id: "ultimate", label: "Ultimate Awakening", description: "Massive burst", cooldown: 120, disabled: true },
+    ],
+    []
+  );
+
+  const fetchState = useCallback(async () => {
     const res = await fetch("/api/boss/state");
     if (!res.ok) return;
     const data = (await res.json()) as BossBattleState;
     setState(data);
-  }
-
-  function handleDamage(payload: BossDamagePayload) {
-    if (!payload.damage) return;
-    const burst: DamageBurst = {
-      id: `${payload.damage}-${Date.now()}`,
-      value: payload.damage,
-      critical: payload.critical ?? payload.damage > 250,
-    };
-    setDamageBursts((prev) => [...prev, burst]);
-    setTimeout(() => {
-      setDamageBursts((prev) => prev.filter((item) => item.id !== burst.id));
-    }, 1500);
-    setBattleLog((prev) => [`${payload.source} dealt ${payload.damage} dmg`, ...prev].slice(0, 5));
-    setShake(true);
-    setTimeout(() => setShake(false), 400);
-    if (payload.defeated) {
-      const loot = {
-        exp: payload.rewards?.exp ?? 0,
-        coins: payload.rewards?.coins ?? 0,
-        itemName: payload.rewards?.itemName ?? null,
-      };
-      setVictory(loot);
-      if (loot.itemName) {
-        setShowLoot(loot);
-      }
+    if (data.cooldownRemainingMs > 0) {
+      setPhase("COOLDOWN");
+    } else if (!data.boss) {
+      setPhase("READY");
     }
-  }
-
-  async function attackBoss() {
-    startTransition(async () => {
-      const res = await fetch("/api/boss/attack", { method: "POST" });
-      if (!res.ok) {
-        await fetchState();
-        return;
-      }
-      const data = (await res.json()) as BossBattleSummary;
-      handleDamage({
-        damage: data.damageApplied,
-        source: "Manual Strike",
-        defeated: data.defeated,
-        rewards: data.rewards
-          ? { exp: data.rewards.exp, coins: data.rewards.coins, itemName: data.rewards.item?.name ?? null }
-          : undefined,
-      });
-      setState((prev) =>
-        prev
-          ? {
-              ...prev,
-              progress: data.progress,
-              cooldownRemainingMs: data.cooldownRemainingMs,
-              percentageRemaining: data.percentageRemaining,
-            }
-          : prev
-      );
-      await fetchState();
-    });
-  }
+  }, []);
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       await fetchState();
     })();
+  }, [fetchState]);
+
+  const pushLog = useCallback((message: string) => {
+    setBattleLog((prev) => [message, ...prev].slice(0, 8));
   }, []);
+
+  const handleDamage = useCallback(
+    (payload: BossDamagePayload) => {
+      if (!payload.damage) return;
+      const burst: DamageBurst = {
+        id: `${payload.damage}-${Date.now()}`,
+        value: payload.damage,
+        critical: payload.critical ?? payload.damage > 250,
+      };
+      setDamageBursts((prev) => [...prev, burst]);
+      setTimeout(() => {
+        setDamageBursts((prev) => prev.filter((item) => item.id !== burst.id));
+      }, 1500);
+      const bossName = state?.boss?.name ?? "The Boss";
+      pushLog(`${payload.source} dealt ${payload.damage} damage`);
+      if (payload.damage < 60) {
+        pushLog(`${bossName} resisted the attack`);
+      }
+      setShake(true);
+      setTimeout(() => setShake(false), 400);
+      if (burst.critical) {
+        setFlash(true);
+        setTimeout(() => setFlash(false), 120);
+      }
+      if (payload.defeated) {
+        setPhase("VICTORY");
+        const loot = {
+          exp: payload.rewards?.exp ?? 0,
+          coins: payload.rewards?.coins ?? 0,
+          itemName: payload.rewards?.itemName ?? null,
+        };
+        setVictory(loot);
+        if (loot.itemName) {
+          setShowLoot(loot);
+        }
+      } else {
+        setTimeout(() => {
+          setPhase("BOSS_COUNTER");
+          setCounterVisible(true);
+          pushLog(`${bossName} is preparing a counter`);
+          setTimeout(() => {
+            setCounterVisible(false);
+            pushLog(`${bossName} retaliates!`);
+            setPhase("COOLDOWN");
+          }, 800);
+        }, 600);
+      }
+    },
+    [state, pushLog]
+  );
 
   useEffect(() => {
     const unsubTasks = subscribeToTasksUpdate(() => {
@@ -114,7 +155,75 @@ export function BossBattlePanel() {
       unsubTasks();
       unsubDamage();
     };
+  }, [fetchState, handleDamage]);
+
+  useEffect(() => {
+    void (async () => {
+      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as { user: { profile?: { username?: string | null; title?: string | null; rank?: string | null; level?: number | null } | null; name?: string | null } | null };
+      if (data.user) {
+        setPlayer({
+          username: data.user.profile?.username ?? data.user.name ?? "Hunter",
+          title: data.user.profile?.title ?? null,
+          rank: data.user.profile?.rank ?? null,
+          level: data.user.profile?.level ?? null,
+        });
+      }
+    })();
   }, []);
+
+  const attackBoss = useCallback(
+    (skill: SkillButton) => {
+      if (pending || !state) return;
+      if (state.cooldownRemainingMs > 0) {
+        pushLog(`Cooldown active: ${formatMs(state.cooldownRemainingMs)}`);
+        setPhase("COOLDOWN");
+        return;
+      }
+      setActiveSkill(skill.id);
+      setSlashVisible(true);
+      setTimeout(() => setSlashVisible(false), 500);
+      setPhase("PLAYER_ATTACK");
+      pushLog(`You used ${skill.label}`);
+      startTransition(() => {
+        void (async () => {
+          const res = await fetch("/api/boss/attack", { method: "POST" });
+          if (!res.ok) {
+            await fetchState();
+            setPhase("COOLDOWN");
+            setActiveSkill(null);
+            return;
+          }
+          const data = (await res.json()) as BossBattleSummary;
+          handleDamage({
+            damage: data.damageApplied,
+            source: skill.label,
+            defeated: data.defeated,
+            rewards: data.rewards
+              ? { exp: data.rewards.exp, coins: data.rewards.coins, itemName: data.rewards.item?.name ?? null }
+              : undefined,
+          });
+          setState((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  progress: data.progress,
+                  cooldownRemainingMs: data.cooldownRemainingMs,
+                  percentageRemaining: data.percentageRemaining,
+                }
+              : prev
+          );
+          setTimeout(() => {
+            setPhase(data.defeated ? "VICTORY" : "COOLDOWN");
+          }, 900);
+          setActiveSkill(null);
+          await fetchState();
+        })();
+      });
+    },
+    [pending, state, pushLog, fetchState, handleDamage]
+  );
 
   if (!state || !state.boss) {
     return (
@@ -125,6 +234,8 @@ export function BossBattlePanel() {
   }
 
   const { boss, progress, cooldownRemainingMs, percentageRemaining } = state;
+  const phaseLabel = phase === "BOSS_HIT" ? "Player Hit" : phase.replace("_", " ");
+  const isOnCooldown = cooldownRemainingMs > 0;
 
   return (
     <motion.div
@@ -132,82 +243,230 @@ export function BossBattlePanel() {
       animate={shake ? { x: [0, -8, 8, -4, 0] } : { x: 0 }}
       transition={{ duration: 0.45 }}
     >
+      {flash && (
+        <motion.div
+          className="pointer-events-none absolute inset-0 bg-white/40"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        />
+      )}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-24 left-0 h-56 w-56 rounded-full bg-purple-600/30 blur-3xl" />
         <div className="absolute -bottom-24 right-0 h-48 w-48 rounded-full bg-rose-500/20 blur-3xl" />
       </div>
       <div className="relative flex flex-col gap-6">
-        <div className="flex flex-wrap items-start gap-6">
-          <motion.div className="relative h-24 w-24 rounded-3xl border border-white/20 bg-black/50">
-            <div className="absolute inset-2 rounded-2xl bg-gradient-to-br from-purple-500/50 to-black/70" />
-            <p className="relative z-10 flex h-full items-center justify-center text-4xl font-black text-white/80">
-              {boss.name.slice(0, 1)}
-            </p>
-          </motion.div>
-          <div className="flex-1">
-            <p className="text-xs uppercase tracking-[0.4em] text-white/50">Boss Arena</p>
-            <h3 className="text-3xl font-black">{boss.name}</h3>
-            <p className="text-sm text-white/70">{boss.description}</p>
-          </div>
-          <div className="text-right text-sm text-white/70">
-            <p>Reward: {formatter.format(boss.rewardExp)} EXP · {formatter.format(boss.rewardCoins)} coins</p>
-            {boss.rewardItem && <p>Loot: {boss.rewardItem.name}</p>}
-          </div>
+        <div className="flex flex-wrap items-center justify-between text-xs uppercase tracking-[0.3em] text-white/60">
+          <span>Phase: {phaseLabel}</span>
+          <span>Cooldown: {formatMs(cooldownRemainingMs)}</span>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
-          <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
-            <span>HP</span>
-            <span>
-              {formatter.format(progress?.currentHp ?? 0)} / {formatter.format(boss.maxHp)}
-            </span>
-          </div>
-          <div className="relative h-4 overflow-hidden rounded-full bg-white/10">
+        <div className="grid gap-4 items-center lg:grid-cols-[1fr_auto_1fr]">
+          <PlayerCard player={player} phase={phase} />
+          <div className="flex flex-col items-center gap-2 text-center">
+            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Battle Line</p>
             <motion.div
-              className="absolute inset-y-0 left-0 bg-gradient-to-r from-rose-500 to-amber-400"
-              animate={{ width: `${percentageRemaining ?? 0}%` }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-            />
+              className="rounded-full border border-white/30 px-4 py-2 text-lg font-black"
+              animate={{ scale: [1, 1.05, 1], rotate: [0, 2, -2, 0] }}
+              transition={{ repeat: Infinity, duration: 4 }}
+            >
+              VS
+            </motion.div>
+            <p className="text-xs text-white/70">{percentageRemaining ?? 0}% HP remaining</p>
+            <div className="h-1 w-32 overflow-hidden rounded-full bg-white/10">
+              <motion.div
+                className="h-full bg-gradient-to-r from-rose-500 to-amber-400"
+                animate={{ width: `${percentageRemaining ?? 0}%` }}
+                transition={{ duration: 0.6 }}
+              />
+            </div>
           </div>
-          <div className="mt-3 flex items-center justify-between text-xs text-white/60">
-            <span>Weakness: {boss.weakness ?? "None"}</span>
-            <span>Cooldown: {formatMs(cooldownRemainingMs)}</span>
-          </div>
+          <BossCard boss={boss} progress={progress} counterVisible={counterVisible} />
         </div>
 
-        <div className="flex flex-col gap-4 lg:flex-row">
-          <Button className="flex-1" disabled={pending || cooldownRemainingMs > 0} onClick={attackBoss}>
-            {pending ? "Processing..." : cooldownRemainingMs > 0 ? "Cooldown active" : "Strike the boss"}
-          </Button>
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white/70">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Battle Log</p>
-            <ul className="mt-2 space-y-1">
-              {battleLog.length === 0 && <li className="text-white/40">Awaiting first strike...</li>}
-              {battleLog.map((entry) => (
-                <li key={entry}>{entry}</li>
-              ))}
-            </ul>
-          </div>
+        <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+          <SkillBoard
+            skills={skills}
+            activeSkill={activeSkill}
+            isOnCooldown={isOnCooldown}
+            pending={pending}
+            onUseSkill={(skill) => attackBoss(skill)}
+          />
+          <BattleLog entries={battleLog} />
         </div>
 
         <AnimatePresence>
+          {slashVisible && <SlashEffect />}
+          {counterVisible && <CounterEffect />}
           {damageBursts.map((burst) => (
-            <motion.span
-              key={burst.id}
-              className={`pointer-events-none absolute right-16 top-24 text-3xl font-black ${burst.critical ? "text-amber-300" : "text-rose-300"}`}
-              initial={{ opacity: 0, y: 0, scale: 0.5 }}
-              animate={{ opacity: 1, y: -40, scale: burst.critical ? 1.4 : 1 }}
-              exit={{ opacity: 0, y: -80, scale: 0.7 }}
-            >
-              -{burst.value}
-            </motion.span>
+            <DamageNumber key={burst.id} value={burst.value} critical={burst.critical} />
           ))}
         </AnimatePresence>
 
-        <VictoryModal state={victory} onClose={() => setVictory(null)} />
-        <LootModal state={showLoot} onClose={() => setShowLoot(null)} />
+        {phase === "VICTORY" && (
+          <motion.div
+            className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-3xl bg-black/60 text-4xl font-black text-emerald-300"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            Victory Achieved
+          </motion.div>
+        )}
       </div>
+      <VictoryModal state={victory} onClose={() => setVictory(null)} />
+      <LootModal state={showLoot} onClose={() => setShowLoot(null)} />
     </motion.div>
+  );
+}
+
+function PlayerCard({ player, phase }: { player: PlayerInfo | null; phase: BattlePhase }) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Hunter</p>
+      <div className="mt-3 flex items-center gap-4">
+        <div className="h-20 w-20 rounded-2xl border border-cyan-400/60 bg-cyan-500/20" />
+        <div>
+          <p className="text-lg font-semibold">{player?.username ?? "Hunter"}</p>
+          <p className="text-sm text-white/70">{player?.title ?? "Initiate"}</p>
+          <p className="text-xs text-white/50">Rank {player?.rank ?? "Bronze"} · Lv {player?.level ?? 1}</p>
+        </div>
+      </div>
+      <p className="mt-4 text-xs text-white/60">Status: {phase}</p>
+    </div>
+  );
+}
+
+function BossCard({
+  boss,
+  progress,
+  counterVisible,
+}: {
+  boss: BossBattleState["boss"];
+  progress: BossBattleState["progress"];
+  counterVisible: boolean;
+}) {
+  return (
+    <div className="relative rounded-3xl border border-white/10 bg-gradient-to-br from-rose-900/40 to-black/60 p-4">
+      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Boss</p>
+      <div className="mt-3 flex items-center gap-4">
+        <div className="relative h-24 w-24 overflow-hidden rounded-2xl border border-rose-400/50 bg-rose-900/40">
+          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-rose-500/20 to-transparent" />
+          <p className="relative z-10 flex h-full items-center justify-center text-5xl font-black text-white/70">
+            {boss?.name.slice(0, 1)}
+          </p>
+        </div>
+        <div>
+          <p className="text-lg font-semibold">{boss?.name}</p>
+          <p className="text-sm text-white/70">Weakness: {boss?.weakness ?? "Unknown"}</p>
+          <p className="text-xs text-white/60">
+            HP {formatter.format(progress?.currentHp ?? 0)} / {formatter.format(boss?.maxHp ?? 0)}
+          </p>
+        </div>
+      </div>
+      {counterVisible && (
+        <motion.div
+          className="mt-4 rounded-2xl border border-amber-400/40 bg-amber-200/10 px-3 py-2 text-xs text-amber-200"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+        >
+          Counter stance activated!
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+function SkillBoard({
+  skills,
+  activeSkill,
+  isOnCooldown,
+  pending,
+  onUseSkill,
+}: {
+  skills: SkillButton[];
+  activeSkill: string | null;
+  isOnCooldown: boolean;
+  pending: boolean;
+  onUseSkill: (skill: SkillButton) => void;
+}) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Skills</p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {skills.map((skill) => {
+          const disabled = pending || isOnCooldown || skill.disabled;
+          return (
+            <button
+              key={skill.id}
+              className={`rounded-2xl border px-4 py-3 text-left transition ${
+                disabled ? "border-white/10 text-white/40" : "border-cyan-400/40 hover:bg-cyan-400/10"
+              } ${activeSkill === skill.id ? "bg-cyan-500/20" : "bg-white/5"}`}
+              disabled={disabled}
+              onClick={() => onUseSkill(skill)}
+            >
+              <p className="text-sm font-semibold">{skill.label}</p>
+              <p className="text-xs text-white/60">{skill.description}</p>
+              {skill.cooldown && <p className="text-[10px] text-white/50">CD {skill.cooldown}s</p>}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function BattleLog({ entries }: { entries: string[] }) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-black/40 p-4 text-sm text-white/80">
+      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Battle Log</p>
+      <ul className="mt-3 space-y-1">
+        {entries.length === 0 && <li className="text-white/40">Awaiting first strike...</li>}
+        {entries.map((entry, index) => (
+          <li key={`${entry}-${index}`}>{entry}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function SlashEffect() {
+  return (
+    <motion.div
+      className="pointer-events-none absolute inset-0"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 1, 0], rotate: [0, -10, -10] }}
+      transition={{ duration: 0.4 }}
+    >
+      <div className="absolute inset-y-1/4 right-10 h-1/2 w-1/3 rotate-12 bg-gradient-to-r from-transparent via-white to-transparent opacity-70" />
+    </motion.div>
+  );
+}
+
+function CounterEffect() {
+  return (
+    <motion.div
+      className="pointer-events-none absolute inset-0"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 0.4, 0], scale: [0.9, 1.05, 1] }}
+      transition={{ duration: 0.6 }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-rose-500/20 to-transparent" />
+    </motion.div>
+  );
+}
+
+function DamageNumber({ value, critical }: { value: number; critical?: boolean }) {
+  return (
+    <motion.span
+      className={`pointer-events-none absolute right-16 top-24 text-3xl font-black ${critical ? "text-amber-300" : "text-rose-300"}`}
+      initial={{ opacity: 0, y: 0, scale: 0.5 }}
+      animate={{ opacity: 1, y: -40, scale: critical ? 1.4 : 1 }}
+      exit={{ opacity: 0, y: -80, scale: 0.7 }}
+    >
+      -{value}
+    </motion.span>
   );
 }
 
