@@ -214,6 +214,18 @@ async function handleBossVictory({
         quantity: { increment: 1 },
       },
     });
+
+    await tx.activityLog.create({
+      data: {
+        userId,
+        type: ActivityType.ITEM_EARNED,
+        description: `Looted ${boss.rewardItem?.name ?? "boss reward"}`,
+        metadata: {
+          bossId: boss.id,
+          itemId: boss.rewardItemId,
+        },
+      },
+    });
   }
 
   await tx.activityLog.create({

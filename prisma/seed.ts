@@ -137,6 +137,24 @@ const achievements: AchievementSeed[] = [
     rewardExp: 700,
     rewardCoins: 320,
   },
+  {
+    name: "Vault Keeper",
+    description: "Collect three unique relics in your inventory.",
+    icon: "vault",
+    rarity: AchievementRarity.EPIC,
+    unlockCondition: "Own at least 3 inventory items.",
+    rewardExp: 450,
+    rewardCoins: 200,
+  },
+  {
+    name: "Relic Master",
+    description: "Equip any legendary-grade item.",
+    icon: "relic",
+    rarity: AchievementRarity.LEGENDARY,
+    unlockCondition: "Equip a legendary item in your inventory.",
+    rewardExp: 650,
+    rewardCoins: 260,
+  },
 ];
 
 type InventorySeed = {
@@ -164,6 +182,18 @@ const inventoryItems: InventorySeed[] = [
     rarity: ItemRarity.LEGENDARY,
     description: "Auto-invest a portion of earned coins.",
     effect: "Convert 20% coins into passive exp nightly",
+  },
+  {
+    name: "Ion Surge Vial",
+    rarity: ItemRarity.RARE,
+    description: "Single-use ampule that grants instant EXP.",
+    effect: "Consume to gain 150 EXP",
+  },
+  {
+    name: "Neural Overclocker",
+    rarity: ItemRarity.EPIC,
+    description: "Equippable rig that boosts focus-task EXP permanently while worn.",
+    effect: "Equip for +12% EXP on FOCUS tasks",
   },
 ];
 

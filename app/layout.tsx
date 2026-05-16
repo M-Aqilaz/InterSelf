@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Orbitron, Inter } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/layout/site-header";
+import { ToastProvider } from "@/components/ui/toast";
 
 const orbitron = Orbitron({
   subsets: ["latin"],
@@ -29,12 +30,14 @@ export default function RootLayout({
     <html lang="en" className={`${orbitron.variable} ${inter.variable}`}>
       <body className="min-h-screen bg-[#030014] text-white">
         <div className="gradient-grid pointer-events-none" aria-hidden />
-        <main className="relative z-10 flex min-h-screen flex-col">
-          <div className="container mx-auto flex w-full flex-1 flex-col gap-10 px-6 py-10">
-            <SiteHeader />
-            {children}
-          </div>
-        </main>
+        <ToastProvider>
+          <main className="relative z-10 flex min-h-screen flex-col">
+            <div className="container mx-auto flex w-full flex-1 flex-col gap-10 px-6 py-10">
+              <SiteHeader />
+              {children}
+            </div>
+          </main>
+        </ToastProvider>
       </body>
     </html>
   );

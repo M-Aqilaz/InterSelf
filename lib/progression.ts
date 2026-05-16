@@ -2,6 +2,8 @@ import { Prisma, Stat, TaskCompletionStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { calculateLevelFromTotalExp, type LevelProgress } from "@/lib/level";
 import { applyBossDamage, type ProfileWithBoss } from "@/lib/boss";
+import { applyPassiveEffects, summarizeInventory } from "@/lib/inventory";
+import { evaluateAchievements, type AchievementUnlock } from "@/lib/achievements";
 import type { BossBattleSummary } from "@/types/boss";
 
 export type TaskCompletionResult = {
@@ -10,6 +12,8 @@ export type TaskCompletionResult = {
   stats: Stat[];
   levelProgress: LevelProgress;
   bossBattle?: BossBattleSummary | null;
+  achievements?: AchievementUnlock[] | null;
+  passiveLogs?: string[];
 };
 
 export class TaskProgressionError extends Error {
@@ -48,8 +52,8 @@ export async function completeTaskForUser({
       throw new TaskProgressionError("Profile not found", 404);
     }
 
-    const expReward = Math.max(task.expReward, 0);
-    const coinReward = Math.max(task.coinReward, 0);
+    const baseExpReward = Math.max(task.expReward, 0);
+    const baseCoinReward = Math.max(task.coinReward, 0);
     const streakGain = Math.max(task.streakImpact, 0);
 
     const statIncreases: Record<string, number> = {};
@@ -82,6 +86,15 @@ export async function completeTaskForUser({
         });
       })
     );
+
+    const passiveResult = await applyPassiveEffects(tx, userId, {
+      expReward: baseExpReward,
+      coinReward: baseCoinReward,
+      taskCategory: task.category,
+    });
+
+    const expReward = passiveResult.expReward;
+    const coinReward = passiveResult.coinReward;
 
     const nextTotalExp = profile.exp + expReward;
     const streak = profile.streak + streakGain;
@@ -149,12 +162,29 @@ export async function completeTaskForUser({
       throw new TaskProgressionError("Unable to load profile after task completion", 500);
     }
 
+    const achievementResult = await evaluateAchievements({
+      tx,
+      userId,
+      profile: profileWithBoss,
+      stats,
+      inventorySummary: summarizeInventory(passiveResult.inventory),
+      bossVictory: bossBattle?.defeated,
+    });
+
+    let achievements: AchievementUnlock[] | null = null;
+
+    if (achievementResult) {
+      achievements = achievementResult;
+    }
+
     return {
       completion,
       profile: profileWithBoss,
       stats,
       levelProgress,
       bossBattle,
+      achievements,
+      passiveLogs: passiveResult.passiveLogs,
     };
   });
 }
