@@ -86,8 +86,8 @@ function computeHabitScore(progress: HabitProgressMap): HabitScoreSnapshot {
 
 export function useProductivitySignals() {
   const [taskSummary, setTaskSummary] = useState<TaskSummary>(DEFAULT_TASK_SUMMARY);
-  const [focusHistory, setFocusHistory] = useState<FocusSession[]>(() => readStorage(FOCUS_HISTORY_KEY, []));
-  const [habitProgress, setHabitProgress] = useState<HabitProgressMap>(() => readStorage(HABIT_PROGRESS_KEY, {}));
+  const [focusHistory, setFocusHistory] = useState<FocusSession[]>([]);
+  const [habitProgress, setHabitProgress] = useState<HabitProgressMap>({});
 
   useEffect(() => {
     void (async () => {
@@ -100,6 +100,15 @@ export function useProductivitySignals() {
         // ignore fetch failure for analytics
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const frame = window.requestAnimationFrame(() => {
+      setFocusHistory(readStorage(FOCUS_HISTORY_KEY, []));
+      setHabitProgress(readStorage(HABIT_PROGRESS_KEY, {}));
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {

@@ -56,7 +56,7 @@ type BossStrikeResult = {
 };
 
 export function FocusModePanel() {
-  const [history, setHistory] = useState<FocusSession[]>(() => readHistory());
+  const [history, setHistory] = useState<FocusSession[]>([]);
   const [minutes, setMinutes] = useState(25);
   const [theme, setTheme] = useState(SESSION_THEMES[0].id);
   const [status, setStatus] = useState<"idle" | "running" | "paused">("idle");
@@ -65,6 +65,14 @@ export function FocusModePanel() {
   const [customMinutes, setCustomMinutes] = useState(25);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { play } = useGameAudio();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const frame = window.requestAnimationFrame(() => {
+      setHistory(readHistory());
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
