@@ -170,6 +170,7 @@ model UserAchievement {
   userId         String
   achievementId  Int
   unlockedAt     DateTime     @default(now())
+  claimedAt      DateTime?
 
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   achievement    Achievement  @relation(fields: [achievementId], references: [id], onDelete: Cascade)

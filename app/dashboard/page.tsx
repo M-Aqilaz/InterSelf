@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { Card } from "@/components/ui/card";
 import { BossBattlePanel } from "@/components/sections/boss-battle";
+import { AchievementsPanel } from "@/components/sections/achievements-panel";
+import { InventoryPanel } from "@/components/sections/inventory-panel";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -39,6 +41,10 @@ export default async function DashboardPage() {
         </div>
       </Card>
       <BossBattlePanel />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AchievementsPanel />
+        <InventoryPanel />
+      </div>
     </div>
   );
 }
