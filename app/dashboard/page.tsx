@@ -99,8 +99,9 @@ export default async function DashboardPage() {
         />
       </section>
 
-      <section id="focus" className="w-full">
+      <section id="focus" className="flex w-full flex-col gap-6">
         <FocusModePanel />
+        <BossBattlePanel productivityCompletion={dailyCompletionPercent} />
       </section>
 
       <section id="progress" className="flex w-full flex-col gap-8">
@@ -119,9 +120,9 @@ export default async function DashboardPage() {
         <div className="flex flex-col gap-3">
           <div>
             <h2 className="text-2xl font-semibold text-white">Character progression</h2>
-            <p className="text-sm text-white/70">EXP, rank, and boss pressure as motivation.</p>
+            <p className="text-sm text-white/70">EXP and rank as motivation.</p>
           </div>
-          <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[0.85fr_1.15fr]">
             <CharacterProfilePanel
               username={user.profile?.username ?? user.name ?? "Hunter"}
               title={user.profile?.title ?? "Awakened"}
@@ -136,10 +137,7 @@ export default async function DashboardPage() {
               equippedSlots={equippedSlots}
               stats={stats.map((stat) => ({ type: stat.type, value: stat.value }))}
             />
-            <div className="grid grid-cols-1 gap-6">
-              <BossBattlePanel />
-              <WeeklyChallengesPanel />
-            </div>
+            <WeeklyChallengesPanel />
           </div>
         </div>
       </section>

@@ -52,7 +52,11 @@ type PlayerInfo = {
   level: number | null;
 };
 
-export function BossBattlePanel() {
+type BossBattlePanelProps = {
+  productivityCompletion?: number;
+};
+
+export function BossBattlePanel({ productivityCompletion = 0 }: BossBattlePanelProps = {}) {
   const [state, setState] = useState<BossBattleState | null>(null);
   const [pending, startTransition] = useTransition();
   const [damageBursts, setDamageBursts] = useState<DamageBurst[]>([]);
@@ -298,123 +302,105 @@ export function BossBattlePanel() {
 
   if (!state || !boss) {
     return (
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-white/70">
+      <div className="rounded-3xl border border-white/10 bg-black/30 p-6 text-white/70">
         <p>No active boss yet. Complete tasks to unlock boss encounters.</p>
       </div>
     );
   }
 
+  const productivitySync = Math.max(0, Math.min(100, Math.round(productivityCompletion ?? 0)));
+
   return (
-    <motion.div
-      className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#07030f] p-6 text-white"
+    <motion.section
+      className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-[#05020d] via-[#0f0c1f] to-[#05020d] p-6 text-white lg:p-8"
       animate={shake ? { x: [0, -8, 8, -4, 0] } : { x: 0 }}
       transition={{ duration: 0.45 }}
     >
       {flash && (
         <motion.div
-          className="pointer-events-none absolute inset-0 bg-white/40"
+          className="pointer-events-none absolute inset-0 bg-white/30"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         />
       )}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 left-0 h-56 w-56 rounded-full bg-purple-600/30 blur-3xl" />
-        <div className="absolute -bottom-24 right-0 h-48 w-48 rounded-full bg-rose-500/20 blur-3xl" />
+        <div className="absolute -top-32 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-purple-600/20 blur-3xl" />
+        <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-[#05020d]" />
       </div>
       <div className="relative flex flex-col gap-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 text-xs uppercase tracking-[0.3em] text-white/60">
-          <span>Phase: {phaseLabel}</span>
-          <span>Cooldown: {formatMs(cooldownRemainingMs)}</span>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-black/30 p-3">
-          <div className="flex items-center justify-between text-[11px] uppercase text-white/50">
-            <span>Hunter Energy</span>
-            <span>{energy}%</span>
+        <div className="flex flex-wrap items-center justify-between gap-4 text-xs uppercase tracking-[0.3em] text-white/60">
+          <div className="flex flex-wrap items-center gap-4">
+            <span>Phase: {phaseLabel}</span>
+            <span>Cooldown: {formatMs(cooldownRemainingMs)}</span>
           </div>
-          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
-            <motion.div
-              className="h-full bg-gradient-to-r from-cyan-400 to-emerald-300"
-              animate={{ width: `${energy}%` }}
-              transition={{ type: "spring", stiffness: 80, damping: 20 }}
-            />
+          <div className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-1 text-[11px] font-semibold text-white/80">
+            <span className="uppercase tracking-[0.3em] text-white/60">Productivity sync</span>
+            <span className="text-white">{productivitySync}%</span>
           </div>
         </div>
 
-        <div className="grid gap-4 items-center lg:grid-cols-[1fr_auto_1fr]">
-          <PlayerCard player={player} phase={phase} />
-          <div className="flex flex-col items-center gap-2 text-center">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Battle Line</p>
-            <motion.div
-              className="rounded-full border border-white/30 px-4 py-2 text-lg font-black"
-              animate={{ scale: [1, 1.05, 1], rotate: [0, 2, -2, 0] }}
-              transition={{ repeat: Infinity, duration: 4 }}
-            >
-              VS
-            </motion.div>
-            <p className="text-xs text-white/70">{percentageRemaining ?? 0}% HP remaining</p>
-            <div className="h-1 w-32 overflow-hidden rounded-full bg-white/10">
-              <motion.div
-                className="h-full bg-gradient-to-r from-rose-500 to-amber-400"
-                animate={{ width: `${percentageRemaining ?? 0}%` }}
-                transition={{ duration: 0.6 }}
-              />
+        <div className="grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
+          <div className="space-y-4">
+            <BossCard boss={boss} progress={progress} counterVisible={counterVisible} visual={monsterVisual} percentageRemaining={percentageRemaining ?? 0} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <PlayerCard player={player} phase={phase} />
+              <ProductivityPanel energy={energy} completion={productivitySync} cooldownMs={cooldownRemainingMs} />
             </div>
           </div>
-          <BossCard boss={boss} progress={progress} counterVisible={counterVisible} visual={monsterVisual} />
+          <div className="space-y-4">
+            <SkillBoard
+              skills={skills}
+              activeSkill={activeSkill}
+              isOnCooldown={isOnCooldown}
+              pending={pending}
+              onUseSkill={(skill) => attackBoss(skill)}
+              energy={energy}
+              cooldowns={skillCooldowns}
+            />
+            <BattleLog entries={battleLog} />
+          </div>
         </div>
-
-        <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <SkillBoard
-            skills={skills}
-            activeSkill={activeSkill}
-            isOnCooldown={isOnCooldown}
-            pending={pending}
-            onUseSkill={(skill) => attackBoss(skill)}
-            energy={energy}
-            cooldowns={skillCooldowns}
-          />
-          <BattleLog entries={battleLog} />
-        </div>
-
-        <AnimatePresence>
-          {slashVisible && <SlashEffect />}
-          {counterVisible && <CounterEffect />}
-          {damageBursts.map((burst) => (
-            <DamageNumber key={burst.id} value={burst.value} critical={burst.critical} />
-          ))}
-        </AnimatePresence>
-
-        {phase === "VICTORY" && (
-          <motion.div
-            className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-3xl bg-black/60 text-4xl font-black text-emerald-300"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            Victory Achieved
-          </motion.div>
-        )}
       </div>
+
+      <AnimatePresence>
+        {slashVisible && <SlashEffect />}
+        {counterVisible && <CounterEffect />}
+        {damageBursts.map((burst) => (
+          <DamageNumber key={burst.id} value={burst.value} critical={burst.critical} />
+        ))}
+      </AnimatePresence>
+
+      {phase === "VICTORY" && (
+        <motion.div
+          className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-3xl bg-black/60 text-4xl font-black text-emerald-300"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          Victory Achieved
+        </motion.div>
+      )}
+
       <VictoryModal state={victory} onClose={() => setVictory(null)} />
       <LootModal state={showLoot} onClose={() => setShowLoot(null)} />
-    </motion.div>
+    </motion.section>
   );
 }
 
 function PlayerCard({ player, phase }: { player: PlayerInfo | null; phase: BattlePhase }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
       <p className="text-xs uppercase tracking-[0.3em] text-white/50">Hunter</p>
       <div className="mt-3 flex items-center gap-4">
-        <div className="h-20 w-20 rounded-2xl border border-cyan-400/60 bg-cyan-500/20" />
+        <div className="h-16 w-16 rounded-2xl border border-cyan-400/40 bg-cyan-500/10" />
         <div>
           <p className="text-lg font-semibold">{player?.username ?? "Hunter"}</p>
           <p className="text-sm text-white/70">{player?.title ?? "Initiate"}</p>
           <p className="text-xs text-white/50">Rank {player?.rank ?? "Bronze"} · Lv {player?.level ?? 1}</p>
         </div>
       </div>
-      <p className="mt-4 text-xs text-white/60">Status: {phase}</p>
+      <p className="mt-4 text-xs text-white/50">Status: {phase.replace("_", " ")}</p>
     </div>
   );
 }
@@ -424,40 +410,84 @@ function BossCard({
   progress,
   counterVisible,
   visual,
+  percentageRemaining,
 }: {
   boss: BossBattleState["boss"];
   progress: BossBattleState["progress"];
   counterVisible: boolean;
   visual: { aura: string; sigil: string };
+  percentageRemaining: number;
 }) {
   return (
-    <div className="relative rounded-3xl border border-white/10 bg-gradient-to-br from-rose-900/40 to-black/60 p-4">
-      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Boss</p>
-      <div className="mt-3 flex items-center gap-4">
-        <div className={`relative h-28 w-28 overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br ${visual.aura}`}>
-          <div className="absolute inset-0 opacity-40" style={{ backgroundImage: "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.25), transparent 60%)" }} />
-          <p className="relative z-10 flex h-full items-center justify-center text-5xl font-black text-white/80">
-            {visual.sigil}
-          </p>
-        </div>
+    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black/30 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-lg font-semibold">{boss?.name}</p>
+          <p className="text-sm text-white/50">Current Boss</p>
+          <h3 className="text-2xl font-black text-white">{boss?.name}</h3>
           <p className="text-sm text-white/70">Weakness: {boss?.weakness ?? "Unknown"}</p>
           <p className="text-xs text-white/60">
             HP {formatter.format(progress?.currentHp ?? 0)} / {formatter.format(boss?.maxHp ?? 0)}
           </p>
         </div>
+        <div className={`relative h-40 w-40 overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-br ${visual.aura}`}>
+          <div className="absolute inset-0 opacity-40" style={{ backgroundImage: "radial-gradient(circle at 40% 40%, rgba(255,255,255,0.25), transparent 60%)" }} />
+          <p className="relative z-10 flex h-full items-center justify-center text-6xl font-black text-white/80">
+            {visual.sigil}
+          </p>
+        </div>
       </div>
-      {counterVisible && (
-        <motion.div
-          className="mt-4 rounded-2xl border border-amber-400/40 bg-amber-200/10 px-3 py-2 text-xs text-amber-200"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-        >
-          Counter stance activated!
-        </motion.div>
-      )}
+      <div className="mt-6 space-y-3">
+        <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/60">
+          <span>Boss Pressure</span>
+          <span>{percentageRemaining}% HP</span>
+        </div>
+        <div className="h-3 w-full overflow-hidden rounded-full bg-white/10">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-rose-500 via-amber-400 to-amber-200"
+            animate={{ width: `${percentageRemaining}%` }}
+            transition={{ duration: 0.6 }}
+          />
+        </div>
+        {counterVisible && (
+          <motion.div
+            className="rounded-2xl border border-amber-400/40 bg-amber-200/10 px-3 py-2 text-xs text-amber-200"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            Counter stance activated!
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProductivityPanel({ energy, completion, cooldownMs }: { energy: number; completion: number; cooldownMs: number }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Productivity link</p>
+      <div className="mt-3 space-y-3 text-sm text-white/80">
+        <div>
+          <div className="flex items-center justify-between text-xs text-white/60">
+            <span>Focus energy</span>
+            <span>{energy}%</span>
+          </div>
+          <div className="mt-1 h-2 rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-emerald-300" style={{ width: `${energy}%` }} />
+          </div>
+        </div>
+        <div>
+          <div className="flex items-center justify-between text-xs text-white/60">
+            <span>Tasks completed</span>
+            <span>{completion}%</span>
+          </div>
+          <div className="mt-1 h-2 rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-200" style={{ width: `${completion}%` }} />
+          </div>
+        </div>
+        <p className="text-xs text-white/60">Next strike ready in {formatMs(cooldownMs)} once tasks fuel your energy.</p>
+      </div>
     </div>
   );
 }
@@ -480,29 +510,43 @@ function SkillBoard({
   cooldowns: Record<string, number>;
 }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
-      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Skills</p>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Combat actions</p>
+      <div className="mt-4 flex flex-col gap-3">
         {skills.map((skill) => {
-          const disabled = pending || isOnCooldown || skill.disabled || energy < skill.energyCost || (cooldowns[skill.id] ?? 0) > 0;
+          const cooldownRemaining = cooldowns[skill.id] ?? 0;
+          const cooldownPercent = skill.cooldown
+            ? Math.max(0, Math.min(100, Math.round(((skill.cooldown - cooldownRemaining) / skill.cooldown) * 100)))
+            : 100;
+          const disabled = pending || isOnCooldown || skill.disabled || energy < skill.energyCost || cooldownRemaining > 0;
           return (
             <button
               key={skill.id}
-              className={`rounded-2xl border px-4 py-3 text-left transition ${
-                disabled ? "border-white/10 text-white/40" : "border-cyan-400/40 hover:bg-cyan-400/10"
-              } ${activeSkill === skill.id ? "bg-cyan-500/20" : "bg-white/5"}`}
+              className={`flex items-center gap-4 rounded-2xl border px-4 py-3 text-left transition ${
+                disabled ? "border-white/10 text-white/40" : "border-cyan-400/40 hover:border-cyan-200/60"
+              } ${activeSkill === skill.id ? "bg-cyan-500/10" : "bg-white/5"}`}
               disabled={disabled}
               onClick={() => onUseSkill(skill)}
             >
-              <p className="text-sm font-semibold">{skill.label}</p>
-              <p className="text-xs text-white/60">{skill.description}</p>
-              <div className="mt-1 flex items-center justify-between text-[10px] uppercase text-white/50">
-                {skill.cooldown && <span>CD {skill.cooldown}s</span>}
-                <span>Cost {skill.energyCost}</span>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-white">{skill.label}</p>
+                <p className="text-xs text-white/60">{skill.description}</p>
+                <div className="mt-1 flex items-center gap-3 text-[11px] uppercase text-white/50">
+                  {skill.cooldown && <span>CD {skill.cooldown}s</span>}
+                  <span>Cost {skill.energyCost}</span>
+                </div>
               </div>
-              {cooldowns[skill.id] && cooldowns[skill.id] > 0 && (
-                <p className="text-[10px] text-amber-200">Recharging: {cooldowns[skill.id]}s</p>
-              )}
+              <div className="relative h-12 w-12">
+                <div
+                  className="absolute inset-0 rounded-full border border-white/20"
+                  style={{
+                    background: `conic-gradient(#22d3ee ${cooldownPercent}%, rgba(255,255,255,0.08) ${cooldownPercent}%)`,
+                  }}
+                />
+                <div className="absolute inset-[4px] rounded-full bg-black/60 flex items-center justify-center text-[10px] font-semibold text-white">
+                  {cooldownRemaining > 0 ? `${cooldownRemaining}s` : "Ready"}
+                </div>
+              </div>
             </button>
           );
         })}
@@ -513,8 +557,8 @@ function SkillBoard({
 
 function BattleLog({ entries }: { entries: string[] }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/40 p-4 text-sm text-white/80">
-      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Battle Log</p>
+    <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white/80">
+      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Battle log</p>
       <ul className="mt-3 space-y-1">
         {entries.length === 0 && <li className="text-white/40">Awaiting first strike...</li>}
         {entries.map((entry, index) => (
