@@ -4,6 +4,7 @@ import { calculateLevelFromTotalExp, type LevelProgress } from "@/lib/level";
 import { applyBossDamage, type ProfileWithBoss } from "@/lib/boss";
 import { applyPassiveEffects, summarizeInventory } from "@/lib/inventory";
 import { evaluateAchievements, type AchievementUnlock } from "@/lib/achievements";
+import { recordWeeklyChallengeProgress } from "@/lib/challenges";
 import type { BossBattleSummary } from "@/types/boss";
 
 export type TaskCompletionResult = {
@@ -176,6 +177,8 @@ export async function completeTaskForUser({
     if (achievementResult) {
       achievements = achievementResult;
     }
+
+    await recordWeeklyChallengeProgress(tx, userId, task.title);
 
     return {
       completion,
