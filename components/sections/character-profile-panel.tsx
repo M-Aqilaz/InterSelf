@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { BarMeter } from "@/components/ui/meters";
 import { Badge } from "@/components/ui/badge";
 import { useGameAudio } from "@/hooks/use-game-audio";
@@ -100,6 +100,7 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
   const { play } = useGameAudio();
   const deterministicAvatarId = useMemo(() => getDeterministicAvatarId(username), [username]);
   const [avatarId, setAvatarId] = useState<string>(deterministicAvatarId);
+  const [roadmapOpen, setRoadmapOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -129,17 +130,12 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
 
   return (
     <motion.div
-      className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-black/70 via-[#12021f] to-[#06021f] p-6 text-white"
+      className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-[#05040a] via-[#0b0f1c] to-[#080512] p-5 text-white"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-20 -right-16 h-52 w-52 rounded-full bg-purple-600/30 blur-3xl" />
-        <div className="absolute -bottom-24 -left-10 h-48 w-48 rounded-full bg-cyan-500/20 blur-3xl" />
-      </div>
-
-      <div className="relative flex flex-col gap-6">
+      <div className="relative flex flex-col gap-5">
         <div className="flex flex-wrap items-center gap-4">
           <div className="relative">
             <motion.div
@@ -170,7 +166,7 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
           <div className="flex items-center justify-between text-sm text-white/60">
             <p>Level {level}</p>
             <p>
@@ -185,8 +181,8 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[0.7fr_1fr]">
-          <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+        <div className="grid gap-4 lg:grid-cols-[0.65fr_1fr]">
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
             <p className="text-xs uppercase tracking-[0.3em] text-white/50">Equipped Relics</p>
             <div className="mt-3 grid gap-3">
               {resolvedSlots.map((slot, index) => {
@@ -231,7 +227,7 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#0b0c1a] to-[#1c0f2a] p-4">
+        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
           <p className="text-xs uppercase tracking-[0.3em] text-white/50">Hunter Avatars</p>
           <div className="mt-3 flex flex-wrap gap-3">
             {AVATAR_GALLERY.map((avatar) => (
@@ -250,7 +246,28 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
           </div>
         </div>
 
-        <RankRoadmap currentRank={rank} />
+        <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+          <button
+            type="button"
+            onClick={() => setRoadmapOpen((prev) => !prev)}
+            className="flex w-full items-center justify-between text-sm font-semibold text-white"
+          >
+            Rank roadmap
+            <span className="text-xs text-white/60">{roadmapOpen ? "Hide" : "View"}</span>
+          </button>
+          <AnimatePresence initial={false}>
+            {roadmapOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="mt-4"
+              >
+                <RankRoadmap currentRank={rank} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </motion.div>
   );
