@@ -3,18 +3,18 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
-import { Compass, Menu, ShieldHalf, Swords, Trophy, UsersRound } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { BarChart3, Compass, Gift, Menu, Sparkles, Timer } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useGameAudio } from "@/hooks/use-game-audio";
 
 const navItems = [
-  { label: "Profile", href: "#character", icon: Compass },
-  { label: "Arena", href: "#arena", icon: Swords },
-  { label: "Challenges", href: "#challenges", icon: Trophy },
-  { label: "Allies", href: "#social", icon: UsersRound },
-  { label: "Sanctum", href: "#systems", icon: ShieldHalf },
+  { label: "Today", href: "#today", icon: Compass },
+  { label: "Focus", href: "#focus", icon: Timer },
+  { label: "Progress", href: "#progress", icon: BarChart3 },
+  { label: "Insights", href: "#insights", icon: Sparkles },
+  { label: "Rewards", href: "#rewards", icon: Gift },
 ];
 
 type HeaderUser = {
@@ -25,23 +25,25 @@ type HeaderUser = {
 
 export function SiteHeader({ user }: { user: HeaderUser }) {
   const [open, setOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState(navItems[0]?.label ?? "Today");
   const router = useRouter();
-  const pathname = usePathname();
   const { play } = useGameAudio();
   const username = user?.profile?.username ?? user?.name ?? "Explorer";
   const isAuthenticated = Boolean(user);
 
-  const activeNav = useMemo(() => {
-    const current = pathname?.toLowerCase() ?? "";
-    if (current.includes("arena")) return "Arena";
-    if (current.includes("challenge")) return "Challenges";
-    if (current.includes("social")) return "Allies";
-    if (current.includes("system")) return "Sanctum";
-    return "Profile";
-  }, [pathname]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const frame = window.requestAnimationFrame(() => {
+      const hash = window.location.hash;
+      const match = navItems.find((item) => item.href === hash);
+      if (match) setActiveNav(match.label);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
-  const handleNavClick = (item: (typeof navItems)[number]) => {
+  const handleNavClick = useCallback((item: (typeof navItems)[number]) => {
     void play("nav", 100);
+    setActiveNav(item.label);
     if (open) setOpen(false);
     if (typeof window !== "undefined") {
       const target = document.querySelector(item.href);
@@ -52,7 +54,7 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
       }
     }
     void router.push(item.href);
-  };
+  }, [open, play, router]);
 
   function renderActions(isMobile: boolean = false) {
     if (isAuthenticated) {
