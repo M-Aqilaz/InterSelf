@@ -7,16 +7,6 @@ import type { GoalRecord } from "@/types/productivity";
 
 const GOAL_STORAGE_KEY = "interself-goals";
 
-const readGoals = () => {
-  if (typeof window === "undefined") return DEFAULT_GOALS;
-  const stored = window.localStorage.getItem(GOAL_STORAGE_KEY);
-  if (!stored) return DEFAULT_GOALS;
-  try {
-    return JSON.parse(stored) as GoalRecord[];
-  } catch {
-    return DEFAULT_GOALS;
-  }
-};
 
 const DEFAULT_GOALS: GoalRecord[] = [
   {
@@ -38,8 +28,23 @@ const DEFAULT_GOALS: GoalRecord[] = [
 ];
 
 export function GoalPlannerPanel() {
-  const [goals, setGoals] = useState<GoalRecord[]>(() => readGoals());
+  const [goals, setGoals] = useState<GoalRecord[]>(DEFAULT_GOALS);
   const [newGoal, setNewGoal] = useState({ title: "", timeframe: "WEEKLY", focusArea: "Execution" });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const frame = window.requestAnimationFrame(() => {
+      const stored = window.localStorage.getItem(GOAL_STORAGE_KEY);
+      if (!stored) return;
+      try {
+        const parsed = JSON.parse(stored) as GoalRecord[];
+        setGoals(parsed);
+      } catch {
+        // ignore bad data
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

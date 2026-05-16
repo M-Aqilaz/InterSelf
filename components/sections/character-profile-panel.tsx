@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { BarMeter } from "@/components/ui/meters";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +38,18 @@ const AVATAR_GALLERY = [
       "https://images.unsplash.com/photo-1476610182048-b716b8518aae?auto=format&fit=crop&w=400&q=60",
   },
 ];
+
+const AVATAR_STORAGE_KEY = "interself-avatar-id";
+const DEFAULT_AVATAR_ID = AVATAR_GALLERY[0]?.id ?? "";
+
+const getDeterministicAvatarId = (seed: string) => {
+  if (!AVATAR_GALLERY.length) return "";
+  const normalized = seed?.trim().toLowerCase() ?? "";
+  if (!normalized) return DEFAULT_AVATAR_ID;
+  const hash = Array.from(normalized).reduce((acc, char, index) => acc + char.charCodeAt(0) * (index + 1), 0);
+  const index = Math.abs(hash) % AVATAR_GALLERY.length;
+  return AVATAR_GALLERY[index]?.id ?? DEFAULT_AVATAR_ID;
+};
 
 const RANK_ORDER = ["BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND", "ASCENDANT"];
 
@@ -86,21 +98,25 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
 
   const progressPercent = expForNextLevel > 0 ? Math.min(100, Math.round((expIntoLevel / expForNextLevel) * 100)) : 0;
   const { play } = useGameAudio();
-  const [avatarId, setAvatarId] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      const stored = window.localStorage.getItem("interself-avatar-id");
-      if (stored && AVATAR_GALLERY.some((avatar) => avatar.id === stored)) {
-        return stored;
-      }
-    }
-    return AVATAR_GALLERY[0]?.id ?? "";
-  });
+  const deterministicAvatarId = useMemo(() => getDeterministicAvatarId(username), [username]);
+  const [avatarId, setAvatarId] = useState<string>(deterministicAvatarId);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem(AVATAR_STORAGE_KEY);
+    if (!stored || !AVATAR_GALLERY.some((avatar) => avatar.id === stored)) return;
+    const frame = window.requestAnimationFrame(() => {
+      setAvatarId(stored);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
   const activeAvatar = useMemo(() => AVATAR_GALLERY.find((avatar) => avatar.id === avatarId) ?? AVATAR_GALLERY[0], [avatarId]);
 
   const handleAvatarChange = (nextId: string) => {
     setAvatarId(nextId);
     if (typeof window !== "undefined") {
-      window.localStorage.setItem("interself-avatar-id", nextId);
+      window.localStorage.setItem(AVATAR_STORAGE_KEY, nextId);
     }
     void play("nav", 120);
   };

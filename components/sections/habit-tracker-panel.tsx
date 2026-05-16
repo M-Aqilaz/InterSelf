@@ -37,8 +37,16 @@ type HabitSnapshot = {
 };
 
 export function HabitTrackerPanel() {
-  const [progress, setProgress] = useState<HabitProgressMap>(() => readProgress());
+  const [progress, setProgress] = useState<HabitProgressMap>({});
   const todayKey = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const frame = window.requestAnimationFrame(() => {
+      setProgress(readProgress());
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
