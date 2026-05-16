@@ -4,10 +4,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
 import { Compass, Menu, ShieldHalf, Swords, Trophy, UsersRound } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 import { useGameAudio } from "@/hooks/use-game-audio";
 
 const navItems = [
@@ -26,41 +25,34 @@ type HeaderUser = {
 
 export function SiteHeader({ user }: { user: HeaderUser }) {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [activeNav, setActiveNav] = useState(navItems[0]?.label ?? "Profile");
   const router = useRouter();
+  const pathname = usePathname();
   const { play } = useGameAudio();
   const username = user?.profile?.username ?? user?.name ?? "Explorer";
   const isAuthenticated = Boolean(user);
 
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setMounted(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted || typeof window === "undefined") return;
-    const handleHashChange = () => {
-      const hash = window.location.hash;
-      const found = navItems.find((item) => item.href === hash);
-      if (found) {
-        setActiveNav(found.label);
-      }
-    };
-    handleHashChange();
-    window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
-  }, [mounted]);
+  const activeSection = useMemo(() => {
+    if (!pathname) return "Profile";
+    const lower = pathname.toLowerCase();
+    if (lower.includes("arena")) return "Arena";
+    if (lower.includes("challenge")) return "Challenges";
+    if (lower.includes("social")) return "Allies";
+    if (lower.includes("system")) return "Sanctum";
+    return "Profile";
+  }, [pathname]);
 
   const handleNavClick = (item: (typeof navItems)[number]) => {
-    setActiveNav(item.label);
     void play("nav", 100);
     if (open) setOpen(false);
-    if (mounted && typeof window !== "undefined") {
+    if (typeof window !== "undefined") {
       const target = document.querySelector(item.href);
-      target?.scrollIntoView({ behavior: "smooth", block: "center" });
-      window.history.replaceState(null, "", item.href);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        window.history.replaceState(null, "", item.href);
+        return;
+      }
     }
+    void router.push(item.href);
   };
 
   function renderActions(isMobile: boolean = false) {
@@ -107,7 +99,7 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
         <nav className="relative hidden items-center gap-6 text-sm font-semibold text-white/70 lg:flex">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = mounted && activeNav === item.label;
+            const isActive = activeSection === item.label;
             return (
               <button
                 key={item.label}
@@ -120,13 +112,7 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
               >
                 <Icon className="h-4 w-4" />
                 <span>{item.label}</span>
-                {mounted && isActive && (
-                  <motion.span
-                    layoutId="nav-indicator"
-                    className="absolute inset-0 -z-10 rounded-full bg-white/10"
-                    transition={{ type: "spring", stiffness: 280, damping: 24 }}
-                  />
-                )}
+                {isActive && <span className="absolute inset-0 -z-10 rounded-full bg-white/10" />}
               </button>
             );
           })}
@@ -148,7 +134,7 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
       >
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = mounted && activeNav === item.label;
+          const isActive = activeSection === item.label;
           return (
             <button
               key={item.label}
