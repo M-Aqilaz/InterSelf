@@ -183,6 +183,8 @@ export function FocusModePanel() {
       pushFloating(`+${reward.coins} Coins`, "coins");
     }
     pushFloating(`Focus +${minutes}m`, "energy");
+    pushFloating("Streak fortified", "system");
+    pushFloating("Goals momentum +", "system");
     setStatus("idle");
     setRemainingMs(minutes * 60 * SECOND);
   }, [minutes, pushFloating, play, strikeBoss, theme]);

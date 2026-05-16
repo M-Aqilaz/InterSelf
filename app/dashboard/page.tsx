@@ -15,8 +15,10 @@ import { ProductivityAnalyticsPanel } from "@/components/sections/productivity-a
 import { HabitTrackerPanel } from "@/components/sections/habit-tracker-panel";
 import { GoalPlannerPanel } from "@/components/sections/goal-planner-panel";
 import { AiCoachPanel } from "@/components/sections/ai-coach-panel";
+import { TodayMissionHero } from "@/components/sections/today-mission-hero";
 import { prisma } from "@/lib/prisma";
 import { calculateLevelFromTotalExp } from "@/lib/level";
+import { startOfToday } from "@/lib/time";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -25,13 +27,32 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const [profileRecord, equippedRelics] = await Promise.all([
+  const today = startOfToday();
+
+  const [profileRecord, equippedRelics, tasks, todayCompletions] = await Promise.all([
     prisma.profile.findUnique({ where: { userId: user.id } }),
     prisma.userInventory.findMany({
       where: { userId: user.id, equipped: true },
       include: { item: true },
       orderBy: { acquiredAt: "desc" },
       take: 3,
+    }),
+    prisma.task.findMany({
+      where: {
+        OR: [{ isSystem: true }, { createdById: user.id }],
+      },
+      select: { id: true, title: true, createdAt: true, isSystem: true },
+      orderBy: [
+        { isSystem: "desc" },
+        { createdAt: "desc" },
+      ],
+    }),
+    prisma.taskCompletion.findMany({
+      where: {
+        userId: user.id,
+        completedAt: { gte: today },
+      },
+      select: { taskId: true },
     }),
   ]);
 
@@ -51,55 +72,106 @@ export default async function DashboardPage() {
       : null,
   }));
 
+  const completedTaskIds = new Set(todayCompletions.map((entry) => entry.taskId));
+  const totalTasks = tasks.length;
+  const completedToday = completedTaskIds.size;
+  const dailyCompletionPercent = totalTasks > 0 ? Math.round((completedToday / totalTasks) * 100) : 0;
+  const nextMission = tasks.find((task) => !completedTaskIds.has(task.id))?.title ?? "Win the day with focused progress";
+  const streakValue = profileRecord?.streak ?? 0;
+  const bestStreakValue = profileRecord?.bestStreak ?? 1;
+  const energyPercent = Math.min(100, Math.max(20, Math.round((streakValue / Math.max(1, bestStreakValue)) * 80 + 20)));
+  const heroLevel = profileRecord?.level ?? levelProgress.level;
+  const heroRank = user.profile?.rank ?? "BRONZE";
+  const heroExpPercent = levelProgress.expForNextLevel > 0 ? Math.min(100, Math.round((levelProgress.expIntoLevel / levelProgress.expForNextLevel) * 100)) : 0;
+
   return (
     <div className="mx-auto flex w-full max-w-full flex-col gap-6 lg:max-w-7xl lg:gap-8">
-      <section id="character" className="grid w-full grid-cols-1 gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <CharacterProfilePanel
+      <section id="today" className="w-full">
+        <TodayMissionHero
           username={user.profile?.username ?? user.name ?? "Hunter"}
-          title={user.profile?.title ?? "Awakened"}
-          rank={user.profile?.rank ?? "BRONZE"}
-          level={profileRecord?.level ?? levelProgress.level}
-          expIntoLevel={levelProgress.expIntoLevel}
-          expForNextLevel={levelProgress.expForNextLevel}
-          coins={profileRecord?.coins ?? 0}
-          streak={profileRecord?.streak ?? 0}
-          bestStreak={profileRecord?.bestStreak ?? 0}
-          powerScore={powerScore}
-          equippedSlots={equippedSlots}
-          stats={stats.map((stat) => ({ type: stat.type, value: stat.value }))}
+          missionTitle={nextMission}
+          dailyCompletion={dailyCompletionPercent}
+          streak={streakValue}
+          level={heroLevel}
+          expPercent={heroExpPercent}
+          rank={heroRank}
+          energyPercent={energyPercent}
         />
-        <DailyTasksPanel />
       </section>
 
-      <section id="arena" className="grid w-full grid-cols-1 gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <BossBattlePanel />
-        <WeeklyChallengesPanel />
-      </section>
-
-      <section id="focus" className="grid w-full grid-cols-1 gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+      <section id="focus" className="w-full">
         <FocusModePanel />
-        <ProductivityAnalyticsPanel />
       </section>
 
-      <section id="systems" className="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">
-        <InventoryPanel />
-        <AchievementsPanel />
-        <PvpPreviewPanel />
+      <section id="progress" className="flex w-full flex-col gap-8">
+        <div className="flex flex-col gap-3">
+          <div>
+            <h2 className="text-2xl font-semibold text-white">Daily progression</h2>
+            <p className="text-sm text-white/70">Your actionable plan for today.</p>
+          </div>
+          <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-3">
+            <DailyTasksPanel />
+            <HabitTrackerPanel />
+            <GoalPlannerPanel />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div>
+            <h2 className="text-2xl font-semibold text-white">Character progression</h2>
+            <p className="text-sm text-white/70">EXP, rank, and boss pressure as motivation.</p>
+          </div>
+          <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+            <CharacterProfilePanel
+              username={user.profile?.username ?? user.name ?? "Hunter"}
+              title={user.profile?.title ?? "Awakened"}
+              rank={heroRank}
+              level={heroLevel}
+              expIntoLevel={levelProgress.expIntoLevel}
+              expForNextLevel={levelProgress.expForNextLevel}
+              coins={profileRecord?.coins ?? 0}
+              streak={streakValue}
+              bestStreak={profileRecord?.bestStreak ?? 0}
+              powerScore={powerScore}
+              equippedSlots={equippedSlots}
+              stats={stats.map((stat) => ({ type: stat.type, value: stat.value }))}
+            />
+            <div className="grid grid-cols-1 gap-6">
+              <BossBattlePanel />
+              <WeeklyChallengesPanel />
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
-        <LeaderboardPanel />
-        <FriendsPanel />
+      <section id="insights" className="flex w-full flex-col gap-3">
+        <div>
+          <h2 className="text-2xl font-semibold text-white">Productivity insights</h2>
+          <p className="text-sm text-white/70">Guidance and analytics to stay on track.</p>
+        </div>
+        <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
+          <AiCoachPanel />
+          <ProductivityAnalyticsPanel />
+        </div>
       </section>
 
-      <section id="habits" className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
-        <HabitTrackerPanel />
-        <GoalPlannerPanel />
-      </section>
-
-      <section className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2" id="exploration">
-        <DungeonNavigationPanel />
-        <AiCoachPanel />
+      <section id="rewards" className="flex w-full flex-col gap-6">
+        <div>
+          <h2 className="text-2xl font-semibold text-white">Rewards & social layer</h2>
+          <p className="text-sm text-white/70">Use RPG systems as motivation and celebration.</p>
+        </div>
+        <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
+          <InventoryPanel />
+          <AchievementsPanel />
+        </div>
+        <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
+          <LeaderboardPanel />
+          <FriendsPanel />
+        </div>
+        <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2" id="exploration">
+          <DungeonNavigationPanel />
+          <PvpPreviewPanel />
+        </div>
       </section>
     </div>
   );
