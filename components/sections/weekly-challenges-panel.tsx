@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { BarMeter } from "@/components/ui/meters";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { subscribeToTasksUpdate } from "@/lib/events";
 
 type Challenge = {
   id: number;
@@ -44,6 +45,13 @@ export function WeeklyChallengesPanel() {
     void (async () => {
       await loadChallenges();
     })();
+  }, [loadChallenges]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToTasksUpdate(() => {
+      void loadChallenges();
+    });
+    return unsubscribe;
   }, [loadChallenges]);
 
   function claim(challengeId: number) {

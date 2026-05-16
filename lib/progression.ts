@@ -6,6 +6,7 @@ import { applyPassiveEffects, summarizeInventory } from "@/lib/inventory";
 import { evaluateAchievements, type AchievementUnlock } from "@/lib/achievements";
 import { recordWeeklyChallengeProgress } from "@/lib/challenges";
 import type { BossBattleSummary } from "@/types/boss";
+import { startOfToday } from "@/lib/time";
 
 export type TaskCompletionResult = {
   completion: Prisma.TaskCompletionGetPayload<{ include: { task: true } }>;
@@ -42,6 +43,21 @@ export async function completeTaskForUser({
 
     if (!task.isSystem && task.createdById !== userId) {
       throw new TaskProgressionError("You do not have access to this task", 403);
+    }
+
+    if (task.isSystem) {
+      const today = startOfToday();
+      const alreadyCompleted = await tx.taskCompletion.findFirst({
+        where: {
+          userId,
+          taskId,
+          completedAt: { gte: today },
+        },
+      });
+
+      if (alreadyCompleted) {
+        throw new TaskProgressionError("System tasks can only be completed once per day", 409);
+      }
     }
 
     const profile = await tx.profile.findUnique({

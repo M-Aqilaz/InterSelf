@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
 import { Menu } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -14,8 +15,50 @@ const navItems = [
   { label: "Community", href: "#social" },
 ];
 
-export function SiteHeader() {
+type HeaderUser = {
+  id: string;
+  name: string | null;
+  profile?: { username: string | null } | null;
+} | null;
+
+export function SiteHeader({ user }: { user: HeaderUser }) {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const username = user?.profile?.username ?? user?.name ?? "Explorer";
+  const isAuthenticated = Boolean(user);
+
+  function renderActions(isMobile: boolean = false) {
+    if (isAuthenticated) {
+      return (
+        <div className={cn("items-center gap-3", isMobile ? "flex flex-col" : "hidden lg:flex") }>
+          <span className="text-sm text-white/70">Hi, {username}</span>
+          <Button variant="ghost" className={isMobile ? "w-full" : ""} asChild>
+            <Link href="/dashboard">Dashboard</Link>
+          </Button>
+          <Button
+            variant="secondary"
+            className={isMobile ? "w-full" : ""}
+            onClick={async () => {
+              await fetch("/api/auth/logout", { method: "POST" });
+              router.refresh();
+            }}
+          >
+            Logout
+          </Button>
+        </div>
+      );
+    }
+    return (
+      <div className={cn("items-center gap-3", isMobile ? "flex flex-col" : "hidden lg:flex") }>
+        <Button variant="ghost" className={isMobile ? "w-full" : "text-white/70"} asChild>
+          <Link href="/login">Login</Link>
+        </Button>
+        <Button className={isMobile ? "w-full" : ""} asChild>
+          <Link href="/register">Start Your Journey</Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <header className="relative z-30 w-full">
@@ -36,14 +79,7 @@ export function SiteHeader() {
             </a>
           ))}
         </nav>
-        <div className="hidden items-center gap-3 lg:flex">
-          <Button variant="ghost" className="text-white/70" asChild>
-            <Link href="/login">Login</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/register">Start Your Journey</Link>
-          </Button>
-        </div>
+        {renderActions()}
         <button
           className="lg:hidden"
           onClick={() => setOpen((prev) => !prev)}
@@ -63,14 +99,7 @@ export function SiteHeader() {
             {item.label}
           </a>
         ))}
-        <div className="flex flex-col gap-3">
-          <Button variant="ghost" className="w-full" asChild>
-            <Link href="/login">Login</Link>
-          </Button>
-          <Button className="w-full" asChild>
-            <Link href="/register">Start Your Journey</Link>
-          </Button>
-        </div>
+        {renderActions(true)}
       </div>
     </header>
   );

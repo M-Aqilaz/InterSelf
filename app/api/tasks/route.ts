@@ -2,6 +2,7 @@ import { TaskCategory, TaskDifficulty } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { startOfToday } from "@/lib/time";
 
 const isTaskCategory = (value: unknown): value is TaskCategory =>
   typeof value === "string" && Object.values(TaskCategory).includes(value as TaskCategory);
@@ -39,7 +40,22 @@ export async function GET() {
       ],
     });
 
-    return NextResponse.json(tasks);
+    const today = startOfToday();
+    const todayCompletions = await prisma.taskCompletion.findMany({
+      where: {
+        userId: user.id,
+        completedAt: { gte: today },
+      },
+      select: { taskId: true },
+    });
+    const completedSet = new Set(todayCompletions.map((completion) => completion.taskId));
+
+    const enriched = tasks.map((task) => ({
+      ...task,
+      completedToday: completedSet.has(task.id),
+    }));
+
+    return NextResponse.json(enriched);
   } catch (error) {
     console.error("GET /api/tasks failed", error);
     return NextResponse.json(

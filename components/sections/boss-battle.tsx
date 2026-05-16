@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { BarMeter } from "@/components/ui/meters";
 import type { BossBattleState, BossBattleSummary } from "@/types/boss";
+import { subscribeToTasksUpdate } from "@/lib/events";
 
 const formatter = new Intl.NumberFormat();
 
@@ -42,6 +43,13 @@ export function BossBattlePanel() {
     (async () => {
       await fetchState();
     })();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToTasksUpdate(() => {
+      void fetchState();
+    });
+    return unsubscribe;
   }, []);
 
   if (!state || !state.boss) {

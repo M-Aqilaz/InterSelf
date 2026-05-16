@@ -30,6 +30,7 @@ export function FriendsPanel() {
   const [loading, setLoading] = useState(true);
   const [pending, startTransition] = useTransition();
   const [username, setUsername] = useState("");
+  const [currentUser, setCurrentUser] = useState<{ id: string; username: string | null } | null>(null);
   const { push } = useToast();
 
   const loadFriends = useCallback(async () => {
@@ -49,12 +50,23 @@ export function FriendsPanel() {
   useEffect(() => {
     void (async () => {
       await loadFriends();
+      const meRes = await fetch("/api/auth/me", { cache: "no-store" });
+      if (meRes.ok) {
+        const me = (await meRes.json()) as { user: { id: string; profile?: { username: string | null } | null } | null };
+        if (me.user) {
+          setCurrentUser({ id: me.user.id, username: me.user.profile?.username ?? null });
+        }
+      }
     })();
   }, [loadFriends]);
 
   function sendRequest() {
     if (!username.trim()) {
       push({ title: "Enter a username", variant: "error" });
+      return;
+    }
+    if (currentUser && username.trim().toLowerCase() === (currentUser.username ?? "").toLowerCase()) {
+      push({ title: "You cannot add yourself", variant: "error" });
       return;
     }
     startTransition(async () => {
@@ -65,7 +77,11 @@ export function FriendsPanel() {
       });
       const data = await res.json();
       if (!res.ok) {
-        push({ title: data.error ?? "Unable to send request", variant: "error" });
+        let message = data.error ?? "Unable to send request";
+        if (message.toLowerCase().includes("not found")) {
+          message = "User not found";
+        }
+        push({ title: message, variant: "error" });
         return;
       }
       push({ title: "Friend request sent", variant: "success" });

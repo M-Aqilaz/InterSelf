@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { subscribeToTasksUpdate } from "@/lib/events";
 
 type Achievement = {
   id: number;
@@ -43,6 +44,13 @@ export function AchievementsPanel() {
     void (async () => {
       await loadAchievements();
     })();
+  }, [loadAchievements]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToTasksUpdate(() => {
+      void loadAchievements();
+    });
+    return unsubscribe;
   }, [loadAchievements]);
 
   function rarityColor(rarity: string) {
