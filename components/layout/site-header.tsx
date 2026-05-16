@@ -26,21 +26,20 @@ type HeaderUser = {
 
 export function SiteHeader({ user }: { user: HeaderUser }) {
   const [open, setOpen] = useState(false);
-  const [activeNav, setActiveNav] = useState(() => {
-    if (typeof window !== "undefined") {
-      const hash = window.location.hash;
-      const found = navItems.find((item) => item.href === hash);
-      if (found) return found.label;
-    }
-    return navItems[0]?.label ?? "Profile";
-  });
+  const [mounted, setMounted] = useState(false);
+  const [activeNav, setActiveNav] = useState(navItems[0]?.label ?? "Profile");
   const router = useRouter();
   const { play } = useGameAudio();
   const username = user?.profile?.username ?? user?.name ?? "Explorer";
   const isAuthenticated = Boolean(user);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || typeof window === "undefined") return;
     const handleHashChange = () => {
       const hash = window.location.hash;
       const found = navItems.find((item) => item.href === hash);
@@ -48,15 +47,16 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
         setActiveNav(found.label);
       }
     };
+    handleHashChange();
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
-  }, []);
+  }, [mounted]);
 
   const handleNavClick = (item: (typeof navItems)[number]) => {
     setActiveNav(item.label);
     void play("nav", 100);
     if (open) setOpen(false);
-    if (typeof window !== "undefined") {
+    if (mounted && typeof window !== "undefined") {
       const target = document.querySelector(item.href);
       target?.scrollIntoView({ behavior: "smooth", block: "center" });
       window.history.replaceState(null, "", item.href);
@@ -107,7 +107,7 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
         <nav className="relative hidden items-center gap-6 text-sm font-semibold text-white/70 lg:flex">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeNav === item.label;
+            const isActive = mounted && activeNav === item.label;
             return (
               <button
                 key={item.label}
@@ -120,7 +120,7 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
               >
                 <Icon className="h-4 w-4" />
                 <span>{item.label}</span>
-                {isActive && (
+                {mounted && isActive && (
                   <motion.span
                     layoutId="nav-indicator"
                     className="absolute inset-0 -z-10 rounded-full bg-white/10"
@@ -148,10 +148,14 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
       >
         {navItems.map((item) => {
           const Icon = item.icon;
+          const isActive = mounted && activeNav === item.label;
           return (
             <button
               key={item.label}
-              className="flex items-center gap-2 text-left text-sm text-white/70"
+              className={cn(
+                "flex items-center gap-2 text-left text-sm",
+                isActive ? "text-white" : "text-white/70"
+              )}
               onClick={() => handleNavClick(item)}
               type="button"
             >
