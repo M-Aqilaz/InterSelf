@@ -52,8 +52,8 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
-      <section id="character" className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+    <div className="mx-auto flex w-full max-w-full flex-col gap-6 lg:max-w-7xl lg:gap-8">
+      <section id="character" className="grid w-full grid-cols-1 gap-6 lg:grid-cols-[1.15fr_0.85fr]">
         <CharacterProfilePanel
           username={user.profile?.username ?? user.name ?? "Hunter"}
           title={user.profile?.title ?? "Awakened"}
@@ -71,33 +71,33 @@ export default async function DashboardPage() {
         <DailyTasksPanel />
       </section>
 
-      <section id="arena" className="grid gap-6 2xl:grid-cols-[1.2fr_0.8fr]">
+      <section id="arena" className="grid w-full grid-cols-1 gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <BossBattlePanel />
         <WeeklyChallengesPanel />
       </section>
 
-      <section id="focus" className="grid gap-6 2xl:grid-cols-[1.2fr_0.8fr]">
+      <section id="focus" className="grid w-full grid-cols-1 gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <FocusModePanel />
         <ProductivityAnalyticsPanel />
       </section>
 
-      <section id="systems" className="grid gap-6 xl:grid-cols-3">
+      <section id="systems" className="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">
         <InventoryPanel />
         <AchievementsPanel />
         <PvpPreviewPanel />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-2">
+      <section className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
         <LeaderboardPanel />
         <FriendsPanel />
       </section>
 
-      <section id="habits" className="grid gap-6 xl:grid-cols-2">
+      <section id="habits" className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
         <HabitTrackerPanel />
         <GoalPlannerPanel />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-2" id="exploration">
+      <section className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2" id="exploration">
         <DungeonNavigationPanel />
         <AiCoachPanel />
       </section>
