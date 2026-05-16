@@ -270,6 +270,7 @@ model UserChallengeProgress {
   progress     Int             @default(0)
   status       ChallengeStatus @default(UPCOMING)
   completedAt  DateTime?
+  claimedAt    DateTime?
 
   user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   challenge    WeeklyChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
