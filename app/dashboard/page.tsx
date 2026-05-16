@@ -10,6 +10,11 @@ import { DailyTasksPanel } from "@/components/sections/daily-tasks-panel";
 import { CharacterProfilePanel } from "@/components/sections/character-profile-panel";
 import { PvpPreviewPanel } from "@/components/sections/pvp-preview-panel";
 import { DungeonNavigationPanel } from "@/components/sections/dungeon-navigation-panel";
+import { FocusModePanel } from "@/components/sections/focus-mode-panel";
+import { ProductivityAnalyticsPanel } from "@/components/sections/productivity-analytics-panel";
+import { HabitTrackerPanel } from "@/components/sections/habit-tracker-panel";
+import { GoalPlannerPanel } from "@/components/sections/goal-planner-panel";
+import { AiCoachPanel } from "@/components/sections/ai-coach-panel";
 import { prisma } from "@/lib/prisma";
 import { calculateLevelFromTotalExp } from "@/lib/level";
 
@@ -71,6 +76,11 @@ export default async function DashboardPage() {
         <WeeklyChallengesPanel />
       </section>
 
+      <section id="focus" className="grid gap-6 2xl:grid-cols-[1.2fr_0.8fr]">
+        <FocusModePanel />
+        <ProductivityAnalyticsPanel />
+      </section>
+
       <section id="systems" className="grid gap-6 xl:grid-cols-3">
         <InventoryPanel />
         <AchievementsPanel />
@@ -82,12 +92,14 @@ export default async function DashboardPage() {
         <FriendsPanel />
       </section>
 
+      <section id="habits" className="grid gap-6 xl:grid-cols-2">
+        <HabitTrackerPanel />
+        <GoalPlannerPanel />
+      </section>
+
       <section className="grid gap-6 xl:grid-cols-2" id="exploration">
         <DungeonNavigationPanel />
-        <div className="rounded-3xl border border-white/10 bg-black/30 p-6 text-white/70">
-          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Audio & Feedback</p>
-          <p className="text-sm">All major interactions now emit subtle synth cues via the useGameAudio hook. Players can mute via browser controls.</p>
-        </div>
+        <AiCoachPanel />
       </section>
     </div>
   );
