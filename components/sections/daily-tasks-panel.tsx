@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
-import { emitTasksUpdatedEvent } from "@/lib/events";
+import { emitBossDamageEvent, emitTasksUpdatedEvent } from "@/lib/events";
 
 const SYSTEM_TASKS = [
   {
@@ -51,6 +52,34 @@ type TaskRecord = {
   completedToday?: boolean;
 };
 
+type RewardBurst = {
+  id: string;
+  label: string;
+  color: string;
+  offset: number;
+};
+
+type RewardModalState = {
+  taskName: string;
+  exp: number;
+  coins: number;
+  stats: { label: string; value: number }[];
+  bossDamage?: number;
+};
+
+type LevelModalState = {
+  fromLevel: number;
+  toLevel: number;
+  newRank?: string | null;
+  newTitle?: string | null;
+};
+
+type PlayerState = {
+  level: number;
+  rank: string | null;
+  title: string | null;
+};
+
 const normalize = (value: string) => value.toLowerCase().trim();
 
 const formatLabel = (label: string) =>
@@ -79,6 +108,10 @@ export function DailyTasksPanel() {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const { push } = useToast();
+  const [floatingRewards, setFloatingRewards] = useState<RewardBurst[]>([]);
+  const [rewardModal, setRewardModal] = useState<RewardModalState | null>(null);
+  const [levelModal, setLevelModal] = useState<LevelModalState | null>(null);
+  const [playerState, setPlayerState] = useState<PlayerState | null>(null);
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -104,6 +137,21 @@ export function DailyTasksPanel() {
       await fetchTasks();
     })();
   }, [fetchTasks]);
+
+  useEffect(() => {
+    void (async () => {
+      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = (await res.json()) as { user: { profile?: { level: number; rank: string | null; title: string | null } | null } | null };
+      if (data.user?.profile) {
+        setPlayerState({
+          level: data.user.profile.level,
+          rank: data.user.profile.rank ?? null,
+          title: data.user.profile.title ?? null,
+        });
+      }
+    })();
+  }, []);
 
   const systemMatches = useMemo(() => {
     return SYSTEM_TASKS.map((definition) => {
@@ -131,17 +179,77 @@ export function DailyTasksPanel() {
 
         const rewardExp = payload?.completion?.expEarned ?? task.expReward;
         const rewardCoins = payload?.completion?.coinsEarned ?? task.coinReward;
+        const statIncreases = Object.entries((payload?.completion?.statIncreases as Record<string, number>) ?? {});
 
         push({
           title: "Task completed",
           description: `+${rewardExp} EXP · ${rewardCoins} coins`,
           variant: "success",
         });
+        const bursts: RewardBurst[] = [
+          makeBurst(`+${rewardExp} EXP`, "text-cyan-300"),
+          makeBurst(`+${rewardCoins} Coins`, "text-amber-200"),
+        ];
+        statIncreases.forEach(([stat, value]) => {
+          if (!value) return;
+          bursts.push(makeBurst(`+${value} ${formatLabel(stat)}`, "text-emerald-300"));
+        });
+
+        const bossDamage = payload?.bossBattle?.damageApplied ?? 0;
+        if (bossDamage > 0) {
+          bursts.push(makeBurst(`-${bossDamage} HP`, "text-rose-300"));
+        }
+
+        setFloatingRewards((prev) => [...prev, ...bursts]);
+        setTimeout(() => {
+          setFloatingRewards((prev) => prev.filter((burst) => !bursts.find((b) => b.id === burst.id)));
+        }, 2000);
+
+        setRewardModal({
+          taskName: task.title,
+          exp: rewardExp,
+          coins: rewardCoins,
+          stats: statIncreases.map(([label, value]) => ({ label: formatLabel(label), value })),
+          bossDamage: bossDamage || undefined,
+        });
+
+        if (payload?.bossBattle) {
+          emitBossDamageEvent({
+            damage: payload.bossBattle.damageApplied,
+            source: task.title,
+            defeated: payload.bossBattle.defeated,
+            rewards: payload.bossBattle.rewards
+              ? {
+                  exp: payload.bossBattle.rewards.exp,
+                  coins: payload.bossBattle.rewards.coins,
+                  itemName: payload.bossBattle.rewards.item?.name ?? null,
+                }
+              : null,
+          });
+        }
+
+        if (payload?.levelProgress?.level) {
+          const newLevel = payload.levelProgress.level;
+          if (playerState && newLevel > playerState.level) {
+            setLevelModal({
+              fromLevel: playerState.level,
+              toLevel: newLevel,
+              newRank: payload.profile?.rank ?? null,
+              newTitle: payload.profile?.title ?? null,
+            });
+          }
+          setPlayerState({
+            level: newLevel,
+            rank: payload.profile?.rank ?? playerState?.rank ?? null,
+            title: payload.profile?.title ?? playerState?.title ?? null,
+          });
+        }
+
         await refreshAll();
         emitTasksUpdatedEvent();
       });
     },
-    [push, refreshAll]
+    [playerState, push, refreshAll]
   );
 
   const addOptionalTask = useCallback(() => {
@@ -199,7 +307,25 @@ export function DailyTasksPanel() {
   };
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-black/70 to-[#0a0318] p-6">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-cyan-500/20 blur-3xl" />
+        <div className="absolute -bottom-20 right-0 h-40 w-40 rounded-full bg-purple-500/30 blur-3xl" />
+      </div>
+      <AnimatePresence>
+        {floatingRewards.map((burst) => (
+          <motion.span
+            key={burst.id}
+            className={`pointer-events-none absolute text-sm font-semibold ${burst.color}`}
+            initial={{ opacity: 0, y: 0 }}
+            animate={{ opacity: 1, y: -60 }}
+            exit={{ opacity: 0, y: -90 }}
+            style={{ right: `${burst.offset}%`, top: "20%" }}
+          >
+            {burst.label}
+          </motion.span>
+        ))}
+      </AnimatePresence>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-white/50">Daily Tasks</p>
@@ -219,7 +345,7 @@ export function DailyTasksPanel() {
       {loading ? (
         <p className="mt-6 text-sm text-white/60">Loading tasks...</p>
       ) : (
-        <div className="mt-6 space-y-6">
+        <div className="relative mt-6 space-y-6">
           <section>
             <h4 className="text-xs uppercase tracking-[0.3em] text-white/50">System rituals</h4>
             <ul className="mt-3 space-y-4">
@@ -294,6 +420,83 @@ export function DailyTasksPanel() {
           </section>
         </div>
       )}
+      <RewardModal state={rewardModal} onClose={() => setRewardModal(null)} />
+      <LevelUpModal state={levelModal} onClose={() => setLevelModal(null)} />
     </div>
+  );
+}
+
+function makeBurst(label: string, color: string): RewardBurst {
+  return {
+    id: `${label}-${Date.now()}-${Math.random()}`,
+    label,
+    color,
+    offset: Math.random() * 30,
+  };
+}
+
+function RewardModal({ state, onClose }: { state: RewardModalState | null; onClose: () => void }) {
+  return (
+    <AnimatePresence>
+      {state && (
+        <motion.div
+          className="pointer-events-auto fixed inset-0 z-40 flex items-center justify-center bg-black/70"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="w-full max-w-md rounded-3xl border border-white/10 bg-[#07030f] p-6 text-white shadow-2xl"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+          >
+            <p className="text-xs uppercase tracking-[0.4em] text-white/50">Rewards</p>
+            <h4 className="text-2xl font-black">{state.taskName}</h4>
+            <div className="mt-4 space-y-2 text-sm text-white/80">
+              <p>+{state.exp.toLocaleString()} EXP</p>
+              <p>+{state.coins.toLocaleString()} coins</p>
+              {state.stats.map((stat) => (
+                <p key={stat.label}>+{stat.value} {stat.label}</p>
+              ))}
+              {state.bossDamage ? <p>Boss damage: {state.bossDamage}</p> : null}
+            </div>
+            <Button className="mt-6 w-full" onClick={onClose}>
+              Continue
+            </Button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function LevelUpModal({ state, onClose }: { state: LevelModalState | null; onClose: () => void }) {
+  return (
+    <AnimatePresence>
+      {state && (
+        <motion.div
+          className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="w-full max-w-lg rounded-3xl border border-white/20 bg-gradient-to-br from-purple-900/80 to-black/80 p-8 text-center text-white"
+            initial={{ scale: 0.85, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+          >
+            <p className="text-xs uppercase tracking-[0.4em] text-white/60">Level Up</p>
+            <h3 className="mt-2 text-4xl font-black">Level {state.fromLevel} → {state.toLevel}</h3>
+            {state.newTitle && <p className="mt-2 text-lg text-white/80">New title unlocked: {state.newTitle}</p>}
+            {state.newRank && <p className="text-white/60">Rank ascended to {state.newRank}</p>}
+            <Button className="mt-6" onClick={onClose}>
+              Ascend
+            </Button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { motion } from "framer-motion";
 
 type InventoryEntry = {
   id: number;
@@ -104,8 +105,12 @@ export function InventoryPanel() {
     });
   }
 
+  const equippedItems = useMemo(() => data?.inventory.filter((item) => item.equipped) ?? [], [data]);
+  const totalSlots = 3;
+  const slots = new Array(totalSlots).fill(null).map((_, index) => equippedItems[index] ?? null);
+
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+    <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#04020b] to-[#12021f] p-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.3em] text-white/50">Inventory</p>
@@ -119,42 +124,78 @@ export function InventoryPanel() {
       {loading ? (
         <p className="mt-6 text-sm text-white/60">Loading inventory...</p>
       ) : data && data.inventory.length > 0 ? (
-        <ul className="mt-6 space-y-4">
-          {data.inventory.map((entry) => (
-            <li key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm font-semibold text-white">{entry.item?.name ?? "Unknown"}</p>
-                  <p className="text-xs text-white/60">{entry.item?.description}</p>
-                </div>
-                <div className="text-right text-xs">
-                  <span className={`rounded-full px-3 py-1 text-[10px] uppercase ${rarityBadge(entry.item?.rarity ?? "")}`}>
-                    {entry.item?.rarity ?? "COMMON"}
-                  </span>
-                  <p className="text-white/60">Qty: {entry.quantity}</p>
-                </div>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-3">
-                {entry.isEquippable && (
-                  <Button
-                    size="sm"
-                    variant={entry.equipped ? "secondary" : "primary"}
-                    disabled={pending}
-                    onClick={() => equip(entry, !entry.equipped)}
-                  >
-                    {entry.equipped ? "Unequip" : "Equip"}
-                  </Button>
-                )}
-                {entry.isConsumable && (
-                  <Button size="sm" disabled={pending} onClick={() => consume(entry)}>
-                    Consume
-                  </Button>
-                )}
-              </div>
-              <p className="mt-2 text-xs text-white/60">Effect: {entry.item?.effect}</p>
-            </li>
-          ))}
-        </ul>
+        <div className="mt-6 space-y-6">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Equipped</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              {slots.map((entry, index) => (
+                <motion.div
+                  key={entry?.id ?? index}
+                  className={`rounded-2xl border px-4 py-4 ${entry ? rarityBadge(entry.item?.rarity ?? "") : "border-dashed border-white/20 text-white/40"}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  {entry ? (
+                    <>
+                      <p className="text-sm font-semibold text-white">{entry.item?.name}</p>
+                      <p className="text-xs text-white/60">{entry.item?.description}</p>
+                      <span className="mt-2 inline-block rounded-full bg-white/10 px-3 py-1 text-[10px] uppercase text-white/60">
+                        Equipped
+                      </span>
+                    </>
+                  ) : (
+                    <p>Empty slot</p>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-white/50">Inventory</p>
+            <ul className="mt-3 space-y-4">
+              {data.inventory.map((entry) => (
+                <motion.li
+                  key={entry.id}
+                  className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-white">{entry.item?.name ?? "Unknown"}</p>
+                      <p className="text-xs text-white/60">{entry.item?.description}</p>
+                    </div>
+                    <div className="text-right text-xs">
+                      <span className={`rounded-full px-3 py-1 text-[10px] uppercase ${rarityBadge(entry.item?.rarity ?? "COMMON")}`}>
+                        {entry.item?.rarity ?? "COMMON"}
+                      </span>
+                      <p className="text-white/60">Qty: {entry.quantity}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-3">
+                    {entry.isEquippable && (
+                      <Button
+                        size="sm"
+                        variant={entry.equipped ? "secondary" : "primary"}
+                        disabled={pending}
+                        onClick={() => equip(entry, !entry.equipped)}
+                      >
+                        {entry.equipped ? "Unequip" : "Equip"}
+                      </Button>
+                    )}
+                    {entry.isConsumable && (
+                      <Button size="sm" disabled={pending} onClick={() => consume(entry)}>
+                        Consume
+                      </Button>
+                    )}
+                  </div>
+                  <p className="mt-2 text-xs text-white/60">Effect: {entry.item?.effect}</p>
+                </motion.li>
+              ))}
+            </ul>
+          </div>
+        </div>
       ) : (
         <p className="mt-6 text-sm text-white/60">No items yet. Defeat bosses to earn gear.</p>
       )}
