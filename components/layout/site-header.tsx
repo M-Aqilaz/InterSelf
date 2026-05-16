@@ -3,16 +3,19 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
-import { Menu } from "lucide-react";
+import { Compass, Menu, ShieldHalf, Swords, Trophy, UsersRound } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { useGameAudio } from "@/hooks/use-game-audio";
 
 const navItems = [
-  { label: "Features", href: "#features" },
-  { label: "Gameplay", href: "#systems" },
-  { label: "Challenges", href: "#challenges" },
-  { label: "Community", href: "#social" },
+  { label: "Profile", href: "#character", icon: Compass },
+  { label: "Arena", href: "#arena", icon: Swords },
+  { label: "Challenges", href: "#challenges", icon: Trophy },
+  { label: "Allies", href: "#social", icon: UsersRound },
+  { label: "Sanctum", href: "#systems", icon: ShieldHalf },
 ];
 
 type HeaderUser = {
@@ -23,9 +26,42 @@ type HeaderUser = {
 
 export function SiteHeader({ user }: { user: HeaderUser }) {
   const [open, setOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash;
+      const found = navItems.find((item) => item.href === hash);
+      if (found) return found.label;
+    }
+    return navItems[0]?.label ?? "Profile";
+  });
   const router = useRouter();
+  const { play } = useGameAudio();
   const username = user?.profile?.username ?? user?.name ?? "Explorer";
   const isAuthenticated = Boolean(user);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      const found = navItems.find((item) => item.href === hash);
+      if (found) {
+        setActiveNav(found.label);
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  const handleNavClick = (item: (typeof navItems)[number]) => {
+    setActiveNav(item.label);
+    void play("nav", 100);
+    if (open) setOpen(false);
+    if (typeof window !== "undefined") {
+      const target = document.querySelector(item.href);
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      window.history.replaceState(null, "", item.href);
+    }
+  };
 
   function renderActions(isMobile: boolean = false) {
     if (isAuthenticated) {
@@ -68,16 +104,32 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
             INTERSELF
           </span>
         </Link>
-        <nav className="hidden items-center gap-8 text-sm font-semibold text-white/70 lg:flex">
-          {navItems.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className="transition hover:text-white"
-            >
-              {item.label}
-            </a>
-          ))}
+        <nav className="relative hidden items-center gap-6 text-sm font-semibold text-white/70 lg:flex">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeNav === item.label;
+            return (
+              <button
+                key={item.label}
+                className={cn(
+                  "relative flex items-center gap-2 rounded-full px-3 py-1 transition",
+                  isActive ? "text-white" : "hover:text-white"
+                )}
+                onClick={() => handleNavClick(item)}
+                type="button"
+              >
+                <Icon className="h-4 w-4" />
+                <span>{item.label}</span>
+                {isActive && (
+                  <motion.span
+                    layoutId="nav-indicator"
+                    className="absolute inset-0 -z-10 rounded-full bg-white/10"
+                    transition={{ type: "spring", stiffness: 280, damping: 24 }}
+                  />
+                )}
+              </button>
+            );
+          })}
         </nav>
         {renderActions()}
         <button
@@ -94,11 +146,20 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
           open ? "opacity-100" : "pointer-events-none opacity-0"
         )}
       >
-        {navItems.map((item) => (
-          <a key={item.label} href={item.href} className="text-sm text-white/70">
-            {item.label}
-          </a>
-        ))}
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.label}
+              className="flex items-center gap-2 text-left text-sm text-white/70"
+              onClick={() => handleNavClick(item)}
+              type="button"
+            >
+              <Icon className="h-4 w-4" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
         {renderActions(true)}
       </div>
     </header>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { motion } from "framer-motion";
+import { useGameAudio } from "@/hooks/use-game-audio";
 
 type InventoryEntry = {
   id: number;
@@ -33,6 +34,7 @@ export function InventoryPanel() {
   const [loading, setLoading] = useState(true);
   const [pending, startTransition] = useTransition();
   const { push } = useToast();
+  const { play } = useGameAudio();
 
   const loadInventory = useCallback(async () => {
     setLoading(true);
@@ -84,6 +86,7 @@ export function InventoryPanel() {
         description: item.item?.name,
         variant: "success",
       });
+      void play("equip", 160);
       loadInventory();
     });
   }
@@ -101,6 +104,7 @@ export function InventoryPanel() {
         description: item.item?.name,
         variant: "success",
       });
+      void play("attack", 140);
       loadInventory();
     });
   }
@@ -131,10 +135,13 @@ export function InventoryPanel() {
               {slots.map((entry, index) => (
                 <motion.div
                   key={entry?.id ?? index}
-                  className={`rounded-2xl border px-4 py-4 ${entry ? rarityBadge(entry.item?.rarity ?? "") : "border-dashed border-white/20 text-white/40"}`}
+                  className={`relative overflow-hidden rounded-2xl border px-4 py-4 ${
+                    entry ? rarityBadge(entry.item?.rarity ?? "") : "border-dashed border-white/20 text-white/40"
+                  }`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
+                  {entry && <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.18), transparent 60%)" }} />}
                   {entry ? (
                     <>
                       <p className="text-sm font-semibold text-white">{entry.item?.name}</p>
@@ -157,10 +164,11 @@ export function InventoryPanel() {
               {data.inventory.map((entry) => (
                 <motion.li
                   key={entry.id}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                  className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
+                  <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "linear-gradient(120deg, transparent, rgba(255,255,255,0.35), transparent)" }} />
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-white">{entry.item?.name ?? "Unknown"}</p>

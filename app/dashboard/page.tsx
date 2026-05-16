@@ -9,6 +9,7 @@ import { WeeklyChallengesPanel } from "@/components/sections/weekly-challenges-p
 import { DailyTasksPanel } from "@/components/sections/daily-tasks-panel";
 import { CharacterProfilePanel } from "@/components/sections/character-profile-panel";
 import { PvpPreviewPanel } from "@/components/sections/pvp-preview-panel";
+import { DungeonNavigationPanel } from "@/components/sections/dungeon-navigation-panel";
 import { prisma } from "@/lib/prisma";
 import { calculateLevelFromTotalExp } from "@/lib/level";
 
@@ -47,7 +48,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-8">
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <section id="character" className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <CharacterProfilePanel
           username={user.profile?.username ?? user.name ?? "Hunter"}
           title={user.profile?.title ?? "Awakened"}
@@ -65,12 +66,12 @@ export default async function DashboardPage() {
         <DailyTasksPanel />
       </section>
 
-      <section className="grid gap-6 2xl:grid-cols-[1.2fr_0.8fr]">
+      <section id="arena" className="grid gap-6 2xl:grid-cols-[1.2fr_0.8fr]">
         <BossBattlePanel />
         <WeeklyChallengesPanel />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-3">
+      <section id="systems" className="grid gap-6 xl:grid-cols-3">
         <InventoryPanel />
         <AchievementsPanel />
         <PvpPreviewPanel />
@@ -79,6 +80,14 @@ export default async function DashboardPage() {
       <section className="grid gap-6 xl:grid-cols-2">
         <LeaderboardPanel />
         <FriendsPanel />
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-2" id="exploration">
+        <DungeonNavigationPanel />
+        <div className="rounded-3xl border border-white/10 bg-black/30 p-6 text-white/70">
+          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Audio & Feedback</p>
+          <p className="text-sm">All major interactions now emit subtle synth cues via the useGameAudio hook. Players can mute via browser controls.</p>
+        </div>
       </section>
     </div>
   );

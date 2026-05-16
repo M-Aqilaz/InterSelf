@@ -1,8 +1,10 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { BarMeter } from "@/components/ui/meters";
 import { Badge } from "@/components/ui/badge";
+import { useGameAudio } from "@/hooks/use-game-audio";
 
 const rarityStyles: Record<string, string> = {
   LEGENDARY: "border-yellow-400/60 shadow-[0_0_25px_rgba(250,204,21,0.35)]",
@@ -12,6 +14,32 @@ const rarityStyles: Record<string, string> = {
 };
 
 const EQUIPMENT_SLOTS = ["Core Relic", "Augment", "Support"]; // fallback labels
+
+const AVATAR_GALLERY = [
+  {
+    id: "eclipse",
+    label: "Eclipse Sentinel",
+    element: "void",
+    image:
+      "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=400&q=60",
+  },
+  {
+    id: "ember",
+    label: "Ember Valkyrie",
+    element: "fire",
+    image:
+      "https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&fit=crop&w=400&q=60",
+  },
+  {
+    id: "aether",
+    label: "Aether Strider",
+    element: "wind",
+    image:
+      "https://images.unsplash.com/photo-1476610182048-b716b8518aae?auto=format&fit=crop&w=400&q=60",
+  },
+];
+
+const RANK_ORDER = ["BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND", "ASCENDANT"];
 
 type EquippedItem = {
   id: number;
@@ -57,7 +85,25 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
   } = props;
 
   const progressPercent = expForNextLevel > 0 ? Math.min(100, Math.round((expIntoLevel / expForNextLevel) * 100)) : 0;
-  const initials = username ? username.slice(0, 2).toUpperCase() : "IN";
+  const { play } = useGameAudio();
+  const [avatarId, setAvatarId] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem("interself-avatar-id");
+      if (stored && AVATAR_GALLERY.some((avatar) => avatar.id === stored)) {
+        return stored;
+      }
+    }
+    return AVATAR_GALLERY[0]?.id ?? "";
+  });
+  const activeAvatar = useMemo(() => AVATAR_GALLERY.find((avatar) => avatar.id === avatarId) ?? AVATAR_GALLERY[0], [avatarId]);
+
+  const handleAvatarChange = (nextId: string) => {
+    setAvatarId(nextId);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("interself-avatar-id", nextId);
+    }
+    void play("nav", 120);
+  };
 
   const resolvedSlots: EquipmentSlot[] = EQUIPMENT_SLOTS.map((slot, index) => equippedSlots[index] ?? { slot });
 
@@ -81,12 +127,19 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
         <div className="flex flex-wrap items-center gap-4">
           <div className="relative">
             <motion.div
-              className="grid h-20 w-20 place-items-center rounded-2xl border border-white/20 bg-white/10 text-lg font-black"
-              whileHover={{ scale: 1.05 }}
+              className="relative h-24 w-24 overflow-hidden rounded-3xl border border-white/30 shadow-lg"
+              whileHover={{ scale: 1.04 }}
             >
-              {initials}
+              <div
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${activeAvatar?.image})` }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/70" />
+              <p className="relative z-10 px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white/80">
+                {activeAvatar?.element}
+              </p>
             </motion.div>
-            <Badge variant="cyber" className="absolute -bottom-2 left-1/2 -translate-x-1/2">
+            <Badge variant="cyber" className="absolute -bottom-3 left-1/2 -translate-x-1/2">
               {rank}
             </Badge>
           </div>
@@ -161,6 +214,27 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
             </div>
           </div>
         </div>
+
+        <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-[#0b0c1a] to-[#1c0f2a] p-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Hunter Avatars</p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            {AVATAR_GALLERY.map((avatar) => (
+              <button
+                key={avatar.id}
+                className={`relative overflow-hidden rounded-2xl border px-3 py-2 text-left transition ${
+                  avatar.id === avatarId ? "border-cyan-400/70" : "border-white/10"
+                }`}
+                onClick={() => handleAvatarChange(avatar.id)}
+                type="button"
+              >
+                <span className="text-xs font-semibold text-white">{avatar.label}</span>
+                <p className="text-[11px] uppercase tracking-[0.3em] text-white/40">{avatar.element}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <RankRoadmap currentRank={rank} />
       </div>
     </motion.div>
   );
@@ -171,6 +245,34 @@ function StatChip({ label, value }: { label: string; value: string }) {
     <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm">
       <p className="text-xs uppercase tracking-[0.3em] text-white/50">{label}</p>
       <p className="text-lg font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
+function RankRoadmap({ currentRank }: { currentRank: string }) {
+  const currentIndex = RANK_ORDER.findIndex((value) => value === currentRank.toUpperCase());
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+      <p className="text-xs uppercase tracking-[0.3em] text-white/50">Rank Roadmap</p>
+      <div className="mt-4 flex flex-wrap gap-4">
+        {RANK_ORDER.map((tier, index) => {
+          const reached = currentIndex >= index;
+          return (
+            <motion.div
+              key={tier}
+              className={`flex-1 min-w-[120px] rounded-2xl border px-4 py-3 text-center ${
+                reached ? "border-emerald-400/60 bg-emerald-400/10" : "border-white/10 bg-white/5"
+              }`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <p className="text-[11px] uppercase tracking-[0.3em] text-white/60">Tier</p>
+              <p className="text-lg font-black text-white">{tier}</p>
+              {index === currentIndex + 1 && <p className="text-[11px] text-amber-200">Next Promotion</p>}
+            </motion.div>
+          );
+        })}
+      </div>
     </div>
   );
 }
