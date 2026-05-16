@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { BossBattlePanel } from "@/components/sections/boss-battle";
 import { AchievementsPanel } from "@/components/sections/achievements-panel";
 import { InventoryPanel } from "@/components/sections/inventory-panel";
+import { LeaderboardPanel } from "@/components/sections/leaderboard-panel";
+import { FriendsPanel } from "@/components/sections/friends-panel";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -44,6 +46,10 @@ export default async function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <AchievementsPanel />
         <InventoryPanel />
+      </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <LeaderboardPanel />
+        <FriendsPanel />
       </div>
     </div>
   );
