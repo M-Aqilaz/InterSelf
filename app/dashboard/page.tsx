@@ -11,6 +11,7 @@ import { FocusModePanel } from "@/components/sections/focus-mode-panel";
 import { prisma } from "@/lib/prisma";
 import { calculateLevelFromTotalExp } from "@/lib/level";
 import { startOfToday } from "@/lib/time";
+import { DashboardTabs } from "@/components/layout/dashboard-tabs";
 import dynamic from "next/dynamic";
 
 function PanelSkeleton() {
@@ -115,8 +116,8 @@ export default async function DashboardPage() {
   const heroExpPercent = levelProgress.expForNextLevel > 0 ? Math.min(100, Math.round((levelProgress.expIntoLevel / levelProgress.expForNextLevel) * 100)) : 0;
 
   return (
-    <div className="mx-auto flex w-full max-w-full flex-col gap-6 lg:max-w-7xl lg:gap-8">
-      <section id="today" className="w-full">
+    <DashboardTabs
+      today={
         <TodayMissionHero
           username={user.profile?.username ?? user.name ?? "Hunter"}
           missionTitle={nextMission}
@@ -127,52 +128,54 @@ export default async function DashboardPage() {
           rank={heroRank}
           energyPercent={energyPercent}
         />
-      </section>
-
-      <section id="focus" className="flex w-full flex-col gap-6">
-        <FocusModePanel />
-        <BossBattlePanel productivityCompletion={dailyCompletionPercent} />
-      </section>
-
-      <section id="progress" className="flex w-full flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <div>
-            <h2 className="text-2xl font-semibold text-white">Daily progression</h2>
-            <p className="text-sm text-white/70">Your actionable plan for today.</p>
+      }
+      focus={
+        <>
+          <FocusModePanel />
+          <BossBattlePanel productivityCompletion={dailyCompletionPercent} />
+        </>
+      }
+      progress={
+        <>
+          <div className="flex flex-col gap-3">
+            <div>
+              <h2 className="text-2xl font-semibold text-white">Daily progression</h2>
+              <p className="text-sm text-white/70">Your actionable plan for today.</p>
+            </div>
+            <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-3">
+              <DailyTasksPanel />
+              <HabitTrackerPanel />
+              <GoalPlannerPanel />
+            </div>
           </div>
-          <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-3">
-            <DailyTasksPanel />
-            <HabitTrackerPanel />
-            <GoalPlannerPanel />
-          </div>
-        </div>
 
-        <div className="flex flex-col gap-3">
-          <div>
-            <h2 className="text-2xl font-semibold text-white">Character progression</h2>
-            <p className="text-sm text-white/70">EXP and rank as motivation.</p>
+          <div className="flex flex-col gap-3">
+            <div>
+              <h2 className="text-2xl font-semibold text-white">Character progression</h2>
+              <p className="text-sm text-white/70">EXP and rank as motivation.</p>
+            </div>
+            <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[0.85fr_1.15fr]">
+              <CharacterProfilePanel
+                username={user.profile?.username ?? user.name ?? "Hunter"}
+                title={user.profile?.title ?? "Awakened"}
+                rank={heroRank}
+                level={heroLevel}
+                expIntoLevel={levelProgress.expIntoLevel}
+                expForNextLevel={levelProgress.expForNextLevel}
+                coins={profileRecord?.coins ?? 0}
+                streak={streakValue}
+                bestStreak={profileRecord?.bestStreak ?? 0}
+                powerScore={powerScore}
+                equippedSlots={equippedSlots}
+                stats={stats.map((stat) => ({ type: stat.type, value: stat.value }))}
+              />
+              <WeeklyChallengesPanel />
+            </div>
           </div>
-          <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-            <CharacterProfilePanel
-              username={user.profile?.username ?? user.name ?? "Hunter"}
-              title={user.profile?.title ?? "Awakened"}
-              rank={heroRank}
-              level={heroLevel}
-              expIntoLevel={levelProgress.expIntoLevel}
-              expForNextLevel={levelProgress.expForNextLevel}
-              coins={profileRecord?.coins ?? 0}
-              streak={streakValue}
-              bestStreak={profileRecord?.bestStreak ?? 0}
-              powerScore={powerScore}
-              equippedSlots={equippedSlots}
-              stats={stats.map((stat) => ({ type: stat.type, value: stat.value }))}
-            />
-            <WeeklyChallengesPanel />
-          </div>
-        </div>
-      </section>
-
-      <section id="insights" className="flex w-full flex-col gap-3">
+        </>
+      }
+      insights={
+        <>
         <div>
           <h2 className="text-2xl font-semibold text-white">Productivity insights</h2>
           <p className="text-sm text-white/70">Guidance and analytics to stay on track.</p>
@@ -181,9 +184,10 @@ export default async function DashboardPage() {
           <AiCoachPanel />
           <ProductivityAnalyticsPanel />
         </div>
-      </section>
-
-      <section id="rewards" className="flex w-full flex-col gap-6">
+        </>
+      }
+      rewards={
+        <>
         <div>
           <h2 className="text-2xl font-semibold text-white">Rewards & social layer</h2>
           <p className="text-sm text-white/70">Use RPG systems as motivation and celebration.</p>
@@ -200,7 +204,8 @@ export default async function DashboardPage() {
           <DungeonNavigationPanel />
           <PvpPreviewPanel />
         </div>
-      </section>
-    </div>
+        </>
+      }
+    />
   );
 }
