@@ -1,4 +1,4 @@
-// Prisma schema for the InterSelf project.
+// Prisma schema for the INTERSELF project.
 // Update DATABASE_URL in your local .env before running Prisma commands.
 
 generator client {
@@ -10,11 +10,421 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// -------------------------------------------------------
+// Auth & User Core (NextAuth compatible)
+// -------------------------------------------------------
+
+model User {
+  id             String            @id @default(cuid())
+  name           String?
+  email          String?           @unique
+  emailVerified  DateTime?
+  image          String?
+  hashedPassword String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  profile        Profile?
+  accounts       Account[]
+  sessions       Session[]
+
+  tasksCreated       Task[]
+  taskCompletions    TaskCompletion[]
+  stats              Stat[]
+  userAchievements   UserAchievement[]
+  userInventories    UserInventory[]
+  bossProgress       UserBossProgress[]
+  challengeProgress  UserChallengeProgress[]
+  sentFriendRequests FriendRequest[] @relation("sentRequests")
+  receivedFriendRequests FriendRequest[] @relation("receivedRequests")
+  friendships        Friendship[]      @relation("userFriendships")
+  friendOf           Friendship[]      @relation("friendUserships")
+  activityLogs       ActivityLog[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Profile {
+  id                  Int       @id @default(autoincrement())
+  userId              String    @unique
+  username            String    @unique
+  avatarUrl           String?
+  level               Int       @default(1)
+  exp                 Int       @default(0)
+  coins               Int       @default(0)
+  rank                RankTier  @default(BRONZE)
+  title               String    @default("Awakened")
+  streak              Int       @default(0)
+  bestStreak          Int       @default(0)
+  totalCompletedTasks Int       @default(0)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  currentBossId       Int?
+
+  user                User      @relation(fields: [userId], references: [id])
+  currentBoss         Boss?     @relation("ProfileCurrentBoss", fields: [currentBossId], references: [id])
+}
+
+// -------------------------------------------------------
+// Task & Progression System
+// -------------------------------------------------------
+
 model Task {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String?
-  completed   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           Int             @id @default(autoincrement())
+  title        String
+  description  String
+  category     TaskCategory
+  difficulty   TaskDifficulty
+  expReward    Int             @default(0)
+  coinReward   Int             @default(0)
+  streakImpact Int             @default(1)
+  isSystem     Boolean         @default(false)
+  createdById  String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  createdBy    User?           @relation(fields: [createdById], references: [id])
+  statRewards  TaskStatReward[]
+  completions  TaskCompletion[]
+}
+
+model TaskStatReward {
+  id     Int      @id @default(autoincrement())
+  taskId Int
+  stat   StatType
+  amount Int      @default(0)
+
+  task   Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, stat])
+}
+
+model TaskCompletion {
+  id            Int                     @id @default(autoincrement())
+  taskId        Int
+  userId        String
+  status        TaskCompletionStatus    @default(COMPLETED)
+  expEarned     Int
+  coinsEarned   Int
+  streakCount   Int                     @default(0)
+  completedAt   DateTime                @default(now())
+  createdAt     DateTime                @default(now())
+  statIncreases Json?
+
+  task          Task                    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user          User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// -------------------------------------------------------
+// Achievements & Inventory
+// -------------------------------------------------------
+
+model Achievement {
+  id               Int                 @id @default(autoincrement())
+  name             String
+  description      String
+  icon             String
+  rarity           AchievementRarity    @default(RARE)
+  unlockCondition  String
+  rewardExp        Int                  @default(0)
+  rewardCoins      Int                  @default(0)
+  createdAt        DateTime             @default(now())
+
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id             Int          @id @default(autoincrement())
+  userId         String
+  achievementId  Int
+  unlockedAt     DateTime     @default(now())
+  claimedAt      DateTime?
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement    Achievement  @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+}
+
+model InventoryItem {
+  id          Int        @id @default(autoincrement())
+  name        String
+  rarity      ItemRarity @default(RARE)
+  description String
+  effect      String
+  createdAt   DateTime   @default(now())
+
+  userInventories UserInventory[]
+  rewardBosses    Boss[]          @relation("BossRewardItem")
+  rewardChallenges WeeklyChallenge[] @relation("ChallengeRewardItem")
+}
+
+model UserInventory {
+  id        Int            @id @default(autoincrement())
+  userId    String
+  itemId    Int
+  quantity  Int            @default(0)
+  equipped  Boolean        @default(false)
+  acquiredAt DateTime      @default(now())
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      InventoryItem  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+}
+
+// -------------------------------------------------------
+// Boss Battle System
+// -------------------------------------------------------
+
+model Boss {
+  id            Int           @id @default(autoincrement())
+  name          String
+  description   String
+  maxHp         Int
+  rewardExp     Int           @default(0)
+  rewardCoins   Int           @default(0)
+  weakness      TaskCategory?
+  status        BossStatus    @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  rewardItemId  Int?
+
+  rewardItem    InventoryItem? @relation("BossRewardItem", fields: [rewardItemId], references: [id])
+  userProgress  UserBossProgress[]
+  currentProfiles Profile[]     @relation("ProfileCurrentBoss")
+}
+
+model UserBossProgress {
+  id            Int                @id @default(autoincrement())
+  userId        String
+  bossId        Int
+  currentHp     Int
+  status        BossProgressStatus @default(ACTIVE)
+  lastDamagedAt DateTime?
+  defeatedAt    DateTime?
+
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  boss          Boss               @relation(fields: [bossId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bossId])
+}
+
+// -------------------------------------------------------
+// Weekly Challenges System
+// -------------------------------------------------------
+
+model WeeklyChallenge {
+  id            Int             @id @default(autoincrement())
+  title         String
+  description   String
+  startDate     DateTime
+  endDate       DateTime
+  progressTarget Int            @default(0)
+  requiredTasks Json?
+  rewardExp     Int             @default(0)
+  rewardCoins   Int             @default(0)
+  status        ChallengeStatus @default(UPCOMING)
+  createdAt     DateTime        @default(now())
+  rewardItemId  Int?
+
+  rewardItem    InventoryItem?  @relation("ChallengeRewardItem", fields: [rewardItemId], references: [id])
+  userProgress  UserChallengeProgress[]
+}
+
+model UserChallengeProgress {
+  id           Int             @id @default(autoincrement())
+  userId       String
+  challengeId  Int
+  progress     Int             @default(0)
+  status       ChallengeStatus @default(UPCOMING)
+  completedAt  DateTime?
+  claimedAt    DateTime?
+
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge    WeeklyChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, challengeId])
+}
+
+// -------------------------------------------------------
+// Friends & Social
+// -------------------------------------------------------
+
+model FriendRequest {
+  id          Int                  @id @default(autoincrement())
+  fromUserId  String
+  toUserId    String
+  status      FriendRequestStatus  @default(PENDING)
+  message     String?
+  createdAt   DateTime             @default(now())
+  respondedAt DateTime?
+
+  fromUser    User                 @relation("sentRequests", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser      User                 @relation("receivedRequests", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, toUserId])
+}
+
+model Friendship {
+  id        Int    @id @default(autoincrement())
+  userId    String
+  friendId  String
+  createdAt DateTime @default(now())
+
+  user   User @relation("userFriendships", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("friendUserships", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+}
+
+// -------------------------------------------------------
+// Stats & Activity
+// -------------------------------------------------------
+
+model Stat {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  type      StatType
+  value     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+}
+
+model ActivityLog {
+  id          Int           @id @default(autoincrement())
+  userId      String
+  type        ActivityType
+  description String
+  metadata    Json?
+  createdAt   DateTime      @default(now())
+
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// -------------------------------------------------------
+// Supporting Enums
+// -------------------------------------------------------
+
+enum TaskCategory {
+  WAKE_UP
+  STUDY
+  WORKOUT
+  SAVE_MONEY
+  FOCUS
+  CUSTOM
+}
+
+enum TaskDifficulty {
+  EASY
+  MEDIUM
+  HARD
+  LEGENDARY
+}
+
+enum TaskCompletionStatus {
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+enum StatType {
+  DISCIPLINE
+  INTELLIGENCE
+  FOCUS
+  FITNESS
+  FINANCE
+  CONSISTENCY
+}
+
+enum RankTier {
+  BRONZE
+  SILVER
+  GOLD
+  ELITE
+  MONARCH
+}
+
+enum AchievementRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+  MYTHIC
+}
+
+enum ItemRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+  RELIC
+}
+
+enum BossStatus {
+  ACTIVE
+  RESTING
+  DEFATED
+}
+
+enum BossProgressStatus {
+  ACTIVE
+  VICTORIOUS
+  FAILED
+}
+
+enum ChallengeStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum ActivityType {
+  TASK_COMPLETED
+  LEVEL_UP
+  BOSS_DEFEATED
+  FRIEND_ACTIVITY
+  ITEM_EARNED
+  ACHIEVEMENT_UNLOCKED
+  CHALLENGE_PROGRESS
 }
