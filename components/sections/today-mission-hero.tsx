@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Flame, Target, Zap } from "lucide-react";
 import { useCallback, type ReactNode } from "react";
 
@@ -26,6 +26,7 @@ export function TodayMissionHero({
   rank,
   energyPercent,
 }: TodayMissionHeroProps) {
+  const prefersReduced = useReducedMotion();
   const scrollTo = useCallback((selector: string) => {
     if (typeof window === "undefined") return;
     const target = document.querySelector(selector);
@@ -39,15 +40,11 @@ export function TodayMissionHero({
 
   return (
     <motion.div
-      className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-[#0c1224] via-[#0a1d2e] to-[#07121f] p-6 text-white shadow-[0_20px_120px_rgba(4,8,20,0.55)] md:p-8"
-      initial={{ opacity: 0, y: 24 }}
+      className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-[#0c1224] via-[#0a1d2e] to-[#07121f] p-6 text-white shadow-xl md:p-8"
+      initial={prefersReduced ? false : { opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <div className="absolute inset-0 opacity-50">
-        <div className="pointer-events-none absolute -right-20 top-10 h-60 w-60 rounded-full bg-cyan-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute -left-24 bottom-0 h-48 w-48 rounded-full bg-purple-500/20 blur-3xl" />
-      </div>
       <div className="relative grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="flex flex-col gap-6">
           <div>
@@ -86,7 +83,7 @@ export function TodayMissionHero({
             />
           </div>
         </div>
-        <div className="rounded-3xl border border-white/5 bg-white/5 p-5 backdrop-blur-xl">
+        <div className="rounded-3xl border border-white/5 bg-white/5 p-5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-white/60">Level {level}</p>

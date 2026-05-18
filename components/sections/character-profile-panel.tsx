@@ -7,9 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { useGameAudio } from "@/hooks/use-game-audio";
 
 const rarityStyles: Record<string, string> = {
-  LEGENDARY: "border-yellow-400/60 shadow-[0_0_25px_rgba(250,204,21,0.35)]",
-  EPIC: "border-purple-400/60 shadow-[0_0_25px_rgba(192,132,252,0.35)]",
-  RARE: "border-cyan-400/60 shadow-[0_0_25px_rgba(34,211,238,0.35)]",
+  LEGENDARY: "border-yellow-400/60",
+  EPIC: "border-purple-400/60",
+  RARE: "border-cyan-400/60",
   COMMON: "border-white/20",
 };
 
@@ -129,19 +129,11 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
     .slice(0, 4);
 
   return (
-    <motion.div
-      className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-[#05040a] via-[#0b0f1c] to-[#080512] p-5 text-white"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-[#05040a] via-[#0b0f1c] to-[#080512] p-5 text-white">
       <div className="relative flex flex-col gap-5">
         <div className="flex flex-wrap items-center gap-4">
           <div className="relative">
-            <motion.div
-              className="relative h-24 w-24 overflow-hidden rounded-3xl border border-white/30 shadow-lg"
-              whileHover={{ scale: 1.04 }}
-            >
+            <div className="relative h-24 w-24 overflow-hidden rounded-3xl border border-white/30 shadow-lg transition-transform duration-150 hover:scale-[1.04]">
               <div
                 className="absolute inset-0 bg-cover bg-center"
                 style={{ backgroundImage: `url(${activeAvatar?.image})` }}
@@ -150,7 +142,7 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
               <p className="relative z-10 px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white/80">
                 {activeAvatar?.element}
               </p>
-            </motion.div>
+            </div>
             <Badge variant="cyber" className="absolute -bottom-3 left-1/2 -translate-x-1/2">
               {rank}
             </Badge>
@@ -188,10 +180,9 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
               {resolvedSlots.map((slot, index) => {
                 const rarity = slot.item?.rarity ?? "COMMON";
                 return (
-                  <motion.div
+                  <div
                     key={`${slot.slot}-${index}`}
-                    className={`flex items-center justify-between rounded-2xl border px-3 py-3 ${rarityStyles[rarity] ?? rarityStyles.COMMON}`}
-                    whileHover={{ scale: 1.02 }}
+                    className={`flex items-center justify-between rounded-2xl border px-3 py-3 transition-transform duration-150 hover:scale-[1.01] ${rarityStyles[rarity] ?? rarityStyles.COMMON}`}
                   >
                     <div>
                       <p className="text-sm font-semibold">
@@ -202,7 +193,7 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
                       </p>
                     </div>
                     <span className="text-[10px] uppercase text-white/60">{slot.item ? slot.item.rarity : "Open"}</span>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
@@ -212,16 +203,13 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
             <p className="text-xs uppercase tracking-[0.3em] text-white/50">Stat Spread</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {topStats.map((stat) => (
-                <motion.div
+                <div
                   key={stat.type}
                   className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05 }}
                 >
                   <p className="text-xs uppercase tracking-[0.3em] text-white/50">{stat.type}</p>
                   <p className="text-2xl font-black">{stat.value}</p>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
@@ -269,7 +257,7 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
           </AnimatePresence>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -291,18 +279,16 @@ function RankRoadmap({ currentRank }: { currentRank: string }) {
         {RANK_ORDER.map((tier, index) => {
           const reached = currentIndex >= index;
           return (
-            <motion.div
+            <div
               key={tier}
               className={`flex-1 min-w-[120px] rounded-2xl border px-4 py-3 text-center ${
                 reached ? "border-emerald-400/60 bg-emerald-400/10" : "border-white/10 bg-white/5"
               }`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
             >
               <p className="text-[11px] uppercase tracking-[0.3em] text-white/60">Tier</p>
               <p className="text-lg font-black text-white">{tier}</p>
               {index === currentIndex + 1 && <p className="text-[11px] text-amber-200">Next Promotion</p>}
-            </motion.div>
+            </div>
           );
         })}
       </div>
