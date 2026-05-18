@@ -8,7 +8,7 @@ import {
 } from "@/lib/auth";
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1),
 });
 
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const email = parsed.data.email.trim().toLowerCase();
+    const email = parsed.data.email;
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user?.hashedPassword) {

@@ -34,14 +34,17 @@ interface AuthCardProps {
 export function AuthCard({ mode }: AuthCardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams?.get("redirect") ?? "/dashboard";
+  const redirectParam = searchParams?.get("redirect");
+  const redirectTo = redirectParam?.startsWith("/") && !redirectParam.startsWith("//") ? redirectParam : "/dashboard";
+  const googleHref = `/api/auth/google?redirect=${encodeURIComponent(redirectTo)}`;
+  const oauthError = getOauthErrorMessage(searchParams?.get("error"));
 
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     username: "",
   });
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(oauthError);
   const [success, setSuccess] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -58,12 +61,12 @@ export function AuthCard({ mode }: AuthCardProps) {
 
     const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register";
     const payload: Record<string, string> = {
-      email: formData.email,
+      email: formData.email.trim().toLowerCase(),
       password: formData.password,
     };
 
     if (mode === "register") {
-      payload.username = formData.username;
+      payload.username = formData.username.trim();
     }
 
     startTransition(async () => {
@@ -150,6 +153,14 @@ export function AuthCard({ mode }: AuthCardProps) {
           {pending ? "Synchronizing..." : labels.submitLabel}
         </Button>
       </form>
+      <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-white/40">
+        <span className="h-px flex-1 bg-white/10" />
+        Or
+        <span className="h-px flex-1 bg-white/10" />
+      </div>
+      <Button asChild variant="secondary" className="w-full rounded-full">
+        <Link href={googleHref}>Continue with Google</Link>
+      </Button>
       <p className="mt-6 text-center text-sm text-white/70">
         {labels.switchLabel}{" "}
         <Link className="text-cyan-300 hover:text-white" href={labels.switchHref}>
@@ -158,4 +169,19 @@ export function AuthCard({ mode }: AuthCardProps) {
       </p>
     </Card>
   );
+}
+
+function getOauthErrorMessage(error: string | null | undefined) {
+  switch (error) {
+    case "google_oauth_not_configured":
+      return "Google login is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.";
+    case "google_oauth_denied":
+      return "Google login was cancelled.";
+    case "google_oauth_invalid":
+      return "Google login expired. Please try again.";
+    case "google_oauth_failed":
+      return "Unable to complete Google login. Please try again.";
+    default:
+      return null;
+  }
 }
