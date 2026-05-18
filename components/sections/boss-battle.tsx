@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import type { BossBattleState, BossBattleSummary } from "@/types/boss";
 import { subscribeToTasksUpdate, subscribeToBossDamage, BossDamagePayload } from "@/lib/events";
@@ -74,6 +74,7 @@ export function BossBattlePanel({ productivityCompletion = 0 }: BossBattlePanelP
   const [skillCooldowns, setSkillCooldowns] = useState<Record<string, number>>({});
   const [monsterVariant, setMonsterVariant] = useState<number>(0);
   const { play } = useGameAudio();
+  const prefersReduced = useReducedMotion();
 
   const skills: SkillButton[] = useMemo(
     () => [
@@ -106,7 +107,7 @@ export function BossBattlePanel({ productivityCompletion = 0 }: BossBattlePanelP
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setEnergy((prev) => Math.min(100, prev + 2));
+      setEnergy((prev) => (prev >= 100 ? prev : Math.min(100, prev + 2)));
     }, 1500);
     return () => clearInterval(interval);
   }, []);
@@ -313,10 +314,10 @@ export function BossBattlePanel({ productivityCompletion = 0 }: BossBattlePanelP
   return (
     <motion.section
       className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-[#05020d] via-[#0f0c1f] to-[#05020d] p-6 text-white lg:p-8"
-      animate={shake ? { x: [0, -8, 8, -4, 0] } : { x: 0 }}
+      animate={shake && !prefersReduced ? { x: [0, -8, 8, -4, 0] } : { x: 0 }}
       transition={{ duration: 0.45 }}
     >
-      {flash && (
+      {flash && !prefersReduced && (
         <motion.div
           className="pointer-events-none absolute inset-0 bg-white/30"
           initial={{ opacity: 0 }}
@@ -325,7 +326,6 @@ export function BossBattlePanel({ productivityCompletion = 0 }: BossBattlePanelP
         />
       )}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-32 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-purple-600/20 blur-3xl" />
         <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-[#05020d]" />
       </div>
       <div className="relative flex flex-col gap-6">
@@ -364,8 +364,8 @@ export function BossBattlePanel({ productivityCompletion = 0 }: BossBattlePanelP
       </div>
 
       <AnimatePresence>
-        {slashVisible && <SlashEffect />}
-        {counterVisible && <CounterEffect />}
+        {slashVisible && !prefersReduced && <SlashEffect />}
+        {counterVisible && !prefersReduced && <CounterEffect />}
         {damageBursts.map((burst) => (
           <DamageNumber key={burst.id} value={burst.value} critical={burst.critical} />
         ))}
