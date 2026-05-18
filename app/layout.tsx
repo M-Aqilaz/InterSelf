@@ -1,19 +1,8 @@
 import type { Metadata } from "next";
-import { Orbitron, Inter } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/layout/site-header";
 import { ToastProvider } from "@/components/ui/toast";
 import { getCurrentUser } from "@/lib/auth";
-
-const orbitron = Orbitron({
-  subsets: ["latin"],
-  variable: "--font-orbitron",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
 
 export const metadata: Metadata = {
   title: "INTERSELF — Level Up Your Real Life",
@@ -38,7 +27,7 @@ export default async function RootLayout({
       }
     : null;
   return (
-    <html lang="en" className={`${orbitron.variable} ${inter.variable}`}>
+    <html lang="en">
       <body className="min-h-screen bg-[#030014] text-white">
         <div className="gradient-grid pointer-events-none" aria-hidden />
         <ToastProvider>
