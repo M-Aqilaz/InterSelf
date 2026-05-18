@@ -19,7 +19,7 @@ const PROTECTED_ROUTES = [
 
 const PROTECTED_API_PREFIXES = ["/api/tasks"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/_next") || pathname.startsWith("/api/auth") || pathname === "/api/auth/me") {

@@ -43,25 +43,34 @@ CREATE TYPE "FriendRequestStatus" AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED');
 -- CreateEnum
 CREATE TYPE "ActivityType" AS ENUM ('TASK_COMPLETED', 'LEVEL_UP', 'BOSS_DEFEATED', 'FRIEND_ACTIVITY', 'ITEM_EARNED', 'ACHIEVEMENT_UNLOCKED', 'CHALLENGE_PROGRESS');
 
+-- Keep this migration deployable for dev databases that already contain rows
+-- from the initial starter Task table.
+UPDATE "Task"
+SET "description" = ''
+WHERE "description" IS NULL;
+
 -- AlterTable
 ALTER TABLE "Task" DROP COLUMN "completed",
-ADD COLUMN     "category" "TaskCategory" NOT NULL,
+ADD COLUMN     "category" "TaskCategory" NOT NULL DEFAULT 'CUSTOM',
 ADD COLUMN     "coinReward" INTEGER NOT NULL DEFAULT 0,
 ADD COLUMN     "createdById" TEXT,
-ADD COLUMN     "difficulty" "TaskDifficulty" NOT NULL,
+ADD COLUMN     "difficulty" "TaskDifficulty" NOT NULL DEFAULT 'EASY',
 ADD COLUMN     "expReward" INTEGER NOT NULL DEFAULT 0,
 ADD COLUMN     "isSystem" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN     "streakImpact" INTEGER NOT NULL DEFAULT 1,
 ALTER COLUMN "description" SET NOT NULL;
 
+ALTER TABLE "Task" ALTER COLUMN "category" DROP DEFAULT;
+ALTER TABLE "Task" ALTER COLUMN "difficulty" DROP DEFAULT;
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "name" TEXT,
-    "email" TEXT,
+    "email" TEXT NOT NULL,
     "emailVerified" TIMESTAMP(3),
     "image" TEXT,
-    "hashedPassword" TEXT,
+    "hashedPassword" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
