@@ -1,24 +1,55 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { BossBattlePanel } from "@/components/sections/boss-battle";
-import { AchievementsPanel } from "@/components/sections/achievements-panel";
-import { InventoryPanel } from "@/components/sections/inventory-panel";
-import { LeaderboardPanel } from "@/components/sections/leaderboard-panel";
-import { FriendsPanel } from "@/components/sections/friends-panel";
 import { WeeklyChallengesPanel } from "@/components/sections/weekly-challenges-panel";
-import { DailyTasksPanel } from "@/components/sections/daily-tasks-panel";
-import { CharacterProfilePanel } from "@/components/sections/character-profile-panel";
-import { PvpPreviewPanel } from "@/components/sections/pvp-preview-panel";
-import { DungeonNavigationPanel } from "@/components/sections/dungeon-navigation-panel";
-import { FocusModePanel } from "@/components/sections/focus-mode-panel";
 import { ProductivityAnalyticsPanel } from "@/components/sections/productivity-analytics-panel";
 import { HabitTrackerPanel } from "@/components/sections/habit-tracker-panel";
 import { GoalPlannerPanel } from "@/components/sections/goal-planner-panel";
 import { AiCoachPanel } from "@/components/sections/ai-coach-panel";
 import { TodayMissionHero } from "@/components/sections/today-mission-hero";
+import { FocusModePanel } from "@/components/sections/focus-mode-panel";
 import { prisma } from "@/lib/prisma";
 import { calculateLevelFromTotalExp } from "@/lib/level";
 import { startOfToday } from "@/lib/time";
+import { DashboardTabs } from "@/components/layout/dashboard-tabs";
+import dynamic from "next/dynamic";
+
+function PanelSkeleton() {
+  return <div className="h-48 animate-pulse rounded-3xl bg-white/5" />;
+}
+
+const DailyTasksPanel = dynamic(
+  () => import("@/components/sections/daily-tasks-panel").then((m) => m.DailyTasksPanel),
+  { loading: PanelSkeleton }
+);
+const CharacterProfilePanel = dynamic(
+  () => import("@/components/sections/character-profile-panel").then((m) => m.CharacterProfilePanel),
+  { loading: PanelSkeleton }
+);
+const InventoryPanel = dynamic(
+  () => import("@/components/sections/inventory-panel").then((m) => m.InventoryPanel),
+  { loading: PanelSkeleton }
+);
+const AchievementsPanel = dynamic(
+  () => import("@/components/sections/achievements-panel").then((m) => m.AchievementsPanel),
+  { loading: PanelSkeleton }
+);
+const LeaderboardPanel = dynamic(
+  () => import("@/components/sections/leaderboard-panel").then((m) => m.LeaderboardPanel),
+  { loading: PanelSkeleton }
+);
+const FriendsPanel = dynamic(
+  () => import("@/components/sections/friends-panel").then((m) => m.FriendsPanel),
+  { loading: PanelSkeleton }
+);
+const DungeonNavigationPanel = dynamic(
+  () => import("@/components/sections/dungeon-navigation-panel").then((m) => m.DungeonNavigationPanel),
+  { loading: PanelSkeleton }
+);
+const PvpPreviewPanel = dynamic(
+  () => import("@/components/sections/pvp-preview-panel").then((m) => m.PvpPreviewPanel),
+  { loading: PanelSkeleton }
+);
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -85,8 +116,8 @@ export default async function DashboardPage() {
   const heroExpPercent = levelProgress.expForNextLevel > 0 ? Math.min(100, Math.round((levelProgress.expIntoLevel / levelProgress.expForNextLevel) * 100)) : 0;
 
   return (
-    <div className="mx-auto flex w-full max-w-full flex-col gap-6 lg:max-w-7xl lg:gap-8">
-      <section id="today" className="w-full">
+    <DashboardTabs
+      today={
         <TodayMissionHero
           username={user.profile?.username ?? user.name ?? "Hunter"}
           missionTitle={nextMission}
@@ -97,52 +128,54 @@ export default async function DashboardPage() {
           rank={heroRank}
           energyPercent={energyPercent}
         />
-      </section>
-
-      <section id="focus" className="flex w-full flex-col gap-6">
-        <FocusModePanel />
-        <BossBattlePanel productivityCompletion={dailyCompletionPercent} />
-      </section>
-
-      <section id="progress" className="flex w-full flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <div>
-            <h2 className="text-2xl font-semibold text-white">Daily progression</h2>
-            <p className="text-sm text-white/70">Your actionable plan for today.</p>
+      }
+      focus={
+        <>
+          <FocusModePanel />
+          <BossBattlePanel productivityCompletion={dailyCompletionPercent} />
+        </>
+      }
+      progress={
+        <>
+          <div className="flex flex-col gap-3">
+            <div>
+              <h2 className="text-2xl font-semibold text-white">Daily progression</h2>
+              <p className="text-sm text-white/70">Your actionable plan for today.</p>
+            </div>
+            <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-3">
+              <DailyTasksPanel />
+              <HabitTrackerPanel />
+              <GoalPlannerPanel />
+            </div>
           </div>
-          <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-3">
-            <DailyTasksPanel />
-            <HabitTrackerPanel />
-            <GoalPlannerPanel />
-          </div>
-        </div>
 
-        <div className="flex flex-col gap-3">
-          <div>
-            <h2 className="text-2xl font-semibold text-white">Character progression</h2>
-            <p className="text-sm text-white/70">EXP and rank as motivation.</p>
+          <div className="flex flex-col gap-3">
+            <div>
+              <h2 className="text-2xl font-semibold text-white">Character progression</h2>
+              <p className="text-sm text-white/70">EXP and rank as motivation.</p>
+            </div>
+            <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[0.85fr_1.15fr]">
+              <CharacterProfilePanel
+                username={user.profile?.username ?? user.name ?? "Hunter"}
+                title={user.profile?.title ?? "Awakened"}
+                rank={heroRank}
+                level={heroLevel}
+                expIntoLevel={levelProgress.expIntoLevel}
+                expForNextLevel={levelProgress.expForNextLevel}
+                coins={profileRecord?.coins ?? 0}
+                streak={streakValue}
+                bestStreak={profileRecord?.bestStreak ?? 0}
+                powerScore={powerScore}
+                equippedSlots={equippedSlots}
+                stats={stats.map((stat) => ({ type: stat.type, value: stat.value }))}
+              />
+              <WeeklyChallengesPanel />
+            </div>
           </div>
-          <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-            <CharacterProfilePanel
-              username={user.profile?.username ?? user.name ?? "Hunter"}
-              title={user.profile?.title ?? "Awakened"}
-              rank={heroRank}
-              level={heroLevel}
-              expIntoLevel={levelProgress.expIntoLevel}
-              expForNextLevel={levelProgress.expForNextLevel}
-              coins={profileRecord?.coins ?? 0}
-              streak={streakValue}
-              bestStreak={profileRecord?.bestStreak ?? 0}
-              powerScore={powerScore}
-              equippedSlots={equippedSlots}
-              stats={stats.map((stat) => ({ type: stat.type, value: stat.value }))}
-            />
-            <WeeklyChallengesPanel />
-          </div>
-        </div>
-      </section>
-
-      <section id="insights" className="flex w-full flex-col gap-3">
+        </>
+      }
+      insights={
+        <>
         <div>
           <h2 className="text-2xl font-semibold text-white">Productivity insights</h2>
           <p className="text-sm text-white/70">Guidance and analytics to stay on track.</p>
@@ -151,9 +184,10 @@ export default async function DashboardPage() {
           <AiCoachPanel />
           <ProductivityAnalyticsPanel />
         </div>
-      </section>
-
-      <section id="rewards" className="flex w-full flex-col gap-6">
+        </>
+      }
+      rewards={
+        <>
         <div>
           <h2 className="text-2xl font-semibold text-white">Rewards & social layer</h2>
           <p className="text-sm text-white/70">Use RPG systems as motivation and celebration.</p>
@@ -170,7 +204,8 @@ export default async function DashboardPage() {
           <DungeonNavigationPanel />
           <PvpPreviewPanel />
         </div>
-      </section>
-    </div>
+        </>
+      }
+    />
   );
 }

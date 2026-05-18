@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { hashPassword, issueSessionCookie, fetchSafeUserById } from "@/lib/auth";
 import { createUserGameRecords } from "@/lib/user-provisioning";
 
@@ -74,19 +74,37 @@ export async function POST(request: NextRequest) {
     await issueSessionCookie(response, newUser.id);
     return response;
   } catch (error) {
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      error.code === "P2002"
-    ) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("POST /api/auth/register failed", error);
+    }
+
+    if (error instanceof Prisma.PrismaClientInitializationError) {
       return NextResponse.json(
-        { error: "Account already exists with that email or username" },
-        { status: 409 }
+        { error: "Database connection failed. Please try again later." },
+        { status: 503 }
       );
     }
 
-    console.error("POST /api/auth/register failed", error);
-    return NextResponse.json({ error: "Unable to register" }, { status: 500 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        return NextResponse.json(
+          { error: "An account with that email or username already exists." },
+          { status: 409 }
+        );
+      }
+      return NextResponse.json(
+        { error: "Database error. Please try again.", code: error.code },
+        { status: 500 }
+      );
+    }
+
+    if (error instanceof Error && error.message.includes("AUTH_SECRET")) {
+      return NextResponse.json(
+        { error: "Server configuration error. Please contact support." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ error: "Unable to register. Please try again." }, { status: 500 });
   }
 }
