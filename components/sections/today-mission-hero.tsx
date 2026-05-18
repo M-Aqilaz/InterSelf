@@ -27,10 +27,11 @@ export function TodayMissionHero({
   energyPercent,
 }: TodayMissionHeroProps) {
   const prefersReduced = useReducedMotion();
-  const scrollTo = useCallback((selector: string) => {
+  const goToTab = useCallback((tabId: string) => {
     if (typeof window === "undefined") return;
-    const target = document.querySelector(selector);
-    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.history.replaceState(null, "", `#${tabId}`);
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const displayName = username || "Hunter";
@@ -48,37 +49,39 @@ export function TodayMissionHero({
       <div className="relative grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="flex flex-col gap-6">
           <div>
-            <p className="text-sm text-white/70">Welcome back, {displayName}</p>
-            <h1 className="mt-1 text-3xl font-black leading-tight text-white md:text-4xl">Today&rsquo;s mission</h1>
-            <p className="mt-2 text-base text-white/80">{missionTitle}</p>
+            <p className="text-sm text-white/70">Selamat datang kembali, {displayName}</p>
+            <h1 className="mt-1 text-3xl font-black leading-tight text-white md:text-4xl">Misi Hari Ini</h1>
+            <p className="mt-2 text-sm text-white/55 font-mono tracking-wider uppercase">Misi Aktif</p>
+            <p className="mt-1 text-base font-semibold text-cyan-200">{missionTitle}</p>
           </div>
+
           <div className="flex flex-wrap gap-4">
             <Button
               className="bg-cyan-400 px-6 py-2 text-base font-semibold text-slate-950 hover:bg-cyan-300"
-              onClick={() => scrollTo("#focus")}
+              onClick={() => goToTab("battle")}
             >
-              Start Focus Session
+              Mulai Sesi Fokus
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
               className="border border-white/20 px-6 py-2 text-base text-white hover:bg-white/10"
-              onClick={() => scrollTo("#progress")}
+              onClick={() => goToTab("status")}
             >
-              View Tasks
+              Lihat Status
             </Button>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <HeroMetric
-              label="Completion"
+              label="Penyelesaian"
               value={`${completionValue}%`}
-              description="Daily momentum"
+              description="Momentum harian"
               icon={<Target className="h-4 w-4 text-cyan-300" />}
             />
             <HeroMetric
               label="Streak"
-              value={`${streak} days`}
-              description="Consistency"
+              value={`${streak} hari`}
+              description="Konsistensi"
               icon={<Flame className="h-4 w-4 text-amber-300" />}
             />
           </div>
@@ -87,7 +90,7 @@ export function TodayMissionHero({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-white/60">Level {level}</p>
-              <p className="text-2xl font-bold text-white">Rank {rank}</p>
+              <p className="text-2xl font-bold text-white">Peringkat {rank}</p>
             </div>
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-black/40 text-lg font-black text-white">
               {level}
@@ -95,12 +98,12 @@ export function TodayMissionHero({
           </div>
           <div className="mt-5 space-y-4">
             <ProgressMeter label="EXP" value={expValue} accent="bg-violet-400" />
-            <ProgressMeter label="Energy" value={energyValue} accent="bg-emerald-400" icon={<Zap className="h-3 w-3" />} />
+            <ProgressMeter label="Energi" value={energyValue} accent="bg-emerald-400" icon={<Zap className="h-3 w-3" />} />
           </div>
           <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white/80">
-            <p className="font-semibold text-white">Daily Completion</p>
+            <p className="font-semibold text-white">Penyelesaian Harian</p>
             <p className="text-4xl font-black text-white">{completionValue}%</p>
-            <p className="mt-1 text-xs text-white/60">Keep pushing to complete today&rsquo;s quest.</p>
+            <p className="mt-1 text-xs text-white/60">Terus berjuang menyelesaikan misi hari ini.</p>
           </div>
         </div>
       </div>

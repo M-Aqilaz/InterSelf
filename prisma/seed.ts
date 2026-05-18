@@ -88,6 +88,32 @@ const systemTasks: SystemTaskSeed[] = [
       { stat: StatType.DISCIPLINE, amount: 4 },
     ],
   },
+  {
+    title: "Neural Expansion Block",
+    description: "Read or study a high-leverage topic for 30 focused minutes — no skimming.",
+    category: TaskCategory.STUDY,
+    difficulty: TaskDifficulty.MEDIUM,
+    expReward: 140,
+    coinReward: 50,
+    streakImpact: 2,
+    statRewards: [
+      { stat: StatType.INTELLIGENCE, amount: 10 },
+      { stat: StatType.FOCUS, amount: 5 },
+    ],
+  },
+  {
+    title: "Sesi Membaca Harian",
+    description: "Baca buku, jurnal, atau artikel berkualitas selama 15 menit penuh tanpa gangguan.",
+    category: TaskCategory.STUDY,
+    difficulty: TaskDifficulty.EASY,
+    expReward: 100,
+    coinReward: 35,
+    streakImpact: 1,
+    statRewards: [
+      { stat: StatType.INTELLIGENCE, amount: 7 },
+      { stat: StatType.CONSISTENCY, amount: 3 },
+    ],
+  },
 ];
 
 type AchievementSeed = {
