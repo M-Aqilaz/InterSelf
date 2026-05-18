@@ -1,24 +1,54 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { BossBattlePanel } from "@/components/sections/boss-battle";
-import { AchievementsPanel } from "@/components/sections/achievements-panel";
-import { InventoryPanel } from "@/components/sections/inventory-panel";
-import { LeaderboardPanel } from "@/components/sections/leaderboard-panel";
-import { FriendsPanel } from "@/components/sections/friends-panel";
 import { WeeklyChallengesPanel } from "@/components/sections/weekly-challenges-panel";
-import { DailyTasksPanel } from "@/components/sections/daily-tasks-panel";
-import { CharacterProfilePanel } from "@/components/sections/character-profile-panel";
-import { PvpPreviewPanel } from "@/components/sections/pvp-preview-panel";
-import { DungeonNavigationPanel } from "@/components/sections/dungeon-navigation-panel";
-import { FocusModePanel } from "@/components/sections/focus-mode-panel";
 import { ProductivityAnalyticsPanel } from "@/components/sections/productivity-analytics-panel";
 import { HabitTrackerPanel } from "@/components/sections/habit-tracker-panel";
 import { GoalPlannerPanel } from "@/components/sections/goal-planner-panel";
 import { AiCoachPanel } from "@/components/sections/ai-coach-panel";
 import { TodayMissionHero } from "@/components/sections/today-mission-hero";
+import { FocusModePanel } from "@/components/sections/focus-mode-panel";
 import { prisma } from "@/lib/prisma";
 import { calculateLevelFromTotalExp } from "@/lib/level";
 import { startOfToday } from "@/lib/time";
+import dynamic from "next/dynamic";
+
+function PanelSkeleton() {
+  return <div className="h-48 animate-pulse rounded-3xl bg-white/5" />;
+}
+
+const DailyTasksPanel = dynamic(
+  () => import("@/components/sections/daily-tasks-panel").then((m) => m.DailyTasksPanel),
+  { loading: PanelSkeleton }
+);
+const CharacterProfilePanel = dynamic(
+  () => import("@/components/sections/character-profile-panel").then((m) => m.CharacterProfilePanel),
+  { loading: PanelSkeleton }
+);
+const InventoryPanel = dynamic(
+  () => import("@/components/sections/inventory-panel").then((m) => m.InventoryPanel),
+  { loading: PanelSkeleton }
+);
+const AchievementsPanel = dynamic(
+  () => import("@/components/sections/achievements-panel").then((m) => m.AchievementsPanel),
+  { loading: PanelSkeleton }
+);
+const LeaderboardPanel = dynamic(
+  () => import("@/components/sections/leaderboard-panel").then((m) => m.LeaderboardPanel),
+  { loading: PanelSkeleton }
+);
+const FriendsPanel = dynamic(
+  () => import("@/components/sections/friends-panel").then((m) => m.FriendsPanel),
+  { loading: PanelSkeleton }
+);
+const DungeonNavigationPanel = dynamic(
+  () => import("@/components/sections/dungeon-navigation-panel").then((m) => m.DungeonNavigationPanel),
+  { loading: PanelSkeleton }
+);
+const PvpPreviewPanel = dynamic(
+  () => import("@/components/sections/pvp-preview-panel").then((m) => m.PvpPreviewPanel),
+  { loading: PanelSkeleton }
+);
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
