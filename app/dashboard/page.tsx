@@ -107,7 +107,9 @@ export default async function DashboardPage() {
   const totalTasks = tasks.length;
   const completedToday = completedTaskIds.size;
   const dailyCompletionPercent = totalTasks > 0 ? Math.round((completedToday / totalTasks) * 100) : 0;
-  const nextMission = tasks.find((task) => !completedTaskIds.has(task.id))?.title ?? "Win the day with focused progress";
+
+  const pendingTasks = tasks.filter((t) => !completedTaskIds.has(t.id));
+  const nextMission = pendingTasks[0]?.title ?? "Win the day with focused progress";
   const streakValue = profileRecord?.streak ?? 0;
   const bestStreakValue = profileRecord?.bestStreak ?? 1;
   const energyPercent = Math.min(100, Math.max(20, Math.round((streakValue / Math.max(1, bestStreakValue)) * 80 + 20)));
@@ -117,93 +119,74 @@ export default async function DashboardPage() {
 
   return (
     <DashboardTabs
-      today={
-        <TodayMissionHero
-          username={user.profile?.username ?? user.name ?? "Hunter"}
-          missionTitle={nextMission}
-          dailyCompletion={dailyCompletionPercent}
-          streak={streakValue}
-          level={heroLevel}
-          expPercent={heroExpPercent}
-          rank={heroRank}
-          energyPercent={energyPercent}
-        />
+      mission={
+        <>
+          <TodayMissionHero
+            username={user.profile?.username ?? user.name ?? "Hunter"}
+            missionTitle={nextMission}
+            dailyCompletion={dailyCompletionPercent}
+            streak={streakValue}
+            level={heroLevel}
+            expPercent={heroExpPercent}
+            rank={heroRank}
+            energyPercent={energyPercent}
+          />
+          <DailyTasksPanel />
+        </>
       }
-      focus={
+      battle={
         <>
           <FocusModePanel />
           <BossBattlePanel productivityCompletion={dailyCompletionPercent} />
+          <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
+            <DungeonNavigationPanel />
+            <PvpPreviewPanel />
+          </div>
         </>
       }
-      progress={
+      status={
         <>
-          <div className="flex flex-col gap-3">
-            <div>
-              <h2 className="text-2xl font-semibold text-white">Daily progression</h2>
-              <p className="text-sm text-white/70">Your actionable plan for today.</p>
-            </div>
-            <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-3">
-              <DailyTasksPanel />
+          <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[1fr_1fr]">
+            <CharacterProfilePanel
+              username={user.profile?.username ?? user.name ?? "Hunter"}
+              title={user.profile?.title ?? "Awakened"}
+              rank={heroRank}
+              level={heroLevel}
+              expIntoLevel={levelProgress.expIntoLevel}
+              expForNextLevel={levelProgress.expForNextLevel}
+              coins={profileRecord?.coins ?? 0}
+              streak={streakValue}
+              bestStreak={profileRecord?.bestStreak ?? 0}
+              powerScore={powerScore}
+              equippedSlots={equippedSlots}
+              stats={stats.map((stat) => ({ type: stat.type, value: stat.value }))}
+            />
+            <div className="flex flex-col gap-6">
               <HabitTrackerPanel />
               <GoalPlannerPanel />
             </div>
           </div>
-
-          <div className="flex flex-col gap-3">
-            <div>
-              <h2 className="text-2xl font-semibold text-white">Character progression</h2>
-              <p className="text-sm text-white/70">EXP and rank as motivation.</p>
-            </div>
-            <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-              <CharacterProfilePanel
-                username={user.profile?.username ?? user.name ?? "Hunter"}
-                title={user.profile?.title ?? "Awakened"}
-                rank={heroRank}
-                level={heroLevel}
-                expIntoLevel={levelProgress.expIntoLevel}
-                expForNextLevel={levelProgress.expForNextLevel}
-                coins={profileRecord?.coins ?? 0}
-                streak={streakValue}
-                bestStreak={profileRecord?.bestStreak ?? 0}
-                powerScore={powerScore}
-                equippedSlots={equippedSlots}
-                stats={stats.map((stat) => ({ type: stat.type, value: stat.value }))}
-              />
-              <WeeklyChallengesPanel />
-            </div>
+        </>
+      }
+      journal={
+        <>
+          <WeeklyChallengesPanel />
+          <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
+            <AiCoachPanel />
+            <ProductivityAnalyticsPanel />
           </div>
         </>
       }
-      insights={
+      vault={
         <>
-        <div>
-          <h2 className="text-2xl font-semibold text-white">Productivity insights</h2>
-          <p className="text-sm text-white/70">Guidance and analytics to stay on track.</p>
-        </div>
-        <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
-          <AiCoachPanel />
-          <ProductivityAnalyticsPanel />
-        </div>
-        </>
-      }
-      rewards={
-        <>
-        <div>
-          <h2 className="text-2xl font-semibold text-white">Rewards & social layer</h2>
-          <p className="text-sm text-white/70">Use RPG systems as motivation and celebration.</p>
-        </div>
-        <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
-          <InventoryPanel />
-          <AchievementsPanel />
-        </div>
-        <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
-          <LeaderboardPanel />
-          <FriendsPanel />
-        </div>
-        <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2" id="exploration">
-          <DungeonNavigationPanel />
-          <PvpPreviewPanel />
-        </div>
+          <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
+            <InventoryPanel />
+            <AchievementsPanel />
+          </div>
+          <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
+            <LeaderboardPanel />
+            <FriendsPanel />
+          </div>
         </>
       }
     />
