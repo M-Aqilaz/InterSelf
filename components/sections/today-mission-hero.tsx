@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Flame, Target, Zap } from "lucide-react";
 import { useCallback, type ReactNode } from "react";
+import { CLASS_DEFINITIONS } from "@/lib/classes";
 
 export type TodayMissionHeroProps = {
   username: string;
@@ -14,6 +15,7 @@ export type TodayMissionHeroProps = {
   expPercent: number;
   rank: string;
   energyPercent: number;
+  characterClass?: string | null;
 };
 
 export function TodayMissionHero({
@@ -25,6 +27,7 @@ export function TodayMissionHero({
   expPercent,
   rank,
   energyPercent,
+  characterClass,
 }: TodayMissionHeroProps) {
   const prefersReduced = useReducedMotion();
   const goToTab = useCallback((tabId: string) => {
@@ -91,6 +94,11 @@ export function TodayMissionHero({
             <div>
               <p className="text-sm text-white/60">Level {level}</p>
               <p className="text-2xl font-bold text-white">Peringkat {rank}</p>
+              {characterClass && (
+                <span className="text-xs font-semibold text-white/50">
+                  {CLASS_DEFINITIONS.find(c => c.id === characterClass)?.icon ?? ""} {characterClass.charAt(0) + characterClass.slice(1).toLowerCase()}
+                </span>
+              )}
             </div>
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-black/40 text-lg font-black text-white">
               {level}

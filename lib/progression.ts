@@ -7,6 +7,8 @@ import { evaluateAchievements, type AchievementUnlock } from "@/lib/achievements
 import { recordWeeklyChallengeProgress } from "@/lib/challenges";
 import type { BossBattleSummary } from "@/types/boss";
 import { startOfToday } from "@/lib/time";
+import { getClassPassiveMultipliers } from "@/lib/classes";
+import type { CharacterClass } from "@prisma/client";
 
 export type TaskCompletionResult = {
   completion: Prisma.TaskCompletionGetPayload<{ include: { task: true } }>;
@@ -69,9 +71,24 @@ export async function completeTaskForUser({
       throw new TaskProgressionError("Profile not found", 404);
     }
 
+    await applyStreakProtection(tx, userId, profile);
+
     const baseExpReward = Math.max(task.expReward, 0);
     const baseCoinReward = Math.max(task.coinReward, 0);
     const streakGain = Math.max(task.streakImpact, 0);
+
+    // === CLASS PASSIVE BONUS ===
+    const characterClass = (profile as ProfileWithBoss & { characterClass?: CharacterClass | null }).characterClass;
+    const classMultipliers = characterClass
+      ? getClassPassiveMultipliers(
+          characterClass,
+          task.category,
+          task.difficulty
+        )
+      : { expMultiplier: 1, coinMultiplier: 1 };
+
+    const baseExpRewardWithClass = Math.round(baseExpReward * classMultipliers.expMultiplier);
+    const baseCoinRewardWithClass = Math.round(baseCoinReward * classMultipliers.coinMultiplier);
 
     const statIncreases: Record<string, number> = {};
 
@@ -105,12 +122,16 @@ export async function completeTaskForUser({
     );
 
     const passiveResult = await applyPassiveEffects(tx, userId, {
-      expReward: baseExpReward,
-      coinReward: baseCoinReward,
+      expReward: baseExpRewardWithClass,
+      coinReward: baseCoinRewardWithClass,
       taskCategory: task.category,
     });
 
-    const expReward = passiveResult.expReward;
+    // Cek streak debuff
+    const streakDebuffActive = await checkStreakDebuff(tx, userId, profile);
+    const expReward = streakDebuffActive
+      ? Math.round(passiveResult.expReward * 0.8)
+      : passiveResult.expReward;
     const coinReward = passiveResult.coinReward;
 
     const nextTotalExp = profile.exp + expReward;
@@ -205,5 +226,51 @@ export async function completeTaskForUser({
       achievements,
       passiveLogs: passiveResult.passiveLogs,
     };
+  });
+}
+
+async function checkStreakDebuff(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  profile: ProfileWithBoss
+): Promise<boolean> {
+  if (profile.streak > 0) return false;
+
+  const now = new Date();
+  const profileWithShield = profile as ProfileWithBoss & { streakShieldExpiry?: Date | null; streakShieldActive?: boolean };
+  const shieldExpiry = profileWithShield.streakShieldExpiry ?? null;
+  const shieldActive = profileWithShield.streakShieldActive ?? false;
+
+  if (shieldActive && shieldExpiry && shieldExpiry > now) return false;
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setHours(0, 0, 0, 0);
+
+  const completedYesterday = await tx.taskCompletion.count({
+    where: {
+      userId,
+      completedAt: { gte: yesterday },
+    },
+  });
+
+  return completedYesterday === 0;
+}
+
+async function applyStreakProtection(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  profile: { streak: number; bestStreak: number; characterClass?: CharacterClass | null }
+): Promise<void> {
+  if (profile.characterClass !== "PHANTOM") return;
+  if (profile.streak > 0) return;
+  if (profile.bestStreak <= 0) return;
+
+  const protectedStreak = Math.floor(profile.bestStreak * 0.5);
+  if (protectedStreak <= 0) return;
+
+  await tx.profile.update({
+    where: { userId },
+    data: { streak: protectedStreak },
   });
 }

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BarMeter } from "@/components/ui/meters";
 import { Badge } from "@/components/ui/badge";
 import { useGameAudio } from "@/hooks/use-game-audio";
+import { CLASS_DEFINITIONS } from "@/lib/classes";
 
 const rarityStyles: Record<string, string> = {
   LEGENDARY: "border-yellow-400/60",
@@ -78,6 +79,7 @@ type CharacterProfilePanelProps = {
   powerScore: number;
   equippedSlots: EquipmentSlot[];
   stats: { type: string; value: number }[];
+  characterClass?: string | null;
 };
 
 export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
@@ -94,6 +96,7 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
     powerScore,
     equippedSlots,
     stats,
+    characterClass,
   } = props;
 
   const progressPercent = expForNextLevel > 0 ? Math.min(100, Math.round((expIntoLevel / expForNextLevel) * 100)) : 0;
@@ -148,6 +151,17 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
             </Badge>
           </div>
           <div className="flex flex-1 flex-col gap-1">
+            {characterClass && (() => {
+              const def = CLASS_DEFINITIONS.find((c) => c.id === characterClass);
+              if (!def) return null;
+              return (
+                <div className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1 text-xs font-bold ${def.badgeStyle}`}>
+                  <span>{def.icon}</span>
+                  <span>{def.name}</span>
+                  <span className="opacity-60">· {def.passiveBonus}</span>
+                </div>
+              );
+            })()}
             <p className="text-xs uppercase tracking-[0.3em] text-white/50">Hunter Title</p>
             <h2 className="text-2xl font-black">{title}</h2>
             <p className="text-white/70">{username}</p>

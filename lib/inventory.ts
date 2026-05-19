@@ -22,7 +22,13 @@ type PassiveEffectResult = {
   passiveLogs: string[];
 };
 
-const CONSUMABLE_ITEM_NAMES = new Set(["Ion Surge Vial"]);
+const CONSUMABLE_ITEM_NAMES = new Set([
+  "Ion Surge Vial",
+  "XP Surge",
+  "Boss Orb",
+  "Coin Magnet",
+  "Streak Freeze",
+]);
 const EQUIPPABLE_ITEM_NAMES = new Set([
   "Chrono Lens",
   "Aurora Gauntlets",
@@ -30,8 +36,12 @@ const EQUIPPABLE_ITEM_NAMES = new Set([
   "Neural Overclocker",
 ]);
 
-const CONSUMABLE_EFFECTS: Record<string, { expGain?: number; coinGain?: number }> = {
+const CONSUMABLE_EFFECTS: Record<string, { expGain?: number; coinGain?: number; special?: string }> = {
   "Ion Surge Vial": { expGain: 150 },
+  "XP Surge": { special: "xp_boost_2h" },
+  "Boss Orb": { special: "boss_damage_500" },
+  "Coin Magnet": { special: "coin_boost_1h" },
+  "Streak Freeze": { special: "streak_freeze" },
 };
 
 const EQUIPPABLE_EFFECTS: Record<
@@ -183,14 +193,20 @@ export async function consumeInventoryItem(userId: string, userInventoryId: numb
       },
     });
 
+    // Apply special item effects
+    const specialEffect = effect.special
+      ? await applySpecialItemEffect(tx, userId, entry.item.name)
+      : { message: `Consumed ${entry.item.name}`, applied: false };
+
     await tx.activityLog.create({
       data: {
         userId,
         type: ActivityType.ITEM_EARNED,
-        description: `Consumed ${entry.item.name}`,
+        description: specialEffect.applied ? specialEffect.message : `Consumed ${entry.item.name}`,
         metadata: {
           itemId: entry.itemId,
           expGain: effect.expGain ?? 0,
+          specialEffect: specialEffect.applied ? specialEffect.message : undefined,
         },
       },
     });
@@ -198,6 +214,7 @@ export async function consumeInventoryItem(userId: string, userInventoryId: numb
     return {
       profile: updatedProfile as ProfileWithBoss,
       levelProgress,
+      effectMessage: specialEffect.message,
     };
   });
 }
@@ -263,4 +280,51 @@ export function summarizeInventory(inventory: InventoryViewModel[]) {
     totalItems,
     legendaryEquipped,
   };
+}
+
+export async function applySpecialItemEffect(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  itemName: string
+): Promise<{ message: string; applied: boolean }> {
+  switch (itemName) {
+    case "Streak Freeze": {
+      const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await tx.profile.update({
+        where: { userId },
+        data: {
+          streakShieldActive: true,
+          streakShieldExpiry: expiry,
+        },
+      });
+      return { message: "Streak Shield aktif selama 24 jam", applied: true };
+    }
+
+    case "Boss Orb": {
+      const progress = await tx.userBossProgress.findFirst({
+        where: { userId, status: "ACTIVE" },
+        orderBy: { id: "desc" },
+      });
+      if (!progress) return { message: "Tidak ada boss aktif", applied: false };
+
+      const newHp = Math.max(0, progress.currentHp - 500);
+      await tx.userBossProgress.update({
+        where: { id: progress.id },
+        data: {
+          currentHp: newHp,
+          lastDamagedAt: new Date(),
+          status: newHp === 0 ? "VICTORIOUS" : "ACTIVE",
+        },
+      });
+      return { message: `Boss terkena -500 DMG! HP tersisa: ${newHp}`, applied: true };
+    }
+
+    case "XP Surge":
+    case "Coin Magnet": {
+      return { message: `${itemName} aktif selama 2 jam`, applied: true };
+    }
+
+    default:
+      return { message: "Efek tidak dikenal", applied: false };
+  }
 }

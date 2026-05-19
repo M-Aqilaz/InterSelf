@@ -89,6 +89,12 @@ model Profile {
   streak              Int       @default(0)
   bestStreak          Int       @default(0)
   totalCompletedTasks Int       @default(0)
+  lastDailyChestAt    DateTime?
+  dailyChestStreak    Int       @default(0)
+  streakShieldActive  Boolean   @default(false)
+  streakShieldExpiry  DateTime?
+  characterClass      CharacterClass?
+  classChosenAt       DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   currentBossId       Int?
@@ -184,6 +190,7 @@ model InventoryItem {
   rarity      ItemRarity @default(RARE)
   description String
   effect      String
+  price       Int        @default(0)
   createdAt   DateTime   @default(now())
 
   userInventories UserInventory[]
@@ -377,6 +384,13 @@ enum RankTier {
   GOLD
   ELITE
   MONARCH
+}
+
+enum CharacterClass {
+  IRONCLAD
+  SAGE
+  PHANTOM
+  MERCHANT
 }
 
 enum AchievementRarity {

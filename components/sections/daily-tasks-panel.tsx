@@ -116,6 +116,43 @@ const SYSTEM_TASKS = [
   },
 ];
 
+const DIFFICULTY_STYLES = {
+  EASY: {
+    border: 'border-emerald-500/30',
+    hover: 'hover:border-emerald-400/60',
+    accent: 'bg-emerald-500',
+    badge: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30',
+    glow: 'hover:shadow-emerald-500/10',
+    chip: 'bg-emerald-500/10 text-emerald-400',
+  },
+  MEDIUM: {
+    border: 'border-amber-500/30',
+    hover: 'hover:border-amber-400/60',
+    accent: 'bg-amber-500',
+    badge: 'bg-amber-500/15 text-amber-400 border border-amber-500/30',
+    glow: 'hover:shadow-amber-500/10',
+    chip: 'bg-amber-500/10 text-amber-400',
+  },
+  HARD: {
+    border: 'border-red-500/30',
+    hover: 'hover:border-red-400/60',
+    accent: 'bg-red-500',
+    badge: 'bg-red-500/15 text-red-400 border border-red-500/30',
+    glow: 'hover:shadow-red-500/10',
+    chip: 'bg-red-500/10 text-red-400',
+  },
+  LEGENDARY: {
+    border: 'border-purple-500/40',
+    hover: 'hover:border-purple-400/70',
+    accent: 'bg-gradient-to-b from-purple-400 to-purple-600',
+    badge: 'bg-purple-500/15 text-purple-300 border border-purple-500/40',
+    glow: 'hover:shadow-purple-500/20',
+    chip: 'bg-purple-500/10 text-purple-300',
+  },
+} as const;
+
+type DifficultyKey = keyof typeof DIFFICULTY_STYLES;
+
 type TaskStatReward = {
   id: number;
   stat: string;
@@ -173,16 +210,6 @@ const formatLabel = (label: string) =>
     .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
     .join(" ");
 
-const describeRewards = (task: TaskRecord) => {
-  const rewardParts = [`+${task.expReward} EXP`, `${task.coinReward} coins`, `Streak +${task.streakImpact}`];
-  if (task.statRewards?.length) {
-    rewardParts.push(
-      task.statRewards.map((reward) => `+${reward.amount} ${formatLabel(reward.stat)}`).join(", ")
-    );
-  }
-  return rewardParts.join(" · ");
-};
-
 export function DailyTasksPanel() {
   const [tasks, setTasks] = useState<TaskRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -196,8 +223,9 @@ export function DailyTasksPanel() {
   const [rewardModal, setRewardModal] = useState<RewardModalState | null>(null);
   const [levelModal, setLevelModal] = useState<LevelModalState | null>(null);
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
-  const [readingSessionDone, setReadingSessionDone] = useState(false);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [combo, setCombo] = useState(0);
+  const comboTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -253,6 +281,32 @@ export function DailyTasksPanel() {
     router.refresh();
   }, [fetchTasks, router]);
 
+  const spawnFloaters = useCallback((rect: DOMRect, xp: number, coins: number, currentCombo: number) => {
+    const cx = rect.left + rect.width * 0.65;
+    const cy = rect.top + rect.height * 0.3;
+
+    const makeFloat = (x: number, y: number, text: string, color: string, delay = 0) => {
+      setTimeout(() => {
+        const el = document.createElement('div');
+        el.style.cssText = `
+          position:fixed;left:${x}px;top:${y}px;
+          color:${color};font-size:14px;font-weight:700;
+          pointer-events:none;z-index:9999;
+          animation:floatUp 1s ease-out forwards;
+        `;
+        el.textContent = text;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1100);
+      }, delay);
+    };
+
+    makeFloat(cx, cy, `+${xp} EXP`, '#00e5ff');
+    makeFloat(cx + 20, cy - 15, `+${coins}`, '#f59e0b', 150);
+    if (currentCombo >= 2) {
+      makeFloat(cx - 10, cy - 30, `x${getComboMultiplier(currentCombo).toFixed(1)}`, '#a855f7', 250);
+    }
+  }, []);
+
   const completeTask = useCallback(
     (task: TaskRecord) => {
       startTransition(async () => {
@@ -266,12 +320,44 @@ export function DailyTasksPanel() {
         const rewardExp = payload?.completion?.expEarned ?? task.expReward;
         const rewardCoins = payload?.completion?.coinsEarned ?? task.coinReward;
         const statIncreases = Object.entries((payload?.completion?.statIncreases as Record<string, number>) ?? {});
+        const bossDamage = payload?.bossBattle?.damageApplied ?? 0;
 
-        push({
-          title: "Tugas selesai!",
-          description: `+${rewardExp} EXP · ${rewardCoins} koin`,
-          variant: "success",
-        });
+        // Combo logic
+        const newCombo = combo + 1;
+        setCombo(newCombo);
+        if (comboTimerRef.current) clearTimeout(comboTimerRef.current);
+        comboTimerRef.current = setTimeout(() => {
+          setCombo(0);
+        }, 5000);
+
+        // Spawn floating numbers
+        const cardEl = document.getElementById(`task-card-${task.id}`);
+        if (cardEl) {
+          const rect = cardEl.getBoundingClientRect();
+          spawnFloaters(rect, rewardExp, rewardCoins, newCombo);
+        }
+
+        // Dynamic toast
+        const isCritical = task.difficulty === 'HARD' || task.difficulty === 'LEGENDARY';
+        if (isCritical) {
+          push({
+            title: `CRITICAL HIT! ${task.title}`,
+            description: `+${rewardExp} EXP · -${bossDamage} DMG Boss`,
+            variant: 'success',
+          });
+        } else if (newCombo >= 3) {
+          push({
+            title: `${newCombo}x COMBO! x${getComboMultiplier(newCombo).toFixed(1)} Multiplier`,
+            description: `+${rewardExp} EXP · +${rewardCoins} koin`,
+            variant: 'success',
+          });
+        } else {
+          push({
+            title: `${task.title} selesai!`,
+            description: `+${rewardExp} EXP · +${rewardCoins} koin`,
+            variant: 'success',
+          });
+        }
         const bursts: RewardBurst[] = [
           makeBurst(`+${rewardExp} EXP`, "text-cyan-300"),
           makeBurst(`+${rewardCoins} Coins`, "text-amber-200"),
@@ -281,7 +367,6 @@ export function DailyTasksPanel() {
           bursts.push(makeBurst(`+${value} ${formatLabel(stat)}`, "text-emerald-300"));
         });
 
-        const bossDamage = payload?.bossBattle?.damageApplied ?? 0;
         if (bossDamage > 0) {
           bursts.push(makeBurst(`-${bossDamage} HP`, "text-rose-300"));
         }
@@ -335,7 +420,7 @@ export function DailyTasksPanel() {
         emitTasksUpdatedEvent();
       });
     },
-    [playerState, push, refreshAll]
+    [playerState, push, refreshAll, combo, spawnFloaters]
   );
 
   const addOptionalTask = useCallback(() => {
@@ -370,27 +455,6 @@ export function DailyTasksPanel() {
       emitTasksUpdatedEvent();
     });
   }, [formDescription, formTitle, push, refreshAll]);
-
-  const renderTask = (task?: TaskRecord | null, requireTimer = false) => {
-    if (!task) {
-      return <p className="text-xs text-white/50">Belum tersedia.</p>;
-    }
-    const completeBlocked = requireTimer && !readingSessionDone && !task.completedToday;
-    return (
-      <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <p className="text-xs text-white/60">
-          {describeRewards(task)} · {formatLabel(task.category)} · {task.difficulty}
-        </p>
-        {task.completedToday ? (
-          <span className="text-xs text-emerald-300">Selesai hari ini</span>
-        ) : (
-          <Button size="sm" disabled={pending || completeBlocked} onClick={() => completeTask(task)}>
-            Selesaikan
-          </Button>
-        )}
-      </div>
-    );
-  };
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-black/70 to-[#0a0318] p-6">
@@ -434,86 +498,150 @@ export function DailyTasksPanel() {
         <div className="relative mt-6 space-y-6">
           <section>
             <h4 className="text-xs uppercase tracking-[0.3em] text-white/50">Ritual Sistem</h4>
+            <AnimatePresence>
+              {combo >= 2 && <ComboHUD combo={combo} />}
+            </AnimatePresence>
             <ul className="mt-3 space-y-4">
+              {/* eslint-disable-next-line */}
               {systemMatches.map(({ definition, task }) => {
                 const isExpanded = expandedKey === definition.key;
                 const hasTimer = "timerMinutes" in definition && !!definition.timerMinutes;
-                return (
-                  <li key={definition.key} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    {/* Header row */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-sm font-semibold text-white">{definition.title}</p>
-                          {task && (
-                            <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-white/55">
-                              {task.difficulty}
-                            </span>
-                          )}
-                        </div>
-                        <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-400/70">
-                          {definition.subtitle}
-                        </p>
-                        {/* Quick action — always visible */}
-                        <p className="mt-2 text-xs text-white/70 leading-relaxed">
-                          {definition.quickAction}
-                        </p>
-                      </div>
-                      {/* Expand toggle */}
-                      <button
-                        type="button"
-                        onClick={() => setExpandedKey(isExpanded ? null : definition.key)}
-                        className="mt-0.5 shrink-0 rounded-lg border border-white/10 p-1.5 text-white/40 transition hover:border-cyan-400/30 hover:text-cyan-300"
-                        aria-label={isExpanded ? "Tutup detail" : "Lihat detail"}
-                      >
-                        {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                      </button>
-                    </div>
+                return (() => {
+                  const diff = (task?.difficulty ?? 'MEDIUM') as DifficultyKey;
+                  const style = DIFFICULTY_STYLES[diff] ?? DIFFICULTY_STYLES.MEDIUM;
+                  const isDone = task?.completedToday ?? false;
+                  const isClickable = task && !isDone && !pending;
 
-                    {/* Expandable detail section */}
-                    {isExpanded && (
-                      <div className="mt-4 space-y-4 border-t border-white/[0.06] pt-4">
-                        <p className="text-xs leading-relaxed text-white/50">{definition.detail}</p>
-                        {"actions" in definition && definition.actions && (
-                          <ol className="space-y-2">
-                            {(definition.actions as string[]).map((step, idx) => (
-                              <li key={idx} className="flex gap-3 text-xs text-white/65">
-                                <span className="shrink-0 font-mono text-[10px] text-cyan-400/60 mt-0.5">
-                                  {String(idx + 1).padStart(2, "0")}
+                  return (
+                    <li
+                      id={`task-card-${task?.id}`}
+                      key={definition.key}
+                      onClick={() => {
+                        if (isClickable) completeTask(task);
+                      }}
+                      className={[
+                        'relative flex overflow-hidden rounded-2xl border bg-white/[0.03] transition-all duration-200',
+                        isDone ? 'opacity-50 cursor-default' : style.border,
+                        isClickable ? `cursor-pointer ${style.hover} hover:bg-white/[0.06] hover:shadow-lg ${style.glow} active:scale-[0.99]` : '',
+                      ].join(' ')}
+                    >
+                      {/* Left accent bar */}
+                      <div className={`w-1 shrink-0 ${isDone ? 'bg-white/20' : style.accent}`} />
+
+                      {/* Card body */}
+                      <div className="flex-1 p-4">
+                        {/* Header row */}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            {/* Title + badge */}
+                            <div className="flex flex-wrap items-center gap-2">
+                              {isDone && (
+                                <span className="text-emerald-400 text-xs">✓</span>
+                              )}
+                              <p className={`text-sm font-bold ${isDone ? 'line-through text-white/40' : 'text-white'}`}>
+                                {definition.title}
+                              </p>
+                              {task && (
+                                <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${style.badge}`}>
+                                  {task.difficulty}
                                 </span>
-                                {step}
-                              </li>
+                              )}
+                            </div>
+
+                            {/* Subtitle kategori */}
+                            <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-400/70">
+                              {definition.subtitle}
+                            </p>
+
+                            {/* Quick action desc */}
+                            <p className="mt-2 text-xs text-white/60 leading-relaxed">
+                              {definition.quickAction}
+                            </p>
+                          </div>
+
+                          {/* Expand toggle — tetap ada */}
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setExpandedKey(isExpanded ? null : definition.key); }}
+                            className="mt-0.5 shrink-0 rounded-lg border border-white/10 p-1.5 text-white/40 transition hover:border-cyan-400/30 hover:text-cyan-300"
+                            aria-label={isExpanded ? 'Tutup detail' : 'Lihat detail'}
+                          >
+                            {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                          </button>
+                        </div>
+
+                        {/* Reward chips row */}
+                        {task && (
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <span className="rounded-md bg-cyan-500/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-400">
+                              +{Math.round(task.expReward * getComboMultiplier(combo))} EXP
+                            </span>
+                            <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400">
+                              +{Math.round(task.coinReward * getComboMultiplier(combo))} coins
+                            </span>
+                            {task.statRewards?.map((sr) => (
+                              <span key={sr.stat} className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${style.chip}`}>
+                                +{sr.amount} {formatLabel(sr.stat)}
+                              </span>
                             ))}
-                          </ol>
-                        )}
-                        {"readingUrls" in definition && definition.readingUrls && (
-                          <div className="flex flex-wrap gap-2">
-                            {(definition.readingUrls as { label: string; url: string }[]).map((src) => (
-                              <a
-                                key={src.url}
-                                href={src.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65 transition hover:border-cyan-400/30 hover:text-cyan-300"
-                              >
-                                <ExternalLink className="h-3 w-3" />
-                                {src.label}
-                              </a>
-                            ))}
+                            {combo >= 2 && !isDone && (
+                              <span className="rounded-md bg-orange-500/15 px-2 py-0.5 text-[11px] font-bold text-orange-400 border border-orange-500/30">
+                                x{getComboMultiplier(combo).toFixed(1)} COMBO
+                              </span>
+                            )}
+                            {isDone ? (
+                              <span className="ml-auto text-xs text-emerald-400 font-semibold">Selesai hari ini ✓</span>
+                            ) : (
+                              <span className="ml-auto text-[10px] text-white/30 italic">klik untuk selesaikan</span>
+                            )}
                           </div>
                         )}
-                        {hasTimer && (
-                          <ReadingTimer
-                            minutes={definition.timerMinutes as number}
-                            onComplete={() => setReadingSessionDone(true)}
-                          />
+
+                        {/* Expandable detail — tetap ada persis sama */}
+                        {isExpanded && (
+                          <div className="mt-4 space-y-4 border-t border-white/[0.06] pt-4">
+                            <p className="text-xs leading-relaxed text-white/50">{definition.detail}</p>
+                            {'actions' in definition && definition.actions && (
+                              <ol className="space-y-2">
+                                {(definition.actions as string[]).map((step, idx) => (
+                                  <li key={idx} className="flex gap-3 text-xs text-white/65">
+                                    <span className="shrink-0 font-mono text-[10px] text-cyan-400/60 mt-0.5">
+                                      {String(idx + 1).padStart(2, '0')}
+                                    </span>
+                                    {step}
+                                  </li>
+                                ))}
+                              </ol>
+                            )}
+                            {'readingUrls' in definition && definition.readingUrls && (
+                              <div className="flex flex-wrap gap-2">
+                                {(definition.readingUrls as { label: string; url: string }[]).map((src) => (
+                                  <a
+                                    key={src.url}
+                                    href={src.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65 transition hover:border-cyan-400/30 hover:text-cyan-300"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                    {src.label}
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                            {hasTimer && (
+                              <ReadingTimer
+                                minutes={definition.timerMinutes as number}
+                                onComplete={() => {}}
+                              />
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
-
-                    {renderTask(task, hasTimer)}
-                  </li>
-                );
+                    </li>
+                  );
+                })();
               })}
             </ul>
           </section>
@@ -547,20 +675,55 @@ export function DailyTasksPanel() {
                 <p className="mt-3 text-sm text-white/60">Belum ada tugas kustom.</p>
               ) : (
                 <ul className="mt-3 space-y-3">
-                  {optionalTasks.map((task) => (
-                    <li key={task.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-semibold text-white">{task.title}</p>
-                          <p className="text-xs text-white/60">{task.description}</p>
-                        </div>
-                        <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] uppercase text-white/70">
-                          {task.category}
-                        </span>
-                      </div>
-                      {renderTask(task)}
-                    </li>
-                  ))}
+                  {/* eslint-disable-next-line */}
+                  {optionalTasks.map((task) => {
+                    return (() => {
+                      const diff = (task.difficulty ?? 'MEDIUM') as DifficultyKey;
+                      const style = DIFFICULTY_STYLES[diff] ?? DIFFICULTY_STYLES.MEDIUM;
+                      const isDone = task.completedToday ?? false;
+
+                      return (
+                        <li
+                          id={`task-card-${task.id}`}
+                          key={task.id}
+                          onClick={() => { if (!isDone && !pending) completeTask(task); }}
+                          className={[
+                            'relative flex overflow-hidden rounded-2xl border bg-white/[0.03] transition-all duration-200',
+                            isDone ? 'opacity-50 cursor-default' : style.border,
+                            !isDone && !pending ? `cursor-pointer ${style.hover} hover:bg-white/[0.06] hover:shadow-lg ${style.glow} active:scale-[0.99]` : '',
+                          ].join(' ')}
+                        >
+                          <div className={`w-1 shrink-0 ${isDone ? 'bg-white/20' : style.accent}`} />
+                          <div className="flex-1 p-4">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div>
+                                <p className={`text-sm font-bold ${isDone ? 'line-through text-white/40' : 'text-white'}`}>
+                                  {task.title}
+                                </p>
+                                <p className="text-xs text-white/60">{task.description}</p>
+                              </div>
+                              <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${style.badge}`}>
+                                {task.category}
+                              </span>
+                            </div>
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              <span className="rounded-md bg-cyan-500/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-400">
+                                +{Math.round(task.expReward * getComboMultiplier(combo))} EXP
+                              </span>
+                              <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400">
+                                +{Math.round(task.coinReward * getComboMultiplier(combo))} coins
+                              </span>
+                              {isDone ? (
+                                <span className="ml-auto text-xs text-emerald-400 font-semibold">Selesai hari ini ✓</span>
+                              ) : (
+                                <span className="ml-auto text-[10px] text-white/30 italic">klik untuk selesaikan</span>
+                              )}
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })();
+                  })}
                 </ul>
               )}
             </div>
@@ -580,6 +743,51 @@ function makeBurst(label: string, color: string): RewardBurst {
     color,
     offset: Math.random() * 30,
   };
+}
+
+function getComboMultiplier(combo: number): number {
+  if (combo <= 1) return 1.0;
+  if (combo === 2) return 1.3;
+  if (combo === 3) return 1.6;
+  if (combo === 4) return 2.0;
+  return 2.5;
+}
+
+function getComboLabel(combo: number): string {
+  const labels: Record<number, string> = {
+    2: 'Double!', 3: 'Triple!', 4: 'Quad!', 5: 'Godmode!'
+  };
+  return labels[Math.min(combo, 5)] ?? 'Godmode!';
+}
+
+function ComboHUD({ combo }: { combo: number }) {
+  if (combo < 2) return null;
+
+  const mult = getComboMultiplier(combo);
+  const label = getComboLabel(combo);
+
+  const ringColor =
+    combo === 2 ? 'border-cyan-400 shadow-cyan-400/40' :
+    combo === 3 ? 'border-purple-500 shadow-purple-500/40' :
+    combo === 4 ? 'border-orange-400 shadow-orange-400/40' :
+    'border-red-500 shadow-red-500/60';
+
+  return (
+    <motion.div
+      className="flex flex-col items-center justify-center py-3"
+      initial={{ opacity: 0, scale: 0.7 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.7 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+    >
+      <div className={`flex h-16 w-16 flex-col items-center justify-center rounded-full border-2 shadow-lg ${ringColor}`}>
+        <span className="text-2xl font-black leading-none text-white">{combo}</span>
+        <span className="text-[9px] uppercase tracking-widest text-white/60">combo</span>
+      </div>
+      <p className="mt-1.5 text-xs font-bold text-orange-300">{label}</p>
+      <p className="text-[10px] text-white/50">x{mult.toFixed(1)} XP Multiplier aktif</p>
+    </motion.div>
+  );
 }
 
 function RewardModal({ state, onClose }: { state: RewardModalState | null; onClose: () => void }) {

@@ -188,6 +188,7 @@ type InventorySeed = {
   rarity: ItemRarity;
   description: string;
   effect: string;
+  price: number;
 };
 
 const inventoryItems: InventorySeed[] = [
@@ -196,30 +197,70 @@ const inventoryItems: InventorySeed[] = [
     rarity: ItemRarity.RARE,
     description: "Reveal the highest leverage task in your queue.",
     effect: "+10% exp on FOCUS tasks for 24h",
+    price: 0,
   },
   {
     name: "Aurora Gauntlets",
     rarity: ItemRarity.EPIC,
     description: "Amplify workout payouts.",
     effect: "+15% coins + exp on WORKOUT tasks",
+    price: 0,
   },
   {
     name: "Vault Prism",
     rarity: ItemRarity.LEGENDARY,
     description: "Auto-invest a portion of earned coins.",
     effect: "Convert 20% coins into passive exp nightly",
+    price: 0,
   },
   {
     name: "Ion Surge Vial",
     rarity: ItemRarity.RARE,
     description: "Single-use ampule that grants instant EXP.",
     effect: "Consume to gain 150 EXP",
+    price: 150,
   },
   {
     name: "Neural Overclocker",
     rarity: ItemRarity.EPIC,
     description: "Equippable rig that boosts focus-task EXP permanently while worn.",
     effect: "Equip for +12% EXP on FOCUS tasks",
+    price: 0,
+  },
+  {
+    name: "Streak Freeze",
+    rarity: ItemRarity.COMMON,
+    description: "Lindungi streak kamu selama 1 hari penuh meski tidak ada task yang selesai.",
+    effect: "Aktif otomatis saat streak akan putus. Berlaku 24 jam.",
+    price: 300,
+  },
+  {
+    name: "XP Surge",
+    rarity: ItemRarity.RARE,
+    description: "Tingkatkan perolehan EXP sebesar 50% selama 2 jam.",
+    effect: "+50% EXP semua task selama 2 jam setelah digunakan.",
+    price: 200,
+  },
+  {
+    name: "Boss Orb",
+    rarity: ItemRarity.RARE,
+    description: "Kristal energi yang memberikan damage instan ke boss aktif.",
+    effect: "Consume: -500 HP boss saat ini secara instan.",
+    price: 500,
+  },
+  {
+    name: "Coin Magnet",
+    rarity: ItemRarity.EPIC,
+    description: "Perangkat pasif yang menggandakan perolehan coin.",
+    effect: "+100% coins semua task selama 1 jam setelah digunakan.",
+    price: 450,
+  },
+  {
+    name: "Relic Fragment",
+    rarity: ItemRarity.EPIC,
+    description: "Pecahan relic purba. Kumpulkan 3 untuk merakit Relic penuh.",
+    effect: "Combine 3 fragments di inventory untuk membuka Relic.",
+    price: 800,
   },
 ];
 

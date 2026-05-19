@@ -8,10 +8,14 @@ import { GoalPlannerPanel } from "@/components/sections/goal-planner-panel";
 import { AiCoachPanel } from "@/components/sections/ai-coach-panel";
 import { TodayMissionHero } from "@/components/sections/today-mission-hero";
 import { FocusModePanel } from "@/components/sections/focus-mode-panel";
+import { DailyChestWidget } from "@/components/sections/daily-chest-widget";
+import { StreakStatusBar } from "@/components/sections/streak-status-bar";
+import { BossTabTitle } from "@/components/layout/boss-tab-title";
 import { prisma } from "@/lib/prisma";
 import { calculateLevelFromTotalExp } from "@/lib/level";
 import { startOfToday } from "@/lib/time";
 import { DashboardTabs } from "@/components/layout/dashboard-tabs";
+import { ClassGate } from "@/components/layout/class-gate";
 import dynamic from "next/dynamic";
 
 function PanelSkeleton() {
@@ -28,6 +32,10 @@ const CharacterProfilePanel = dynamic(
 );
 const InventoryPanel = dynamic(
   () => import("@/components/sections/inventory-panel").then((m) => m.InventoryPanel),
+  { loading: PanelSkeleton }
+);
+const ShopPanel = dynamic(
+  () => import("@/components/sections/shop-panel").then((m) => m.ShopPanel),
   { loading: PanelSkeleton }
 );
 const AchievementsPanel = dynamic(
@@ -87,6 +95,8 @@ export default async function DashboardPage() {
     }),
   ]);
 
+  const hasChosenClass = profileRecord?.characterClass !== null;
+
   const stats = user.stats ?? [];
   const profileExp = profileRecord?.exp ?? 0;
   const levelProgress = calculateLevelFromTotalExp(profileExp);
@@ -118,9 +128,13 @@ export default async function DashboardPage() {
   const heroExpPercent = levelProgress.expForNextLevel > 0 ? Math.min(100, Math.round((levelProgress.expIntoLevel / levelProgress.expForNextLevel) * 100)) : 0;
 
   return (
-    <DashboardTabs
-      mission={
+    <ClassGate hasChosenClass={hasChosenClass}>
+      <BossTabTitle />
+      <DashboardTabs
+        mission={
         <>
+          <DailyChestWidget />
+          <StreakStatusBar />
           <TodayMissionHero
             username={user.profile?.username ?? user.name ?? "Hunter"}
             missionTitle={nextMission}
@@ -130,6 +144,7 @@ export default async function DashboardPage() {
             expPercent={heroExpPercent}
             rank={heroRank}
             energyPercent={energyPercent}
+            characterClass={profileRecord?.characterClass}
           />
           <DailyTasksPanel />
         </>
@@ -160,6 +175,7 @@ export default async function DashboardPage() {
               powerScore={powerScore}
               equippedSlots={equippedSlots}
               stats={stats.map((stat) => ({ type: stat.type, value: stat.value }))}
+              characterClass={profileRecord?.characterClass}
             />
             <div className="flex flex-col gap-6">
               <HabitTrackerPanel />
@@ -179,6 +195,7 @@ export default async function DashboardPage() {
       }
       vault={
         <>
+          <ShopPanel />
           <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
             <InventoryPanel />
             <AchievementsPanel />
@@ -189,6 +206,7 @@ export default async function DashboardPage() {
           </div>
         </>
       }
-    />
+      />
+    </ClassGate>
   );
 }
