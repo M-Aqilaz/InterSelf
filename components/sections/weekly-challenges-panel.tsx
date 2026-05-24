@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { BarMeter } from "@/components/ui/meters";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { subscribeToTasksUpdate } from "@/lib/events";
@@ -74,11 +73,11 @@ export function WeeklyChallengesPanel() {
   }
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+    <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.07] to-white/[0.02] p-5 sm:p-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Weekly Challenges</p>
-          <h3 className="text-2xl font-black text-white">Limited-Time Arcs</h3>
+          <p className="text-[11px] uppercase tracking-[0.28em] text-white/50">Weekly Challenges</p>
+          <h3 className="text-xl font-black text-white sm:text-2xl">Limited-Time Arcs</h3>
         </div>
       </div>
       {loading ? (
@@ -86,34 +85,52 @@ export function WeeklyChallengesPanel() {
       ) : challenges.length ? (
         <ul className="mt-6 space-y-4">
           {challenges.map((challenge) => (
-            <li key={challenge.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+            <li key={challenge.id} className="rounded-2xl border border-white/10 bg-black/25 p-4 sm:p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-white">{challenge.title}</p>
-                  <p className="text-xs text-white/60">{challenge.description}</p>
+                  <p className="text-base font-semibold text-white">{challenge.title}</p>
+                  <p className="mt-1 text-sm text-white/65">{challenge.description}</p>
                 </div>
-                <div className="text-right text-xs text-white/60">
-                  <p>
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-left text-xs text-white/70 sm:text-right">
+                  <p className="font-medium text-white/80">
                     Reward: {challenge.rewardExp} EXP · {challenge.rewardCoins} coins
                     {challenge.rewardItemName ? ` · ${challenge.rewardItemName}` : ""}
                   </p>
-                  <p>
+                  <p className="mt-1">
                     {new Date(challenge.startDate).toLocaleDateString()} —
                     {new Date(challenge.endDate).toLocaleDateString()}
                   </p>
                 </div>
               </div>
-              <BarMeter
-                className="mt-4"
-                label="Progress"
-                value={
-                  challenge.target === 0
-                    ? 0
-                    : Math.min(100, Math.round((challenge.progress / challenge.target) * 100))
-                }
-              />
-              <div className="mt-3 flex items-center justify-between text-xs text-white/60">
-                <span>
+              <div className="mt-4">
+                <div className="mb-1.5 flex justify-between text-xs text-white/55">
+                  <span>Progress</span>
+                  <span>
+                    {challenge.target === 0
+                      ? 0
+                      : Math.min(100, Math.round((challenge.progress / challenge.target) * 100))}
+                    %
+                  </span>
+                </div>
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-500"
+                    style={{
+                      width: `${challenge.target === 0
+                        ? 0
+                        : Math.min(100, Math.round((challenge.progress / challenge.target) * 100))}%`,
+                      background:
+                        (challenge.target === 0
+                          ? 0
+                          : Math.min(100, Math.round((challenge.progress / challenge.target) * 100))) >= 60
+                          ? "linear-gradient(90deg, var(--jade-dim), var(--jade-light))"
+                          : "linear-gradient(90deg, var(--gold-dim), var(--gold))",
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-white/65">
+                <span className="rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1">
                   {challenge.progress}/{challenge.target} completions
                 </span>
                 {challenge.claimable ? (
@@ -125,7 +142,7 @@ export function WeeklyChallengesPanel() {
                     Claim Reward
                   </Button>
                 ) : (
-                  <span>
+                  <span className="text-white/55">
                     {challenge.claimedAt
                       ? `Claimed ${new Date(challenge.claimedAt).toLocaleDateString()}`
                       : "Keep pushing"}

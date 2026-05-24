@@ -10,12 +10,12 @@ import { TodayMissionHero } from "@/components/sections/today-mission-hero";
 import { FocusModePanel } from "@/components/sections/focus-mode-panel";
 import { DailyChestWidget } from "@/components/sections/daily-chest-widget";
 import { StreakStatusBar } from "@/components/sections/streak-status-bar";
-import { BossTabTitle } from "@/components/layout/boss-tab-title";
 import { prisma } from "@/lib/prisma";
 import { calculateLevelFromTotalExp } from "@/lib/level";
 import { startOfToday } from "@/lib/time";
 import { DashboardTabs } from "@/components/layout/dashboard-tabs";
 import { ClassGate } from "@/components/layout/class-gate";
+import { DashboardTopbar } from "@/components/layout/dashboard-topbar";
 import dynamic from "next/dynamic";
 
 function PanelSkeleton() {
@@ -68,34 +68,55 @@ export default async function DashboardPage() {
 
   const today = startOfToday();
 
-  const [profileRecord, equippedRelics, tasks, todayCompletions] = await Promise.all([
-    prisma.profile.findUnique({ where: { userId: user.id } }),
-    prisma.userInventory.findMany({
-      where: { userId: user.id, equipped: true },
-      include: { item: true },
-      orderBy: { acquiredAt: "desc" },
-      take: 3,
-    }),
-    prisma.task.findMany({
-      where: {
-        OR: [{ isSystem: true }, { createdById: user.id }],
-      },
-      select: { id: true, title: true, createdAt: true, isSystem: true },
-      orderBy: [
-        { isSystem: "desc" },
-        { createdAt: "desc" },
-      ],
-    }),
-    prisma.taskCompletion.findMany({
-      where: {
-        userId: user.id,
-        completedAt: { gte: today },
-      },
-      select: { taskId: true },
-    }),
-  ]);
+  type ProfileRecord = Awaited<ReturnType<typeof prisma.profile.findUnique>>;
+  type EquippedRelic = {
+    item: {
+      id: number;
+      name: string;
+      rarity: string;
+      description: string;
+    } | null;
+  };
+  type TaskRecord = { id: number; title: string; createdAt: Date; isSystem: boolean };
+  type TodayCompletion = { taskId: number };
 
-  const hasChosenClass = profileRecord?.characterClass !== null;
+  let profileRecord: ProfileRecord = null;
+  let equippedRelics: EquippedRelic[] = [];
+  let tasks: TaskRecord[] = [];
+  let todayCompletions: TodayCompletion[] = [];
+
+  try {
+    [profileRecord, equippedRelics, tasks, todayCompletions] = await Promise.all([
+      prisma.profile.findUnique({ where: { userId: user.id } }),
+      prisma.userInventory.findMany({
+        where: { userId: user.id, equipped: true },
+        include: { item: true },
+        orderBy: { acquiredAt: "desc" },
+        take: 3,
+      }),
+      prisma.task.findMany({
+        where: {
+          OR: [{ isSystem: true }, { createdById: user.id }],
+        },
+        select: { id: true, title: true, createdAt: true, isSystem: true },
+        orderBy: [
+          { isSystem: "desc" },
+          { createdAt: "desc" },
+        ],
+      }),
+      prisma.taskCompletion.findMany({
+        where: {
+          userId: user.id,
+          completedAt: { gte: today },
+        },
+        select: { taskId: true },
+      }),
+    ]);
+  } catch (error) {
+    console.error("Dashboard data fetch error:", error);
+  }
+
+  const hasChosenClass = profileRecord?.characterClass !== null && profileRecord?.characterClass !== undefined;
 
   const stats = user.stats ?? [];
   const profileExp = profileRecord?.exp ?? 0;
@@ -129,84 +150,87 @@ export default async function DashboardPage() {
 
   return (
     <ClassGate hasChosenClass={hasChosenClass}>
-      <BossTabTitle />
-      <DashboardTabs
-        mission={
-        <>
-          <DailyChestWidget />
-          <StreakStatusBar />
-          <TodayMissionHero
-            username={user.profile?.username ?? user.name ?? "Hunter"}
-            missionTitle={nextMission}
-            dailyCompletion={dailyCompletionPercent}
-            streak={streakValue}
-            level={heroLevel}
-            expPercent={heroExpPercent}
-            rank={heroRank}
-            energyPercent={energyPercent}
-            characterClass={profileRecord?.characterClass}
-          />
-          <DailyTasksPanel />
-        </>
-      }
-      battle={
-        <>
-          <FocusModePanel />
-          <BossBattlePanel productivityCompletion={dailyCompletionPercent} />
-          <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
-            <DungeonNavigationPanel />
-            <PvpPreviewPanel />
-          </div>
-        </>
-      }
-      status={
-        <>
-          <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-[1fr_1fr]">
-            <CharacterProfilePanel
-              username={user.profile?.username ?? user.name ?? "Hunter"}
-              title={user.profile?.title ?? "Awakened"}
-              rank={heroRank}
-              level={heroLevel}
-              expIntoLevel={levelProgress.expIntoLevel}
-              expForNextLevel={levelProgress.expForNextLevel}
-              coins={profileRecord?.coins ?? 0}
-              streak={streakValue}
-              bestStreak={profileRecord?.bestStreak ?? 0}
-              powerScore={powerScore}
-              equippedSlots={equippedSlots}
-              stats={stats.map((stat) => ({ type: stat.type, value: stat.value }))}
-              characterClass={profileRecord?.characterClass}
-            />
-            <div className="flex flex-col gap-6">
-              <HabitTrackerPanel />
-              <GoalPlannerPanel />
+      <div style={{ minHeight:"100vh", background:"var(--bg-base)" }}>
+        <DashboardTopbar
+          username={user.profile?.username ?? user.name ?? "Hunter"}
+          coins={profileRecord?.coins ?? 0}
+          hasChest={true}
+        />
+        <DashboardTabs
+          mission={
+            <>
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                <DailyChestWidget />
+                <StreakStatusBar />
+              </div>
+              <TodayMissionHero
+                username={user.profile?.username ?? user.name ?? "Hunter"}
+                missionTitle={nextMission}
+                dailyCompletion={dailyCompletionPercent}
+                streak={streakValue}
+                level={heroLevel}
+                expPercent={heroExpPercent}
+                rank={heroRank}
+                energyPercent={energyPercent}
+              />
+              <DailyTasksPanel />
+              <WeeklyChallengesPanel />
+            </>
+          }
+          battle={
+            <>
+              <BossBattlePanel productivityCompletion={dailyCompletionPercent} />
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <DungeonNavigationPanel />
+                <FocusModePanel />
+              </div>
+            </>
+          }
+          status={
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <CharacterProfilePanel
+                username={user.profile?.username ?? user.name ?? "Hunter"}
+                title={user.profile?.title ?? "Awakened"}
+                rank={heroRank}
+                level={heroLevel}
+                expIntoLevel={levelProgress.expIntoLevel}
+                expForNextLevel={levelProgress.expForNextLevel}
+                coins={profileRecord?.coins ?? 0}
+                streak={streakValue}
+                bestStreak={profileRecord?.bestStreak ?? 0}
+                powerScore={powerScore}
+                equippedSlots={equippedSlots}
+                stats={stats.map((s) => ({ type: s.type, value: s.value }))}
+                characterClass={profileRecord?.characterClass ?? null}
+              />
+              <div className="flex flex-col gap-4">
+                <HabitTrackerPanel />
+                <GoalPlannerPanel />
+              </div>
             </div>
-          </div>
-        </>
-      }
-      journal={
-        <>
-          <WeeklyChallengesPanel />
-          <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
-            <AiCoachPanel />
-            <ProductivityAnalyticsPanel />
-          </div>
-        </>
-      }
-      vault={
-        <>
-          <ShopPanel />
-          <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
-            <InventoryPanel />
-            <AchievementsPanel />
-          </div>
-          <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
-            <LeaderboardPanel />
-            <FriendsPanel />
-          </div>
-        </>
-      }
-      />
+          }
+          oracle={
+            <>
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <AiCoachPanel />
+                <ProductivityAnalyticsPanel />
+              </div>
+              <LeaderboardPanel />
+            </>
+          }
+          vault={
+            <>
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <InventoryPanel />
+                <ShopPanel />
+              </div>
+              <AchievementsPanel />
+            </>
+          }
+          arena={<PvpPreviewPanel />}
+          guild={<FriendsPanel />}
+        />
+      </div>
     </ClassGate>
   );
 }

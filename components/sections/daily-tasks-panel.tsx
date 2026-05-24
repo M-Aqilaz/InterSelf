@@ -118,36 +118,36 @@ const SYSTEM_TASKS = [
 
 const DIFFICULTY_STYLES = {
   EASY: {
-    border: 'border-emerald-500/30',
-    hover: 'hover:border-emerald-400/60',
-    accent: 'bg-emerald-500',
-    badge: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30',
-    glow: 'hover:shadow-emerald-500/10',
-    chip: 'bg-emerald-500/10 text-emerald-400',
+    border: "border-[rgba(58,170,122,0.3)]",
+    hover: "hover:border-[rgba(58,170,122,0.55)]",
+    accent: "bg-[var(--jade)]",
+    badge: "bg-[rgba(58,170,122,0.1)] text-[var(--jade-light)] border border-[rgba(58,170,122,0.25)]",
+    glow: "hover:shadow-[rgba(58,170,122,0.08)]",
+    chip: "bg-[rgba(58,170,122,0.08)] text-[var(--jade-light)]",
   },
   MEDIUM: {
-    border: 'border-amber-500/30',
-    hover: 'hover:border-amber-400/60',
-    accent: 'bg-amber-500',
-    badge: 'bg-amber-500/15 text-amber-400 border border-amber-500/30',
-    glow: 'hover:shadow-amber-500/10',
-    chip: 'bg-amber-500/10 text-amber-400',
+    border: "border-[rgba(212,168,67,0.3)]",
+    hover: "hover:border-[rgba(212,168,67,0.55)]",
+    accent: "bg-[var(--gold)]",
+    badge: "bg-[rgba(212,168,67,0.1)] text-[var(--gold-light)] border border-[rgba(212,168,67,0.25)]",
+    glow: "hover:shadow-[rgba(212,168,67,0.08)]",
+    chip: "bg-[rgba(212,168,67,0.08)] text-[var(--gold-light)]",
   },
   HARD: {
-    border: 'border-red-500/30',
-    hover: 'hover:border-red-400/60',
-    accent: 'bg-red-500',
-    badge: 'bg-red-500/15 text-red-400 border border-red-500/30',
-    glow: 'hover:shadow-red-500/10',
-    chip: 'bg-red-500/10 text-red-400',
+    border: "border-[rgba(224,90,106,0.3)]",
+    hover: "hover:border-[rgba(224,90,106,0.55)]",
+    accent: "bg-[var(--rose)]",
+    badge: "bg-[rgba(224,90,106,0.1)] text-[var(--rose-light)] border border-[rgba(224,90,106,0.25)]",
+    glow: "hover:shadow-[rgba(224,90,106,0.08)]",
+    chip: "bg-[rgba(224,90,106,0.08)] text-[var(--rose-light)]",
   },
   LEGENDARY: {
-    border: 'border-purple-500/40',
-    hover: 'hover:border-purple-400/70',
-    accent: 'bg-gradient-to-b from-purple-400 to-purple-600',
-    badge: 'bg-purple-500/15 text-purple-300 border border-purple-500/40',
-    glow: 'hover:shadow-purple-500/20',
-    chip: 'bg-purple-500/10 text-purple-300',
+    border: "border-[rgba(167,139,250,0.35)]",
+    hover: "hover:border-[rgba(167,139,250,0.6)]",
+    accent: "bg-gradient-to-b from-[#a78bfa] to-[#7c3aed]",
+    badge: "bg-[rgba(167,139,250,0.1)] text-[#c4b5fd] border border-[rgba(167,139,250,0.3)]",
+    glow: "hover:shadow-[rgba(167,139,250,0.12)]",
+    chip: "bg-[rgba(167,139,250,0.08)] text-[#c4b5fd]",
   },
 } as const;
 
@@ -459,7 +459,7 @@ export function DailyTasksPanel() {
   return (
     <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-black/70 to-[#0a0318] p-6">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-cyan-500/20 blur-3xl" />
+        <div className="absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-[rgba(212,168,67,0.2)] blur-3xl" />
         <div className="absolute -bottom-20 right-0 h-40 w-40 rounded-full bg-purple-500/30 blur-3xl" />
       </div>
       <AnimatePresence>
@@ -478,7 +478,7 @@ export function DailyTasksPanel() {
       </AnimatePresence>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Tugas Harian</p>
+          <p className="text-[11px] uppercase tracking-[0.25em] text-white/50">Tugas Harian</p>
           <h3 className="text-2xl font-black text-white">Antrian Misi</h3>
         </div>
         <Button variant="ghost" size="sm" disabled={loading} onClick={fetchTasks}>
@@ -497,7 +497,7 @@ export function DailyTasksPanel() {
       ) : (
         <div className="relative mt-6 space-y-6">
           <section>
-            <h4 className="text-xs uppercase tracking-[0.3em] text-white/50">Ritual Sistem</h4>
+            <h4 className="text-[11px] uppercase tracking-[0.24em] text-white/50">Ritual Sistem</h4>
             <AnimatePresence>
               {combo >= 2 && <ComboHUD combo={combo} />}
             </AnimatePresence>
@@ -542,14 +542,14 @@ export function DailyTasksPanel() {
                                 {definition.title}
                               </p>
                               {task && (
-                                <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${style.badge}`}>
+                                <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${style.badge}`}>
                                   {task.difficulty}
                                 </span>
                               )}
                             </div>
 
                             {/* Subtitle kategori */}
-                            <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-400/70">
+                            <p style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--t3)", fontFamily: "var(--font-mono)", marginTop: "2px" }}>
                               {definition.subtitle}
                             </p>
 
@@ -563,7 +563,7 @@ export function DailyTasksPanel() {
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setExpandedKey(isExpanded ? null : definition.key); }}
-                            className="mt-0.5 shrink-0 rounded-lg border border-white/10 p-1.5 text-white/40 transition hover:border-cyan-400/30 hover:text-cyan-300"
+                            className="mt-0.5 shrink-0 rounded-lg border border-white/10 p-1.5 text-white/40 transition hover:border-[rgba(212,168,67,0.3)] hover:text-[var(--gold)]"
                             aria-label={isExpanded ? 'Tutup detail' : 'Lihat detail'}
                           >
                             {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -573,10 +573,10 @@ export function DailyTasksPanel() {
                         {/* Reward chips row */}
                         {task && (
                           <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <span className="rounded-md bg-cyan-500/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-400">
+                            <span className="rounded-md bg-[rgba(58,170,122,0.1)] px-2 py-0.5 text-[11px] font-semibold text-[var(--jade-light)]">
                               +{Math.round(task.expReward * getComboMultiplier(combo))} EXP
                             </span>
-                            <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400">
+                            <span className="rounded-md bg-[rgba(212,168,67,0.1)] px-2 py-0.5 text-[11px] font-semibold text-[var(--gold)]">
                               +{Math.round(task.coinReward * getComboMultiplier(combo))} coins
                             </span>
                             {task.statRewards?.map((sr) => (
@@ -585,14 +585,14 @@ export function DailyTasksPanel() {
                               </span>
                             ))}
                             {combo >= 2 && !isDone && (
-                              <span className="rounded-md bg-orange-500/15 px-2 py-0.5 text-[11px] font-bold text-orange-400 border border-orange-500/30">
+                              <span className="rounded-md bg-[rgba(212,168,67,0.15)] px-2 py-0.5 text-[11px] font-bold text-[var(--gold)] border border-[rgba(212,168,67,0.3)]">
                                 x{getComboMultiplier(combo).toFixed(1)} COMBO
                               </span>
                             )}
                             {isDone ? (
                               <span className="ml-auto text-xs text-emerald-400 font-semibold">Selesai hari ini ✓</span>
                             ) : (
-                              <span className="ml-auto text-[10px] text-white/30 italic">klik untuk selesaikan</span>
+                              <span className="ml-auto text-xs text-white/35 italic">klik untuk selesaikan</span>
                             )}
                           </div>
                         )}
@@ -605,7 +605,7 @@ export function DailyTasksPanel() {
                               <ol className="space-y-2">
                                 {(definition.actions as string[]).map((step, idx) => (
                                   <li key={idx} className="flex gap-3 text-xs text-white/65">
-                                    <span className="shrink-0 font-mono text-[10px] text-cyan-400/60 mt-0.5">
+                                    <span className="shrink-0 font-mono text-xs text-[var(--t3)] mt-0.5">
                                       {String(idx + 1).padStart(2, '0')}
                                     </span>
                                     {step}
@@ -622,7 +622,7 @@ export function DailyTasksPanel() {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={(e) => e.stopPropagation()}
-                                    className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65 transition hover:border-cyan-400/30 hover:text-cyan-300"
+                                    className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65 transition hover:border-[rgba(212,168,67,0.3)] hover:text-[var(--gold)]"
                                   >
                                     <ExternalLink className="h-3 w-3" />
                                     {src.label}
@@ -648,7 +648,7 @@ export function DailyTasksPanel() {
 
           <section>
             <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-white/50">Tambah Tugas Opsional</p>
+              <p className="text-[11px] uppercase tracking-[0.25em] text-white/50">Tambah Tugas Opsional</p>
               <div className="mt-3 flex flex-col gap-3">
                 <input
                   value={formTitle}
@@ -670,7 +670,7 @@ export function DailyTasksPanel() {
             </div>
 
             <div className="mt-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-white/50">Quest Tambahan</p>
+              <p className="text-[11px] uppercase tracking-[0.25em] text-white/50">Quest Tambahan</p>
               {optionalTasks.length === 0 ? (
                 <p className="mt-3 text-sm text-white/60">Belum ada tugas kustom.</p>
               ) : (
@@ -702,21 +702,21 @@ export function DailyTasksPanel() {
                                 </p>
                                 <p className="text-xs text-white/60">{task.description}</p>
                               </div>
-                              <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${style.badge}`}>
+                              <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${style.badge}`}>
                                 {task.category}
                               </span>
                             </div>
                             <div className="mt-3 flex flex-wrap items-center gap-2">
-                              <span className="rounded-md bg-cyan-500/10 px-2 py-0.5 text-[11px] font-semibold text-cyan-400">
+                              <span className="rounded-md bg-[rgba(58,170,122,0.1)] px-2 py-0.5 text-[11px] font-semibold text-[var(--jade-light)]">
                                 +{Math.round(task.expReward * getComboMultiplier(combo))} EXP
                               </span>
-                              <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400">
+                              <span className="rounded-md bg-[rgba(212,168,67,0.1)] px-2 py-0.5 text-[11px] font-semibold text-[var(--gold)]">
                                 +{Math.round(task.coinReward * getComboMultiplier(combo))} coins
                               </span>
                               {isDone ? (
                                 <span className="ml-auto text-xs text-emerald-400 font-semibold">Selesai hari ini ✓</span>
                               ) : (
-                                <span className="ml-auto text-[10px] text-white/30 italic">klik untuk selesaikan</span>
+                                <span className="ml-auto text-xs text-white/35 italic">klik untuk selesaikan</span>
                               )}
                             </div>
                           </div>
@@ -766,11 +766,13 @@ function ComboHUD({ combo }: { combo: number }) {
   const mult = getComboMultiplier(combo);
   const label = getComboLabel(combo);
 
-  const ringColor =
-    combo === 2 ? 'border-cyan-400 shadow-cyan-400/40' :
-    combo === 3 ? 'border-purple-500 shadow-purple-500/40' :
-    combo === 4 ? 'border-orange-400 shadow-orange-400/40' :
-    'border-red-500 shadow-red-500/60';
+  const COMBO_RING_STYLES = {
+    2: "border-[var(--jade)] shadow-[0_0_20px_rgba(58,170,122,0.3)]",
+    3: "border-[var(--gold)] shadow-[0_0_24px_rgba(212,168,67,0.4)]",
+    4: "border-[var(--rose)] shadow-[0_0_28px_rgba(224,90,106,0.5)]",
+    5: "border-[var(--rose-light)] shadow-[0_0_32px_rgba(224,90,106,0.6)] animate-pulse",
+  } as const;
+  const ringColor = COMBO_RING_STYLES[Math.min(combo, 5) as 2 | 3 | 4 | 5];
 
   return (
     <motion.div
@@ -785,7 +787,7 @@ function ComboHUD({ combo }: { combo: number }) {
         <span className="text-[9px] uppercase tracking-widest text-white/60">combo</span>
       </div>
       <p className="mt-1.5 text-xs font-bold text-orange-300">{label}</p>
-      <p className="text-[10px] text-white/50">x{mult.toFixed(1)} XP Multiplier aktif</p>
+      <p className="text-xs text-white/55">x{mult.toFixed(1)} XP Multiplier aktif</p>
     </motion.div>
   );
 }
@@ -956,3 +958,4 @@ function LevelUpModal({ state, onClose }: { state: LevelModalState | null; onClo
     </AnimatePresence>
   );
 }
+
