@@ -1,112 +1,254 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { FadeIn } from "@/components/motion/fade-in";
 import { motion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
+
+const STATS = [
+  { value: "12K+", label: "Adventurer" },
+  { value: "840K", label: "Task Selesai" },
+  { value: "96K",  label: "Boss Dikalahkan" },
+];
 
 export function LandingHero() {
   return (
-    <section className="relative overflow-hidden rounded-[40px] border border-white/10 bg-gradient-to-br from-[#0c0217] via-[#05010d] to-[#05001a] p-10 shadow-[0_20px_120px_rgba(32,4,63,0.8)]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(118,92,255,0.45),_transparent_55%)]" />
-      <div className="relative grid gap-12 lg:grid-cols-2">
-        <FadeIn className="space-y-10">
-          <Badge variant="neon" className="text-xs uppercase tracking-[0.4em]">
-            Solo Leveling for your life
-          </Badge>
-          <div className="space-y-6">
-            <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-              Level Up Your Real Life with <span className="text-gradient">INTERSELF</span>
-            </h1>
-            <p className="text-lg text-white/70">
-              Stack streaks, battle procrastination bosses, and evolve your avatar with every focused action. A cyberpunk RPG dashboard that turns discipline into a game.
-            </p>
+    <section
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        padding: "64px 0 48px",
+      }}
+    >
+      {/* Ambient blobs */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute", top: "-100px", left: "-80px",
+          width: "400px", height: "400px", borderRadius: "50%",
+          background: "var(--gold)", filter: "blur(120px)",
+          opacity: 0.05, pointerEvents: "none",
+        }}
+      />
+      <div
+        aria-hidden
+        style={{
+          position: "absolute", bottom: "-60px", right: "5%",
+          width: "300px", height: "300px", borderRadius: "50%",
+          background: "var(--jade)", filter: "blur(100px)",
+          opacity: 0.04, pointerEvents: "none",
+        }}
+      />
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "48px",
+          alignItems: "center",
+          position: "relative",
+        }}
+        className="hero-grid"
+      >
+        {/* LEFT */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          style={{ display: "flex", flexDirection: "column", gap: "0" }}
+        >
+          {/* Eyebrow */}
+          <div
+            style={{
+              display: "flex", alignItems: "center", gap: "10px",
+              marginBottom: "20px",
+            }}
+          >
+            <div style={{ width: "20px", height: "1px", background: "var(--gold)" }} />
+            <span
+              style={{
+                fontSize: "10px", fontWeight: 600,
+                letterSpacing: "0.35em", textTransform: "uppercase",
+                color: "var(--gold)", fontFamily: "var(--font-mono)",
+              }}
+            >
+              Pengembangan Diri · RPG
+            </span>
           </div>
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <Button className="h-14 rounded-full text-base" asChild>
-              <Link href="/register">Start Your Journey</Link>
-            </Button>
-            <Button variant="secondary" className="h-14 rounded-full text-base" asChild>
-              <Link href="#systems">Explore Systems</Link>
-            </Button>
+
+          {/* Headline */}
+          <h1
+            style={{
+              fontSize: "clamp(32px, 4vw, 48px)",
+              fontWeight: 700,
+              lineHeight: 1.05,
+              letterSpacing: "-0.025em",
+              color: "var(--t1)",
+              marginBottom: "16px",
+            }}
+          >
+            Hidupmu adalah<br />
+            <span className="text-gold-gradient">
+              dungeon terkuat<br />yang pernah ada.
+            </span>
+          </h1>
+
+          {/* Sub */}
+          <p
+            style={{
+              fontSize: "15px", color: "var(--t2)",
+              lineHeight: 1.75, maxWidth: "440px",
+              marginBottom: "28px",
+            }}
+          >
+            Prokrastinasi adalah boss yang menunggu diserang. Setiap
+            kebiasaan yang kamu bangun adalah serangan ke arahnya.
+            InterSelf mengubah pengembangan diri menjadi sistem RPG
+            dengan konsekuensi nyata.
+          </p>
+
+          {/* CTAs */}
+          <div style={{ display: "flex", gap: "10px", marginBottom: "36px" }}>
+            <Link href="/register" className="btn-gold">
+              Pilih Kelasmu →
+            </Link>
+            <Link href="/login" className="btn-ghost">
+              Sudah punya akun
+            </Link>
           </div>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            {[
-              { label: "Daily Players", value: "120K" },
-              { label: "Tasks Dominated", value: "4.2M" },
-              { label: "Bosses Slain", value: "96K" },
-            ].map((stat) => (
+
+          {/* Stats */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "10px" }}>
+            {STATS.map((s) => (
               <div
-                key={stat.label}
-                className="rounded-2xl border border-white/10 bg-white/5 py-4 text-white/80"
+                key={s.label}
+                style={{
+                  borderRadius: "12px",
+                  border: "1px solid var(--border)",
+                  background: "var(--bg-1)",
+                  padding: "12px",
+                  textAlign: "center",
+                }}
               >
-                <p className="text-2xl font-black text-white">{stat.value}</p>
-                <p className="text-xs uppercase tracking-[0.3em] text-white/50">
-                  {stat.label}
-                </p>
+                <div
+                  style={{
+                    fontSize: "22px", fontWeight: 700,
+                    color: "var(--gold)", fontFamily: "var(--font-mono)",
+                  }}
+                >
+                  {s.value}
+                </div>
+                <div
+                  style={{
+                    fontSize: "9px", textTransform: "uppercase",
+                    letterSpacing: "0.18em", color: "var(--t3)",
+                    marginTop: "3px",
+                  }}
+                >
+                  {s.label}
+                </div>
               </div>
             ))}
           </div>
-        </FadeIn>
-        <FadeIn delay={0.15} className="relative">
-          <div className="relative h-full min-h-[420px]">
-            <motion.div
-              className="absolute inset-x-0 top-14 mx-auto h-80 w-full max-w-sm rounded-[32px] border border-white/10 bg-white/5 p-6 text-white backdrop-blur-2xl"
-              animate={{ y: [0, -12, 0] }}
-              transition={{ repeat: Infinity, duration: 8 }}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase text-white/60">Current Level</p>
-                  <p className="text-4xl font-black text-[#8a7bff]">27</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs uppercase text-white/60">Streak</p>
-                  <p className="text-3xl font-black text-cyan-200">48</p>
-                </div>
-              </div>
-              <div className="mt-10 space-y-4">
-                {[
-                  { label: "EXP", value: 72 },
-                  { label: "Boss HP", value: 38 },
-                  { label: "Challenge", value: 54 },
-                ].map((bar) => (
-                  <div key={bar.label}>
-                    <div className="flex items-center justify-between text-xs text-white/60">
-                      <span>{bar.label}</span>
-                      <span>{bar.value}%</span>
-                    </div>
-                    <div className="mt-2 h-2 rounded-full bg-white/10">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-[#8a7bff] to-cyan-400"
-                        style={{ width: `${bar.value}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-            <motion.div
-              className="absolute inset-x-6 bottom-6 rounded-[28px] border border-white/15 bg-gradient-to-r from-[rgba(138,123,255,0.2)] via-[#0bf] to-cyan-200/20 p-6 text-white"
-              animate={{ y: [8, -8, 8] }}
-              transition={{ repeat: Infinity, duration: 10, delay: 0.4 }}
-            >
-              <p className="text-sm uppercase text-white/60">Active Boss</p>
-              <p className="text-2xl font-black">Doomscrolling Beast</p>
-              <p className="text-sm text-white/70">Weakness: Focus Tasks</p>
-            </motion.div>
-            <Image
-              src="/next.svg"
-              alt="Dashboard placeholder"
-              width={500}
-              height={400}
-              className="invisible"
+        </motion.div>
+
+        {/* RIGHT — HUD card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+        >
+          <motion.div
+            animate={{ y: [0, -10, 0] }}
+            transition={{ repeat: Infinity, duration: 7, ease: "easeInOut" }}
+            style={{
+              borderRadius: "20px",
+              border: "1px solid var(--border-2)",
+              background: "rgba(12,16,24,0.90)",
+              backdropFilter: "blur(24px)",
+              padding: "22px",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            {/* Subtle gold shimmer */}
+            <div
+              aria-hidden
+              style={{
+                position: "absolute", inset: 0,
+                background: "linear-gradient(135deg,rgba(212,168,67,0.04),transparent 60%)",
+                pointerEvents: "none",
+              }}
             />
-          </div>
-        </FadeIn>
+
+            {/* Level + Streak row */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "18px", position: "relative" }}>
+              <div>
+                <div style={{ fontSize: "8px", color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.2em", fontFamily: "var(--font-mono)" }}>
+                  Level
+                </div>
+                <div style={{ fontSize: "42px", fontWeight: 700, color: "var(--gold)", lineHeight: 1, fontFamily: "var(--font-mono)" }}>
+                  24
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: "8px", color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.2em", fontFamily: "var(--font-mono)" }}>
+                  Streak
+                </div>
+                <div style={{ fontSize: "28px", fontWeight: 700, color: "var(--t1)", fontFamily: "var(--font-mono)" }}>
+                  🔥 26
+                </div>
+              </div>
+            </div>
+
+            {/* Bars */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "16px" }}>
+              {[
+                { label: "EXP", value: 68, colorClass: "bar-gold" },
+                { label: "Daily Progress", value: 86, colorClass: "bar-jade" },
+              ].map((bar) => (
+                <div key={bar.label}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "9px", color: "var(--t3)", marginBottom: "4px", fontFamily: "var(--font-mono)" }}>
+                    <span>{bar.label}</span><span>{bar.value}%</span>
+                  </div>
+                  <div className="bar-track" style={{ height: "5px" }}>
+                    <div className={`bar-fill ${bar.colorClass}`} style={{ width: `${bar.value}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Active boss */}
+            <div
+              style={{
+                display: "flex", alignItems: "center", gap: "12px",
+                borderRadius: "12px", border: "1px solid rgba(224,90,106,0.22)",
+                background: "rgba(224,90,106,0.06)", padding: "12px 14px",
+              }}
+            >
+              <span style={{ fontSize: "20px" }}>💀</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--t1)" }}>
+                  Prokrastinasi Abyssal
+                </div>
+                <div style={{ fontSize: "9px", color: "var(--rose)", fontFamily: "var(--font-mono)", marginTop: "1px" }}>
+                  HP: 4,820 / 8,000
+                </div>
+              </div>
+              <div style={{ fontSize: "9px", color: "var(--gold)", fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+                Pulih: 1j 20m
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
       </div>
+
+      {/* Mobile hero grid fix */}
+      <style>{`
+        @media (max-width: 768px) {
+          .hero-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </section>
   );
 }
