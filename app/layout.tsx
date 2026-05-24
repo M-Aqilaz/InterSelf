@@ -1,14 +1,31 @@
 import type { Metadata } from "next";
+import { Space_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/layout/site-header";
 import { ToastProvider } from "@/components/ui/toast";
 import { getCurrentUser } from "@/lib/auth";
 
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
+
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-space-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "INTERSELF — Level Up Your Real Life",
+  title: "InterSelf — Jadikan Dirimu Karakter Terkuat",
   description:
-    "A Solo Leveling inspired productivity RPG with quests, bosses, achievements, and social play.",
-  metadataBase: new URL("https://interself.local"),
+    "Platform gamifikasi pengembangan diri. Setiap kebiasaan yang kamu bangun menyerang boss. Setiap hari yang kamu lewati memperkuatnya.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  ),
 };
 
 export default async function RootLayout({
@@ -26,16 +43,14 @@ export default async function RootLayout({
         },
       }
     : null;
+
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-[#030014] text-white">
-        <div className="gradient-grid pointer-events-none" aria-hidden />
+    <html lang="id" className={`${spaceGrotesk.variable} ${spaceMono.variable}`}>
+      <body className={`min-h-screen ${spaceGrotesk.className}`}>
         <ToastProvider>
           <main className="relative z-10 flex min-h-screen flex-col">
-            <div className="container mx-auto flex w-full max-w-full flex-1 flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8 lg:gap-10 lg:py-10">
-              <SiteHeader user={headerUser} />
-              {children}
-            </div>
+            <SiteHeader user={headerUser} />
+            {children}
           </main>
         </ToastProvider>
       </body>
