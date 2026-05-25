@@ -125,74 +125,76 @@ export function DashboardTabs({ mission, battle, status, oracle, vault, arena, g
   };
 
   return (
-    <div className="flex w-full flex-col gap-5 lg:gap-6">
-      <div className="rounded-3xl border border-white/[0.08] bg-[#0b0f18]/80 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:p-4">
-        <div className="mb-4 flex flex-col gap-1 px-1 py-1 sm:px-2 lg:flex-row lg:items-end lg:justify-between">
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-cyan-300/60">
-            Active Deck
-          </p>
-          <div className="flex flex-col gap-1 lg:items-end lg:text-right">
-            <h2 className="text-2xl font-black text-white">{activeMeta.label}</h2>
-            <p className="max-w-xl text-sm text-white/55">{activeMeta.description}</p>
+    <div className="grid w-full gap-5 lg:grid-cols-[17rem_minmax(0,1fr)] xl:grid-cols-[18.5rem_minmax(0,1fr)] 2xl:grid-cols-[20rem_minmax(0,1fr)]">
+      <aside className="lg:sticky lg:top-[5.25rem] lg:h-[calc(100vh-6.5rem)] lg:self-start">
+        <div className="flex h-full flex-col rounded-3xl border border-white/[0.08] bg-[#0b0f18]/88 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:p-4">
+          <div className="mb-4 px-1 py-1">
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-cyan-300/60">
+              Active Deck
+            </p>
+            <h2 className="mt-2 text-2xl font-black text-white">{activeMeta.label}</h2>
+            <p className="mt-1 text-sm leading-6 text-white/50">{activeMeta.description}</p>
           </div>
+
+          <nav
+            role="tablist"
+            aria-label="Dashboard sections"
+            className="grid grid-flow-col auto-cols-[minmax(10.5rem,1fr)] gap-2 overflow-x-auto pb-1 lg:grid-flow-row lg:auto-cols-auto lg:grid-cols-1 lg:overflow-visible lg:pb-0"
+          >
+            {tabs.map((tab, index) => {
+              const Icon = tab.icon;
+              const isActive = tab.id === activeTab;
+
+              return (
+                <button
+                  key={tab.id}
+                  role="tab"
+                  type="button"
+                  aria-selected={isActive}
+                  onClick={() => switchTab(tab.id)}
+                  className={cn(
+                    "group relative flex min-h-24 min-w-0 flex-col justify-between rounded-2xl border px-4 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400/60 lg:min-h-[4.8rem] lg:flex-row lg:items-center lg:justify-start lg:gap-3",
+                    isActive
+                      ? "border-cyan-300/35 bg-cyan-300/12 text-white shadow-[0_0_28px_rgba(34,211,238,0.10)]"
+                      : "border-white/[0.06] bg-white/[0.025] text-white/50 hover:border-white/15 hover:bg-white/[0.055] hover:text-white/80"
+                  )}
+                >
+                  {isActive && (
+                    <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent lg:inset-x-auto lg:inset-y-3 lg:left-0 lg:h-auto lg:w-px lg:bg-gradient-to-b" />
+                  )}
+
+                  <span className="flex items-center justify-between gap-2 lg:contents">
+                    <Icon
+                      className={cn(
+                        "h-5 w-5 shrink-0 transition-all",
+                        isActive && "text-cyan-200 drop-shadow-[0_0_8px_rgba(34,211,238,0.65)]"
+                      )}
+                    />
+                    <span className="font-mono text-[9px] tracking-[0.25em] text-white/25 lg:order-3 lg:ml-auto">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                  </span>
+
+                  <span className="min-w-0">
+                    <span className="block text-xs font-black uppercase tracking-[0.18em]">
+                      {tab.label}
+                    </span>
+                    <span className="mt-1 block text-[11px] leading-snug text-white/40 lg:max-w-[11rem]">
+                      {tab.description}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
         </div>
+      </aside>
 
-        <nav
-          role="tablist"
-          aria-label="Dashboard sections"
-          className="grid grid-flow-col auto-cols-[minmax(10rem,1fr)] gap-2 overflow-x-auto pb-1 lg:grid-flow-row lg:grid-cols-7 lg:overflow-visible lg:pb-0 2xl:gap-3"
-        >
-          {tabs.map((tab, index) => {
-            const Icon = tab.icon;
-            const isActive = tab.id === activeTab;
-
-            return (
-              <button
-                key={tab.id}
-                role="tab"
-                type="button"
-                aria-selected={isActive}
-                onClick={() => switchTab(tab.id)}
-                className={cn(
-                  "group relative flex min-h-24 min-w-0 flex-col justify-between rounded-2xl border px-4 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400/60",
-                  isActive
-                    ? "border-cyan-300/35 bg-cyan-300/12 text-white shadow-[0_0_28px_rgba(34,211,238,0.10)]"
-                    : "border-white/[0.06] bg-white/[0.025] text-white/50 hover:border-white/15 hover:bg-white/[0.055] hover:text-white/80"
-                )}
-              >
-                {isActive && (
-                  <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent" />
-                )}
-
-                <span className="flex items-center justify-between gap-2">
-                  <Icon
-                    className={cn(
-                      "h-5 w-5 shrink-0 transition-all",
-                      isActive && "text-cyan-200 drop-shadow-[0_0_8px_rgba(34,211,238,0.65)]"
-                    )}
-                  />
-                  <span className="font-mono text-[9px] tracking-[0.25em] text-white/25">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                </span>
-
-                <span>
-                  <span className="block text-xs font-black uppercase tracking-[0.18em]">
-                    {tab.label}
-                  </span>
-                  <span className="mt-1 block text-[11px] leading-snug text-white/40">
-                    {tab.description}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
-      <section id={activeTab} role="tabpanel" className="flex w-full flex-col gap-4 lg:gap-5">
-        {panels[activeTab]}
-      </section>
+      <main className="min-w-0">
+        <section id={activeTab} role="tabpanel" className="flex w-full min-w-0 flex-col gap-4 lg:gap-5">
+          {panels[activeTab]}
+        </section>
+      </main>
     </div>
   );
 }
