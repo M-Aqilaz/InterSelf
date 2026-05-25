@@ -158,6 +158,15 @@ export default async function DashboardPage() {
         />
         <div className="mx-auto w-full max-w-[1800px] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 2xl:px-10">
           <DashboardTabs
+            profile={{
+              username: user.profile?.username ?? user.name ?? "Hunter",
+              title: user.profile?.title ?? "Awakened",
+              level: heroLevel,
+              coins: profileRecord?.coins ?? 0,
+              expIntoLevel: levelProgress.expIntoLevel,
+              expForNextLevel: levelProgress.expForNextLevel,
+              characterClass: profileRecord?.characterClass ?? null,
+            }}
             mission={
               <>
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

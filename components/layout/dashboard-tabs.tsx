@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import {
   Archive,
   BookOpen,
+  Coins,
   Compass,
   Shield,
+  Sparkles,
   Swords,
   Users,
   Zap,
@@ -13,10 +15,32 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGameAudio } from "@/hooks/use-game-audio";
+import {
+  CLASS_COLORS,
+  IroncladSprite,
+  MerchantSprite,
+  PhantomSprite,
+  SageSprite,
+  type SpriteProps,
+} from "@/lib/character-sprites";
 
 type DashboardTabId = "mission" | "battle" | "status" | "oracle" | "vault" | "arena" | "guild";
 
-type DashboardTabsProps = Record<DashboardTabId, ReactNode>;
+type DashboardPanelsProps = Record<DashboardTabId, ReactNode>;
+
+type DashboardProfile = {
+  username: string;
+  title: string;
+  level: number;
+  coins: number;
+  expIntoLevel: number;
+  expForNextLevel: number;
+  characterClass?: string | null;
+};
+
+type DashboardTabsProps = DashboardPanelsProps & {
+  profile: DashboardProfile;
+};
 
 type DashboardTab = {
   id: DashboardTabId;
@@ -72,13 +96,27 @@ const tabs: DashboardTab[] = [
 
 const tabIds = new Set<DashboardTabId>(tabs.map((tab) => tab.id));
 
+const classLabels: Record<string, string> = {
+  IRONCLAD: "Ironclad",
+  SAGE: "Sage",
+  PHANTOM: "Phantom",
+  MERCHANT: "Merchant",
+};
+
+const characterSprites: Record<string, ComponentType<SpriteProps>> = {
+  IRONCLAD: IroncladSprite,
+  SAGE: SageSprite,
+  PHANTOM: PhantomSprite,
+  MERCHANT: MerchantSprite,
+};
+
 function getTabFromHash(): DashboardTabId {
   if (typeof window === "undefined") return "mission";
   const hash = window.location.hash.replace("#", "") as DashboardTabId;
   return tabIds.has(hash) ? hash : "mission";
 }
 
-export function DashboardTabs({ mission, battle, status, oracle, vault, arena, guild }: DashboardTabsProps) {
+export function DashboardTabs({ profile, mission, battle, status, oracle, vault, arena, guild }: DashboardTabsProps) {
   const [activeTab, setActiveTab] = useState<DashboardTabId>("mission");
   const { play } = useGameAudio();
   const activeMeta = useMemo(
@@ -114,7 +152,7 @@ export function DashboardTabs({ mission, battle, status, oracle, vault, arena, g
     [play]
   );
 
-  const panels: DashboardTabsProps = {
+  const panels: DashboardPanelsProps = {
     mission,
     battle,
     status,
@@ -125,15 +163,17 @@ export function DashboardTabs({ mission, battle, status, oracle, vault, arena, g
   };
 
   return (
-    <div className="grid w-full gap-5 lg:grid-cols-[17rem_minmax(0,1fr)] xl:grid-cols-[18.5rem_minmax(0,1fr)] 2xl:grid-cols-[20rem_minmax(0,1fr)]">
+    <div className="grid w-full gap-5 lg:grid-cols-[18rem_minmax(0,1fr)] xl:grid-cols-[19.5rem_minmax(0,1fr)] 2xl:grid-cols-[21rem_minmax(0,1fr)]">
       <aside className="lg:sticky lg:top-[5.25rem] lg:h-[calc(100vh-6.5rem)] lg:self-start">
-        <div className="flex h-full flex-col rounded-3xl border border-white/[0.08] bg-[#0b0f18]/88 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:p-4">
-          <div className="mb-4 px-1 py-1">
+        <div className="flex h-full flex-col gap-3 rounded-3xl border border-white/[0.08] bg-[#0b0f18]/88 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:p-4">
+          <PlayerCard profile={profile} />
+
+          <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
             <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-cyan-300/60">
               Active Deck
             </p>
-            <h2 className="mt-2 text-2xl font-black text-white">{activeMeta.label}</h2>
-            <p className="mt-1 text-sm leading-6 text-white/50">{activeMeta.description}</p>
+            <h2 className="mt-1 text-xl font-black text-white">{activeMeta.label}</h2>
+            <p className="mt-1 text-xs leading-5 text-white/45">{activeMeta.description}</p>
           </div>
 
           <nav
@@ -153,7 +193,7 @@ export function DashboardTabs({ mission, battle, status, oracle, vault, arena, g
                   aria-selected={isActive}
                   onClick={() => switchTab(tab.id)}
                   className={cn(
-                    "group relative flex min-h-24 min-w-0 flex-col justify-between rounded-2xl border px-4 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400/60 lg:min-h-[4.8rem] lg:flex-row lg:items-center lg:justify-start lg:gap-3",
+                    "group relative flex min-h-24 min-w-0 flex-col justify-between rounded-2xl border px-4 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400/60 lg:min-h-[4.35rem] lg:flex-row lg:items-center lg:justify-start lg:gap-3",
                     isActive
                       ? "border-cyan-300/35 bg-cyan-300/12 text-white shadow-[0_0_28px_rgba(34,211,238,0.10)]"
                       : "border-white/[0.06] bg-white/[0.025] text-white/50 hover:border-white/15 hover:bg-white/[0.055] hover:text-white/80"
@@ -195,6 +235,93 @@ export function DashboardTabs({ mission, battle, status, oracle, vault, arena, g
           {panels[activeTab]}
         </section>
       </main>
+    </div>
+  );
+}
+
+function PlayerCard({ profile }: { profile: DashboardProfile }) {
+  const characterClass = profile.characterClass ?? "SAGE";
+  const className = classLabels[characterClass] ?? "Adventurer";
+  const colors = CLASS_COLORS[characterClass] ?? CLASS_COLORS.DEFAULT;
+  const Sprite = characterSprites[characterClass] ?? SageSprite;
+  const expTarget = Math.max(1, profile.expForNextLevel);
+  const expValue = Math.max(0, profile.expIntoLevel);
+  const expPercent = Math.min(100, Math.round((expValue / expTarget) * 100));
+
+  return (
+    <div
+      className="relative overflow-hidden rounded-3xl border p-4"
+      style={{
+        borderColor: `${colors.accent}45`,
+        background:
+          `linear-gradient(145deg, ${colors.primary}18, rgba(12,16,24,0.96) 42%, rgba(8,11,18,0.98))`,
+        boxShadow: `0 18px 50px ${colors.glow}18`,
+      }}
+    >
+      <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/45 to-transparent" />
+      <div className="relative flex items-start gap-3">
+        <div
+          className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-2xl border bg-black/35"
+          style={{ borderColor: `${colors.accent}55` }}
+        >
+          <Sprite className="h-24 w-20 translate-y-2" />
+        </div>
+
+        <div className="min-w-0 flex-1 pt-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h3 className="truncate text-sm font-black uppercase tracking-[0.16em] text-white">
+                {profile.username}
+              </h3>
+              <p className="mt-1 text-xs font-semibold text-white/65">{className}</p>
+            </div>
+            <div
+              className="flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-black text-white"
+              style={{ borderColor: `${colors.accent}55`, backgroundColor: `${colors.primary}24` }}
+            >
+              <Shield className="h-3 w-3" />
+              LV {profile.level}
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="text-xs font-black uppercase tracking-[0.14em] text-white/70">XP</span>
+              <span className="font-mono text-[10px] text-white/55">
+                {expValue}/{expTarget}
+              </span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full border border-white/10 bg-black/45">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${expPercent}%`,
+                  background: `linear-gradient(90deg, ${colors.primary}, ${colors.accent})`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative mt-4 grid grid-cols-2 gap-2">
+        <div className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/35">
+            <Sparkles className="h-3 w-3" />
+            Title
+          </div>
+          <p className="mt-1 truncate text-xs font-semibold text-white/70">{profile.title}</p>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-black/25 px-3 py-2">
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/35">
+            <Coins className="h-3 w-3" />
+            Coins
+          </div>
+          <p className="mt-1 truncate text-xs font-semibold text-amber-200">
+            {profile.coins.toLocaleString()}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
