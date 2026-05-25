@@ -32,7 +32,13 @@ export function StreakStatusBar() {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
-          className="rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 flex items-center gap-3"
+          style={{
+            borderRadius: "14px",
+            border: "1px solid rgba(224,90,106,0.3)",
+            background: "rgba(224,90,106,0.06)",
+            padding: "12px 14px",
+            display: "flex", alignItems: "center", gap: "12px",
+          }}
         >
           <span className="text-2xl">⚠️</span>
           <div className="flex-1">
@@ -52,7 +58,13 @@ export function StreakStatusBar() {
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-purple-500/40 bg-purple-500/10 px-4 py-3 flex items-center gap-3"
+          style={{
+            borderRadius: "14px",
+            border: "1px solid rgba(167,139,250,0.3)",
+            background: "rgba(124,58,237,0.06)",
+            padding: "12px 14px",
+            display: "flex", alignItems: "center", gap: "12px",
+          }}
         >
           <span className="text-2xl">🛡️</span>
           <div className="flex-1">

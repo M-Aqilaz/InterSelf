@@ -116,43 +116,6 @@ const SYSTEM_TASKS = [
   },
 ];
 
-const DIFFICULTY_STYLES = {
-  EASY: {
-    border: "border-[rgba(58,170,122,0.3)]",
-    hover: "hover:border-[rgba(58,170,122,0.55)]",
-    accent: "bg-[var(--jade)]",
-    badge: "bg-[rgba(58,170,122,0.1)] text-[var(--jade-light)] border border-[rgba(58,170,122,0.25)]",
-    glow: "hover:shadow-[rgba(58,170,122,0.08)]",
-    chip: "bg-[rgba(58,170,122,0.08)] text-[var(--jade-light)]",
-  },
-  MEDIUM: {
-    border: "border-[rgba(212,168,67,0.3)]",
-    hover: "hover:border-[rgba(212,168,67,0.55)]",
-    accent: "bg-[var(--gold)]",
-    badge: "bg-[rgba(212,168,67,0.1)] text-[var(--gold-light)] border border-[rgba(212,168,67,0.25)]",
-    glow: "hover:shadow-[rgba(212,168,67,0.08)]",
-    chip: "bg-[rgba(212,168,67,0.08)] text-[var(--gold-light)]",
-  },
-  HARD: {
-    border: "border-[rgba(224,90,106,0.3)]",
-    hover: "hover:border-[rgba(224,90,106,0.55)]",
-    accent: "bg-[var(--rose)]",
-    badge: "bg-[rgba(224,90,106,0.1)] text-[var(--rose-light)] border border-[rgba(224,90,106,0.25)]",
-    glow: "hover:shadow-[rgba(224,90,106,0.08)]",
-    chip: "bg-[rgba(224,90,106,0.08)] text-[var(--rose-light)]",
-  },
-  LEGENDARY: {
-    border: "border-[rgba(167,139,250,0.35)]",
-    hover: "hover:border-[rgba(167,139,250,0.6)]",
-    accent: "bg-gradient-to-b from-[#a78bfa] to-[#7c3aed]",
-    badge: "bg-[rgba(167,139,250,0.1)] text-[#c4b5fd] border border-[rgba(167,139,250,0.3)]",
-    glow: "hover:shadow-[rgba(167,139,250,0.12)]",
-    chip: "bg-[rgba(167,139,250,0.08)] text-[#c4b5fd]",
-  },
-} as const;
-
-type DifficultyKey = keyof typeof DIFFICULTY_STYLES;
-
 type TaskStatReward = {
   id: number;
   stat: string;
@@ -359,12 +322,12 @@ export function DailyTasksPanel() {
           });
         }
         const bursts: RewardBurst[] = [
-          makeBurst(`+${rewardExp} EXP`, "text-cyan-300"),
-          makeBurst(`+${rewardCoins} Coins`, "text-amber-200"),
+          makeBurst(`+${rewardExp} EXP`, "text-[#50c890]"),
+          makeBurst(`+${rewardCoins} Coins`, "text-[#f0c060]"),
         ];
         statIncreases.forEach(([stat, value]) => {
           if (!value) return;
-          bursts.push(makeBurst(`+${value} ${formatLabel(stat)}`, "text-emerald-300"));
+          bursts.push(makeBurst(`+${value} ${formatLabel(stat)}`, "text-[#50c890]"));
         });
 
         if (bossDamage > 0) {
@@ -457,10 +420,10 @@ export function DailyTasksPanel() {
   }, [formDescription, formTitle, push, refreshAll]);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-black/70 to-[#0a0318] p-6">
+    <div className="relative overflow-hidden rounded-3xl border p-6" style={{ borderColor: "rgba(255,255,255,0.08)", background: "linear-gradient(160deg, #080b12, #0c1018)" }}>
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-[rgba(212,168,67,0.2)] blur-3xl" />
-        <div className="absolute -bottom-20 right-0 h-40 w-40 rounded-full bg-purple-500/30 blur-3xl" />
+        <div className="absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full blur-3xl" style={{ background: "rgba(212,168,67,0.08)" }} />
+        <div className="absolute -bottom-20 right-0 h-40 w-40 rounded-full blur-3xl" style={{ background: "rgba(58,170,122,0.08)" }} />
       </div>
       <AnimatePresence>
         {floatingRewards.map((burst) => (
@@ -507,8 +470,6 @@ export function DailyTasksPanel() {
                 const isExpanded = expandedKey === definition.key;
                 const hasTimer = "timerMinutes" in definition && !!definition.timerMinutes;
                 return (() => {
-                  const diff = (task?.difficulty ?? 'MEDIUM') as DifficultyKey;
-                  const style = DIFFICULTY_STYLES[diff] ?? DIFFICULTY_STYLES.MEDIUM;
                   const isDone = task?.completedToday ?? false;
                   const isClickable = task && !isDone && !pending;
 
@@ -520,13 +481,32 @@ export function DailyTasksPanel() {
                         if (isClickable) completeTask(task);
                       }}
                       className={[
-                        'relative flex overflow-hidden rounded-2xl border bg-white/[0.03] transition-all duration-200',
-                        isDone ? 'opacity-50 cursor-default' : style.border,
-                        isClickable ? `cursor-pointer ${style.hover} hover:bg-white/[0.06] hover:shadow-lg ${style.glow} active:scale-[0.99]` : '',
+                        'relative flex overflow-hidden rounded-2xl transition-all duration-200',
+                        isDone ? 'opacity-50 cursor-default' : '',
+                        isClickable ? `cursor-pointer hover:bg-white/[0.06] hover:shadow-lg active:scale-[0.99]` : '',
                       ].join(' ')}
+                      style={{
+                        borderColor: isDone ? 'rgba(255,255,255,0.1)' : (
+                          task?.difficulty === "HARD" || task?.difficulty === "LEGENDARY"
+                            ? "rgba(224,90,106,0.3)"
+                            : task?.difficulty === "EASY"
+                            ? "rgba(58,170,122,0.25)"
+                            : "rgba(212,168,67,0.25)"
+                        ),
+                        background: "rgba(255,255,255,0.03)",
+                      }}
                     >
                       {/* Left accent bar */}
-                      <div className={`w-1 shrink-0 ${isDone ? 'bg-white/20' : style.accent}`} />
+                      <div style={{
+                        width: 3, flexShrink: 0,
+                        background: isDone ? 'rgba(255,255,255,0.2)' : (
+                          task?.difficulty === "HARD" || task?.difficulty === "LEGENDARY"
+                            ? "#e05a6a"
+                            : task?.difficulty === "EASY"
+                            ? "#3aaa7a"
+                            : "#d4a843"
+                        ),
+                      }} />
 
                       {/* Card body */}
                       <div className="flex-1 p-4">
@@ -536,20 +516,41 @@ export function DailyTasksPanel() {
                             {/* Title + badge */}
                             <div className="flex flex-wrap items-center gap-2">
                               {isDone && (
-                                <span className="text-emerald-400 text-xs">✓</span>
+                                <span className="text-xs" style={{ color: "#50c890" }}>✓</span>
                               )}
                               <p className={`text-sm font-bold ${isDone ? 'line-through text-white/40' : 'text-white'}`}>
                                 {definition.title}
                               </p>
                               {task && (
-                                <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${style.badge}`}>
+                                <span
+                                  className="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                                  style={{
+                                    background: task.difficulty === "HARD" || task.difficulty === "LEGENDARY"
+                                      ? "rgba(224,90,106,0.15)"
+                                      : task.difficulty === "EASY"
+                                      ? "rgba(58,170,122,0.15)"
+                                      : "rgba(212,168,67,0.15)",
+                                    color: task.difficulty === "HARD" || task.difficulty === "LEGENDARY"
+                                      ? "#f07080"
+                                      : task.difficulty === "EASY"
+                                      ? "#50c890"
+                                      : "#d4a843",
+                                    border: `1px solid ${
+                                      task.difficulty === "HARD" || task.difficulty === "LEGENDARY"
+                                        ? "rgba(224,90,106,0.3)"
+                                        : task.difficulty === "EASY"
+                                        ? "rgba(58,170,122,0.25)"
+                                        : "rgba(212,168,67,0.25)"
+                                    }`,
+                                  }}
+                                >
                                   {task.difficulty}
                                 </span>
                               )}
                             </div>
 
                             {/* Subtitle kategori */}
-                            <p style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--t3)", fontFamily: "var(--font-mono)", marginTop: "2px" }}>
+                            <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "rgba(212,168,67,0.6)" }}>
                               {definition.subtitle}
                             </p>
 
@@ -563,7 +564,8 @@ export function DailyTasksPanel() {
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setExpandedKey(isExpanded ? null : definition.key); }}
-                            className="mt-0.5 shrink-0 rounded-lg border border-white/10 p-1.5 text-white/40 transition hover:border-[rgba(212,168,67,0.3)] hover:text-[var(--gold)]"
+                            className="mt-0.5 shrink-0 rounded-lg border border-white/10 p-1.5 text-white/40 transition hover:text-white/70"
+                            style={{ }}
                             aria-label={isExpanded ? 'Tutup detail' : 'Lihat detail'}
                           >
                             {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -573,14 +575,14 @@ export function DailyTasksPanel() {
                         {/* Reward chips row */}
                         {task && (
                           <div className="mt-3 flex flex-wrap items-center gap-2">
-                            <span className="rounded-md bg-[rgba(58,170,122,0.1)] px-2 py-0.5 text-[11px] font-semibold text-[var(--jade-light)]">
+                            <span className="rounded-md px-2 py-0.5 text-[10px] font-semibold" style={{ background: "rgba(58,170,122,0.1)", color: "#50c890" }}>
                               +{Math.round(task.expReward * getComboMultiplier(combo))} EXP
                             </span>
-                            <span className="rounded-md bg-[rgba(212,168,67,0.1)] px-2 py-0.5 text-[11px] font-semibold text-[var(--gold)]">
+                            <span className="rounded-md px-2 py-0.5 text-[10px] font-semibold" style={{ background: "rgba(212,168,67,0.1)", color: "#d4a843" }}>
                               +{Math.round(task.coinReward * getComboMultiplier(combo))} coins
                             </span>
                             {task.statRewards?.map((sr) => (
-                              <span key={sr.stat} className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ${style.chip}`}>
+                              <span key={sr.stat} className="rounded-md px-2 py-0.5 text-[10px]" style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)" }}>
                                 +{sr.amount} {formatLabel(sr.stat)}
                               </span>
                             ))}
@@ -590,9 +592,9 @@ export function DailyTasksPanel() {
                               </span>
                             )}
                             {isDone ? (
-                              <span className="ml-auto text-xs text-emerald-400 font-semibold">Selesai hari ini ✓</span>
+                              <span className="ml-auto text-xs font-semibold" style={{ color: "#50c890" }}>Selesai hari ini ✓</span>
                             ) : (
-                              <span className="ml-auto text-xs text-white/35 italic">klik untuk selesaikan</span>
+                              <span className="ml-auto italic" style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>klik untuk selesaikan</span>
                             )}
                           </div>
                         )}
@@ -605,7 +607,7 @@ export function DailyTasksPanel() {
                               <ol className="space-y-2">
                                 {(definition.actions as string[]).map((step, idx) => (
                                   <li key={idx} className="flex gap-3 text-xs text-white/65">
-                                    <span className="shrink-0 font-mono text-xs text-[var(--t3)] mt-0.5">
+                                    <span className="shrink-0 font-mono text-[10px] mt-0.5" style={{ color: "rgba(212,168,67,0.5)" }}>
                                       {String(idx + 1).padStart(2, '0')}
                                     </span>
                                     {step}
@@ -622,7 +624,7 @@ export function DailyTasksPanel() {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={(e) => e.stopPropagation()}
-                                    className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65 transition hover:border-[rgba(212,168,67,0.3)] hover:text-[var(--gold)]"
+                                    className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/65 transition hover:border-white/20 hover:text-white/90"
                                   >
                                     <ExternalLink className="h-3 w-3" />
                                     {src.label}
@@ -678,8 +680,6 @@ export function DailyTasksPanel() {
                   {/* eslint-disable-next-line */}
                   {optionalTasks.map((task) => {
                     return (() => {
-                      const diff = (task.difficulty ?? 'MEDIUM') as DifficultyKey;
-                      const style = DIFFICULTY_STYLES[diff] ?? DIFFICULTY_STYLES.MEDIUM;
                       const isDone = task.completedToday ?? false;
 
                       return (
@@ -688,12 +688,31 @@ export function DailyTasksPanel() {
                           key={task.id}
                           onClick={() => { if (!isDone && !pending) completeTask(task); }}
                           className={[
-                            'relative flex overflow-hidden rounded-2xl border bg-white/[0.03] transition-all duration-200',
-                            isDone ? 'opacity-50 cursor-default' : style.border,
-                            !isDone && !pending ? `cursor-pointer ${style.hover} hover:bg-white/[0.06] hover:shadow-lg ${style.glow} active:scale-[0.99]` : '',
+                            'relative flex overflow-hidden rounded-2xl transition-all duration-200',
+                            isDone ? 'opacity-50 cursor-default' : '',
+                            !isDone && !pending ? `cursor-pointer hover:bg-white/[0.06] hover:shadow-lg active:scale-[0.99]` : '',
                           ].join(' ')}
+                          style={{
+                            borderColor: isDone ? 'rgba(255,255,255,0.1)' : (
+                              task.difficulty === "HARD" || task.difficulty === "LEGENDARY"
+                                ? "rgba(224,90,106,0.3)"
+                                : task.difficulty === "EASY"
+                                ? "rgba(58,170,122,0.25)"
+                                : "rgba(212,168,67,0.25)"
+                            ),
+                            background: "rgba(255,255,255,0.03)",
+                          }}
                         >
-                          <div className={`w-1 shrink-0 ${isDone ? 'bg-white/20' : style.accent}`} />
+                          <div style={{
+                            width: 3, flexShrink: 0,
+                            background: isDone ? 'rgba(255,255,255,0.2)' : (
+                              task.difficulty === "HARD" || task.difficulty === "LEGENDARY"
+                                ? "#e05a6a"
+                                : task.difficulty === "EASY"
+                                ? "#3aaa7a"
+                                : "#d4a843"
+                            ),
+                          }} />
                           <div className="flex-1 p-4">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <div>
@@ -702,21 +721,42 @@ export function DailyTasksPanel() {
                                 </p>
                                 <p className="text-xs text-white/60">{task.description}</p>
                               </div>
-                              <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${style.badge}`}>
-                                {task.category}
+                              <span
+                                className="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                                style={{
+                                  background: task.difficulty === "HARD" || task.difficulty === "LEGENDARY"
+                                    ? "rgba(224,90,106,0.15)"
+                                    : task.difficulty === "EASY"
+                                    ? "rgba(58,170,122,0.15)"
+                                    : "rgba(212,168,67,0.15)",
+                                  color: task.difficulty === "HARD" || task.difficulty === "LEGENDARY"
+                                    ? "#f07080"
+                                    : task.difficulty === "EASY"
+                                    ? "#50c890"
+                                    : "#d4a843",
+                                  border: `1px solid ${
+                                    task.difficulty === "HARD" || task.difficulty === "LEGENDARY"
+                                      ? "rgba(224,90,106,0.3)"
+                                      : task.difficulty === "EASY"
+                                      ? "rgba(58,170,122,0.25)"
+                                      : "rgba(212,168,67,0.25)"
+                                  }`,
+                                }}
+                              >
+                                {task.difficulty}
                               </span>
                             </div>
                             <div className="mt-3 flex flex-wrap items-center gap-2">
-                              <span className="rounded-md bg-[rgba(58,170,122,0.1)] px-2 py-0.5 text-[11px] font-semibold text-[var(--jade-light)]">
+                              <span className="rounded-md px-2 py-0.5 text-[10px] font-semibold" style={{ background: "rgba(58,170,122,0.1)", color: "#50c890" }}>
                                 +{Math.round(task.expReward * getComboMultiplier(combo))} EXP
                               </span>
-                              <span className="rounded-md bg-[rgba(212,168,67,0.1)] px-2 py-0.5 text-[11px] font-semibold text-[var(--gold)]">
+                              <span className="rounded-md px-2 py-0.5 text-[10px] font-semibold" style={{ background: "rgba(212,168,67,0.1)", color: "#d4a843" }}>
                                 +{Math.round(task.coinReward * getComboMultiplier(combo))} coins
                               </span>
                               {isDone ? (
-                                <span className="ml-auto text-xs text-emerald-400 font-semibold">Selesai hari ini ✓</span>
+                                <span className="ml-auto text-xs font-semibold" style={{ color: "#50c890" }}>Selesai hari ini ✓</span>
                               ) : (
-                                <span className="ml-auto text-xs text-white/35 italic">klik untuk selesaikan</span>
+                                <span className="ml-auto italic" style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>klik untuk selesaikan</span>
                               )}
                             </div>
                           </div>
@@ -873,9 +913,9 @@ function ReadingTimer({ minutes, onComplete }: { minutes: number; onComplete: ()
           className={cn(
             "flex h-14 w-24 items-center justify-center rounded-xl border font-mono text-2xl font-black tabular-nums",
             finished
-              ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-300"
+              ? "border-[rgba(58,170,122,0.4)] bg-[rgba(58,170,122,0.1)] text-[#50c890]"
               : running
-              ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300"
+              ? "border-[rgba(212,168,67,0.4)] bg-[rgba(212,168,67,0.1)] text-[#d4a843]"
               : "border-white/10 bg-black/30 text-white/70"
           )}
         >
@@ -886,7 +926,7 @@ function ReadingTimer({ minutes, onComplete }: { minutes: number; onComplete: ()
             <div
               className={cn(
                 "h-full rounded-full transition-all duration-1000",
-                finished ? "bg-emerald-400" : "bg-cyan-400"
+                finished ? "bg-[#3aaa7a]" : "bg-[#d4a843]"
               )}
               style={{ width: `${progress}%` }}
             />
@@ -909,7 +949,7 @@ function ReadingTimer({ minutes, onComplete }: { minutes: number; onComplete: ()
               "rounded-xl px-4 py-1.5 text-xs font-semibold transition",
               running
                 ? "border border-white/20 bg-white/10 text-white hover:bg-white/15"
-                : "bg-cyan-400 text-slate-950 hover:bg-cyan-300"
+                : "bg-[#d4a843] text-[#080b12] hover:bg-[#f0c060]"
             )}
           >
             {running ? "Jeda" : "Mulai"}
@@ -940,7 +980,7 @@ function LevelUpModal({ state, onClose }: { state: LevelModalState | null; onClo
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="w-full max-w-lg rounded-3xl border border-white/20 bg-gradient-to-br from-purple-900/80 to-black/80 p-8 text-center text-white"
+            className="w-full max-w-lg rounded-3xl border p-8 text-center text-white" style={{ borderColor: "rgba(212,168,67,0.3)", background: "linear-gradient(135deg, rgba(61,46,14,0.9), rgba(8,11,18,0.95))" }}
             initial={{ scale: 0.85, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}

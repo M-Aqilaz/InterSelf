@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/toast";
 import { subscribeToTasksUpdate } from "@/lib/events";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGameAudio } from "@/hooks/use-game-audio";
+import { AchievementShareModal } from "@/components/sections/achievement-share-modal";
 
 type Achievement = {
   id: number;
@@ -29,6 +30,7 @@ export function AchievementsPanel() {
   const { push } = useToast();
   const [recentUnlock, setRecentUnlock] = useState<number | null>(null);
   const { play } = useGameAudio();
+  const [sharingId, setSharingId] = useState<number | null>(null);
 
   const loadAchievements = useCallback(async () => {
     setLoading(true);
@@ -96,6 +98,8 @@ export function AchievementsPanel() {
     });
   }
 
+  // Tidak ada fungsi handleShare — cukup setSharingId(achievement.id)
+
   return (
     <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#05040a] to-[#140d1e] p-6">
       <div className="flex items-center justify-between">
@@ -151,17 +155,31 @@ export function AchievementsPanel() {
                 </div>
                 <div className="mt-3 flex items-center justify-between text-xs text-white/60">
                   <span className="capitalize">Status: {achievement.status}</span>
-                  {achievement.claimable && (
-                    <Button size="sm" disabled={pending} onClick={() => claimAchievement(achievement.id)}>
-                      Claim Reward
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {achievement.claimable && (
+                      <Button size="sm" disabled={pending} onClick={() => claimAchievement(achievement.id)}>
+                        Claim Reward
+                      </Button>
+                    )}
+                    {achievement.status === "claimed" && (
+                      <button
+                        onClick={() => setSharingId(achievement.id)}
+                        className="ml-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50 hover:text-white/80 hover:bg-white/10 transition-all"
+                      >
+                        🏅 Share
+                      </button>
+                    )}
+                  </div>
                 </div>
               </motion.li>
             );
           })}
         </ul>
       )}
+      <AchievementShareModal
+        achievementId={sharingId}
+        onClose={() => setSharingId(null)}
+      />
     </div>
   );
 }

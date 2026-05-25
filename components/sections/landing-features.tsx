@@ -1,5 +1,3 @@
-import { type ReactNode } from "react";
-
 type Feature = {
   icon: string;
   title: string;
@@ -141,3 +139,4 @@ export function LandingFeatures() {
     </section>
   );
 }
+

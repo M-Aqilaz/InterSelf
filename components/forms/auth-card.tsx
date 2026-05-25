@@ -95,7 +95,17 @@ export function AuthCard({ mode }: AuthCardProps) {
   }
 
   return (
-    <Card className="border-white/10 bg-white/5 p-8">
+    <Card
+      style={{
+        maxWidth: "400px",
+        margin: "0 auto",
+        borderRadius: "20px",
+        border: "1px solid var(--border-2)",
+        background: "rgba(12,16,24,0.85)",
+        backdropFilter: "blur(24px)",
+        padding: "32px",
+      }}
+    >
       <div className="mb-6 space-y-3 text-center">
         <Badge variant="void" className="mx-auto w-fit">
           {mode === "login" ? "Returning Hunter" : "New Awakened"}
@@ -112,7 +122,7 @@ export function AuthCard({ mode }: AuthCardProps) {
             value={formData.email}
             onChange={handleChange}
             required
-            className="rounded-2xl border border-white/15 bg-black/40 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-white/60 focus:outline-none"
+            className="input-dark"
             placeholder="hunter@interself.gg"
           />
         </label>
@@ -126,7 +136,7 @@ export function AuthCard({ mode }: AuthCardProps) {
               onChange={handleChange}
               required={mode === "register"}
               minLength={3}
-              className="rounded-2xl border border-white/15 bg-black/40 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-white/60 focus:outline-none"
+              className="input-dark"
               placeholder="shadow_breaker"
             />
           </label>
@@ -140,7 +150,7 @@ export function AuthCard({ mode }: AuthCardProps) {
             onChange={handleChange}
             required
             minLength={mode === "register" ? 8 : 1}
-            className="rounded-2xl border border-white/15 bg-black/40 px-4 py-3 text-base text-white placeholder:text-white/40 focus:border-white/60 focus:outline-none"
+            className="input-dark"
             placeholder="••••••••"
           />
         </label>
@@ -149,7 +159,7 @@ export function AuthCard({ mode }: AuthCardProps) {
         ) : success ? (
           <p className="text-sm text-emerald-300">{success}</p>
         ) : null}
-        <Button type="submit" className="w-full rounded-full" disabled={pending}>
+        <Button type="submit" className="btn-gold w-full justify-center" disabled={pending}>
           {pending ? "Synchronizing..." : labels.submitLabel}
         </Button>
       </form>

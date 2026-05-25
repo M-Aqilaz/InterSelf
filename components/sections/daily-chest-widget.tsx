@@ -19,10 +19,10 @@ type ChestState = {
 };
 
 const RARITY_STYLES = {
-  common:   { border: "border-white/20",       glow: "",                          label: "Biasa",    color: "text-white/60"       },
-  uncommon: { border: "border-emerald-500/40", glow: "shadow-emerald-500/20",     label: "Langka",   color: "text-emerald-400"    },
-  rare:     { border: "border-cyan-500/50",    glow: "shadow-cyan-500/30",        label: "Berharga", color: "text-cyan-400"       },
-  epic:     { border: "border-purple-500/60",  glow: "shadow-purple-500/40",      label: "EPIK",     color: "text-purple-300"     },
+  common:   { border: "border-[var(--border-2)]", label: "Biasa", color: "var(--t2)" },
+  uncommon: { border: "border-[rgba(58,170,122,0.4)]", label: "Langka", color: "var(--jade-light)" },
+  rare:     { border: "border-[rgba(212,168,67,0.5)]", label: "Berharga", color: "var(--gold)" },
+  epic:     { border: "border-[rgba(167,139,250,0.5)]", label: "EPIK", color: "#c4b5fd" },
 };
 
 const DAY_LABELS = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "EPIK"];
@@ -78,13 +78,13 @@ export function DailyChestWidget() {
       <div className="flex items-center justify-between mb-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Daily Chest</p>
-          <p className={`text-sm font-bold ${style.color}`}>
+          <p className="text-sm font-bold text-[var(--gold)]">
             {opened ? "Sudah diklaim hari ini" : "Klik untuk buka!"}
           </p>
         </div>
         <div className="text-right">
           <p className="text-[10px] text-white/40">Streak chest</p>
-          <p className="text-lg font-black text-amber-400">{state.currentStreak} hari</p>
+          <p className="text-lg text-[var(--gold)] font-[var(--font-mono)] font-black">{state.currentStreak} hari</p>
         </div>
       </div>
 
@@ -96,15 +96,15 @@ export function DailyChestWidget() {
           return (
             <div key={i} className="flex-1 text-center">
               <div className={`h-1.5 rounded-full mb-1 transition-all ${
-                isPast ? "bg-amber-400" :
-                isToday ? "bg-amber-400/50 animate-pulse" :
+                isPast ? "bg-[var(--gold)]" :
+                isToday ? "bg-[rgba(212,168,67,0.5)] animate-pulse" :
                 "bg-white/10"
               }`} />
               <span className={`text-[9px] font-bold ${
-                isPast ? "text-amber-400" :
+                isPast ? "text-[var(--gold)]" :
                 isToday ? "text-white/70" :
                 "text-white/25"
-              } ${dayNum === 7 ? "text-purple-400" : ""}`}>
+              } ${dayNum === 7 ? "text-[#c4b5fd]" : ""}`}>
                 {label}
               </span>
             </div>
@@ -121,7 +121,7 @@ export function DailyChestWidget() {
           {opened ? "✓" : opening ? "✨" : "🎁"}
           {!opened && !opening && (
             <motion.div
-              className="absolute inset-0 rounded-xl border-2 border-amber-400/30"
+              className="absolute inset-0 rounded-xl border-2 border-[rgba(212,168,67,0.35)]"
               animate={{ scale: [1, 1.08, 1], opacity: [0.5, 0, 0.5] }}
               transition={{ duration: 2, repeat: Infinity }}
             />
@@ -135,14 +135,14 @@ export function DailyChestWidget() {
                 initial={opened && claimedReward ? { opacity: 0, y: 8 } : { opacity: 1 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${style.color}`}>
+                <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: style.color }}>
                   {style.label} · Hari ke-{reward.day}
                 </p>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-bold text-cyan-400">+{reward.exp} EXP</span>
-                  <span className="text-sm font-bold text-amber-400">+{reward.coins} coins</span>
+                  <span className="text-sm font-bold text-[var(--jade-light)]">+{reward.exp} EXP</span>
+                  <span className="text-sm font-bold text-[var(--gold)]">+{reward.coins} coins</span>
                   {reward.bonus && (
-                    <span className="text-xs text-purple-300 bg-purple-500/15 px-2 py-0.5 rounded-full border border-purple-500/30">
+                    <span className="text-xs text-[#c4b5fd] bg-[rgba(167,139,250,0.15)] px-2 py-0.5 rounded-full border border-[rgba(167,139,250,0.3)]">
                       {reward.bonus}
                     </span>
                   )}
@@ -154,6 +154,15 @@ export function DailyChestWidget() {
             </AnimatePresence>
           ) : null}
         </div>
+      </div>
+      <div className="mt-4">
+        <button
+          className="btn-gold w-full justify-center"
+          onClick={claimChest}
+          disabled={opened || opening}
+        >
+          {opening ? "Membuka..." : opened ? "Sudah diklaim hari ini ✓" : "Buka Chest →"}
+        </button>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { BarMeter } from "@/components/ui/meters";
 import { Badge } from "@/components/ui/badge";
 import { useGameAudio } from "@/hooks/use-game-audio";
 import { CLASS_DEFINITIONS } from "@/lib/classes";
+import { getCharacterSprite, CLASS_COLORS } from "@/lib/character-sprites";
 
 const rarityStyles: Record<string, string> = {
   LEGENDARY: "border-yellow-400/60",
@@ -115,8 +116,6 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  const activeAvatar = useMemo(() => AVATAR_GALLERY.find((avatar) => avatar.id === avatarId) ?? AVATAR_GALLERY[0], [avatarId]);
-
   const handleAvatarChange = (nextId: string) => {
     setAvatarId(nextId);
     if (typeof window !== "undefined") {
@@ -131,24 +130,34 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
     .sort((a, b) => b.value - a.value)
     .slice(0, 4);
 
+  const characterVisuals = useMemo(() => {
+    const CharSprite = getCharacterSprite(characterClass ?? null);
+    const colors = CLASS_COLORS[characterClass ?? "DEFAULT"] ?? CLASS_COLORS.DEFAULT;
+    return { CharSprite, colors };
+  }, [characterClass]);
+
   return (
     <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-[#05040a] via-[#0b0f1c] to-[#080512] p-5 text-white">
       <div className="relative flex flex-col gap-5">
         <div className="flex flex-wrap items-center gap-4">
-          <div className="relative">
-            <div className="relative h-24 w-24 overflow-hidden rounded-3xl border border-white/30 shadow-lg transition-transform duration-150 hover:scale-[1.04]">
-              <div
-                className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: `url(${activeAvatar?.image})` }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/70" />
-              <p className="relative z-10 px-2 py-1 text-[10px] uppercase tracking-[0.3em] text-white/80">
-                {activeAvatar?.element}
-              </p>
+          {/* Character sprite — berdasarkan class yang dipilih */}
+          <div className="relative flex flex-col items-center">
+            {/* Aura glow */}
+            <div
+              className="absolute inset-0 rounded-full blur-3xl opacity-20 pointer-events-none"
+              style={{ background: characterVisuals.colors.glow }}
+            />
+            {/* Float animation wrapper */}
+            <div style={{ animation: "char-float 3s ease-in-out infinite" }}>
+              <characterVisuals.CharSprite className="w-32 h-44 drop-shadow-xl" />
             </div>
-            <Badge variant="cyber" className="absolute -bottom-3 left-1/2 -translate-x-1/2">
-              {rank}
-            </Badge>
+            {/* Shadow */}
+            <div
+              className="w-16 h-2 rounded-full mt-1 opacity-30"
+              style={{ background: `radial-gradient(ellipse, ${characterVisuals.colors.primary}, transparent)`, animation: "shadow-scale 3s ease-in-out infinite" }}
+            />
+            {/* Rank badge */}
+            <Badge variant="cyber" className="mt-3">{rank}</Badge>
           </div>
           <div className="flex flex-1 flex-col gap-1">
             {characterClass && (() => {

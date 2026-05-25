@@ -40,6 +40,8 @@ model User {
   friendships        Friendship[]      @relation("userFriendships")
   friendOf           Friendship[]      @relation("friendUserships")
   activityLogs       ActivityLog[]
+  challengerChallenges  PvpChallenge[] @relation("challengerChallenges")
+  challengedChallenges  PvpChallenge[] @relation("challengedChallenges")
 }
 
 model Account {
@@ -177,6 +179,7 @@ model UserAchievement {
   achievementId  Int
   unlockedAt     DateTime     @default(now())
   claimedAt      DateTime?
+  shareToken     String?      @unique  // ← TAMBAHKAN: token unik untuk link share publik
 
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   achievement    Achievement  @relation(fields: [achievementId], references: [id], onDelete: Cascade)
@@ -227,6 +230,11 @@ model Boss {
   status        BossStatus    @default(ACTIVE)
   createdAt     DateTime      @default(now())
   rewardItemId  Int?
+  minLevel      Int           @default(1)    // ← TAMBAHKAN: level minimum untuk unlock dungeon
+  dungeonName   String        @default("")   // ← TAMBAHKAN: nama dungeon zone
+  dungeonTier   String        @default("F")  // ← TAMBAHKAN: F/E/D/C/B/A/S
+  dungeonBiome  String        @default("")   // ← TAMBAHKAN: deskripsi biome (Volcanic, Frost, dll)
+  loreText      String        @default("")   // ← TAMBAHKAN: flavor text dungeon
 
   rewardItem    InventoryItem? @relation("BossRewardItem", fields: [rewardItemId], references: [id])
   userProgress  UserBossProgress[]
@@ -433,6 +441,20 @@ enum FriendRequestStatus {
   REJECTED
 }
 
+enum PvpChallengeMode {
+  TASK_COUNT
+  EXP_RACE
+  STREAK_HOLD
+}
+
+enum PvpChallengeStatus {
+  PENDING    // menunggu lawan accept
+  ACTIVE     // sedang berjalan
+  COMPLETED  // sudah selesai, pemenang ditentukan
+  DECLINED   // lawan menolak
+  CANCELLED  // penantang membatalkan
+}
+
 enum ActivityType {
   TASK_COMPLETED
   LEVEL_UP
@@ -441,4 +463,25 @@ enum ActivityType {
   ITEM_EARNED
   ACHIEVEMENT_UNLOCKED
   CHALLENGE_PROGRESS
+}
+
+model PvpChallenge {
+  id             Int                @id @default(autoincrement())
+  challengerId   String
+  challengedId   String
+  mode           PvpChallengeMode   @default(TASK_COUNT)
+  status         PvpChallengeStatus @default(PENDING)
+  startsAt       DateTime?          // null sampai ACTIVE
+  endsAt         DateTime?          // null sampai ACTIVE
+  challengerScore Int               @default(0)
+  challengedScore Int               @default(0)
+  winnerId       String?            // null sampai COMPLETED
+  rewardCoins    Int                @default(150)
+  rewardExp      Int                @default(200)
+  message        String?            // pesan dari penantang
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  challenger  User @relation("challengerChallenges", fields: [challengerId], references: [id], onDelete: Cascade)
+  challenged  User @relation("challengedChallenges", fields: [challengedId], references: [id], onDelete: Cascade)
 }

@@ -273,9 +273,31 @@ type BossSeed = {
   weakness: TaskCategory | null;
   status: BossStatus;
   rewardItemName?: string;
+  minLevel: number;       // ← TAMBAHKAN
+  dungeonName: string;    // ← TAMBAHKAN
+  dungeonTier: string;    // ← TAMBAHKAN
+  dungeonBiome: string;   // ← TAMBAHKAN
+  loreText: string;       // ← TAMBAHKAN
 };
 
 const bosses: BossSeed[] = [
+  // Tier F — Level 1 (semua bisa akses dari awal)
+  {
+    name: "Prokrastinasi Abyssal",
+    description: "Entitas purba yang lahir dari penundaan. Semakin lama kamu menunggu, semakin kuat dia.",
+    maxHp: 800,
+    rewardExp: 500,
+    rewardCoins: 250,
+    weakness: TaskCategory.FOCUS,
+    status: BossStatus.ACTIVE,
+    rewardItemName: "Ion Surge Vial",
+    minLevel: 1,
+    dungeonName: "Hollow Cradle",
+    dungeonTier: "F",
+    dungeonBiome: "Shadow Realm",
+    loreText: "Di sini semua perjalanan dimulai. Musuh pertamamu adalah dirimu sendiri.",
+  },
+  // Tier E — Level 5
   {
     name: "Echo Titan",
     description: "A towering AI that feeds on distractions and broken streaks.",
@@ -285,7 +307,13 @@ const bosses: BossSeed[] = [
     weakness: TaskCategory.FOCUS,
     status: BossStatus.ACTIVE,
     rewardItemName: "Chrono Lens",
+    minLevel: 5,
+    dungeonName: "Ashen Citadel",
+    dungeonTier: "E",
+    dungeonBiome: "Volcanic",
+    loreText: "Reruntuhan citadel yang dibakar oleh ambisi yang tidak pernah dieksekusi.",
   },
+  // Tier D — Level 10
   {
     name: "Gravemind Regent",
     description: "An ancient weight that manifests as procrastination and lethargy.",
@@ -295,6 +323,75 @@ const bosses: BossSeed[] = [
     weakness: TaskCategory.WORKOUT,
     status: BossStatus.ACTIVE,
     rewardItemName: "Aurora Gauntlets",
+    minLevel: 10,
+    dungeonName: "Glacier Veil",
+    dungeonTier: "D",
+    dungeonBiome: "Frost",
+    loreText: "Kedinginan bukan dari suhu — melainkan dari jiwa yang kehilangan momentum.",
+  },
+  // Tier C — Level 15
+  {
+    name: "Wrath of Stagnation",
+    description: "Manifestasi dari pikiran yang berhenti berkembang. Mengunci siapapun yang takut belajar.",
+    maxHp: 2200,
+    rewardExp: 1500,
+    rewardCoins: 700,
+    weakness: TaskCategory.STUDY,
+    status: BossStatus.ACTIVE,
+    rewardItemName: "Codex of Insight",
+    minLevel: 15,
+    dungeonName: "Crimson Sanctum",
+    dungeonTier: "C",
+    dungeonBiome: "Arcane",
+    loreText: "Sanctum yang pernah menjadi perpustakaan terbesar — kini dibakar oleh ketakutan akan pengetahuan.",
+  },
+  // Tier B — Level 20
+  {
+    name: "The Hollow Crown",
+    description: "Raja tanpa kerajaan. Berkuasa atas mereka yang mengejar kekayaan tanpa rencana.",
+    maxHp: 3000,
+    rewardExp: 2000,
+    rewardCoins: 1000,
+    weakness: TaskCategory.SAVE_MONEY,
+    status: BossStatus.ACTIVE,
+    rewardItemName: "Golden Ledger",
+    minLevel: 20,
+    dungeonName: "Void Labyrinth",
+    dungeonTier: "B",
+    dungeonBiome: "Cursed Gold",
+    loreText: "Labirin yang dibangun dari hutang dan keputusan finansial yang ditunda.",
+  },
+  // Tier A — Level 30
+  {
+    name: "Chronovore",
+    description: "Pemangsa waktu. Setiap jam yang terbuang menambah kekuatannya.",
+    maxHp: 4500,
+    rewardExp: 3000,
+    rewardCoins: 1500,
+    weakness: TaskCategory.WAKE_UP,
+    status: BossStatus.ACTIVE,
+    rewardItemName: "Temporal Anchor",
+    minLevel: 30,
+    dungeonName: "Aether Spire",
+    dungeonTier: "A",
+    dungeonBiome: "Time Rift",
+    loreText: "Menara yang ada di antara dimensi waktu. Hanya mereka yang bangun pagi yang bisa mencapainya.",
+  },
+  // Tier S — Level 50
+  {
+    name: "Nemesis Prime",
+    description: "Bayangan terkuat dari dirimu sendiri. Semua kelemahan yang pernah kamu miliki.",
+    maxHp: 8000,
+    rewardExp: 6000,
+    rewardCoins: 3000,
+    weakness: TaskCategory.FOCUS,
+    status: BossStatus.ACTIVE,
+    rewardItemName: "Abyssal Core",
+    minLevel: 50,
+    dungeonName: "Abyssal Throne",
+    dungeonTier: "S",
+    dungeonBiome: "Void Abyss",
+    loreText: "Tahta terakhir. Musuh terakhir. Dirimu yang paling gelap.",
   },
 ];
 
@@ -447,6 +544,11 @@ async function seedBosses(itemIdMap: Map<string, number>) {
       weakness: boss.weakness,
       status: boss.status,
       rewardItemId,
+      minLevel: boss.minLevel,        // ← TAMBAHKAN
+      dungeonName: boss.dungeonName,  // ← TAMBAHKAN
+      dungeonTier: boss.dungeonTier,  // ← TAMBAHKAN
+      dungeonBiome: boss.dungeonBiome,// ← TAMBAHKAN
+      loreText: boss.loreText,        // ← TAMBAHKAN
     };
 
     const existing = await prisma.boss.findFirst({ where: { name: boss.name } });

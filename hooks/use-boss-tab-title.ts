@@ -30,17 +30,16 @@ export function useBossTabTitle() {
         const hpPercent = Math.round((data.currentHp / data.maxHp) * 100);
 
         if (hpPercent <= 10) {
-          // Alternating alert untuk HP sangat kritis
           const isAlt = Math.floor(Date.now() / 2000) % 2 === 0;
           document.title = isAlt
             ? `⚔️ BOSS ${hpPercent}% HP — SERANG SEKARANG!`
-            : `💀 ${data.bossName} hampir mati!`;
+            : `💀 Prokrastinasi Abyssal hampir mati!`;
         } else if (hpPercent <= 25) {
-          document.title = `⚔️ Boss ${hpPercent}% HP · ${originalTitle.current}`;
+          document.title = `⚔️ Boss ${hpPercent}% HP · InterSelf`;
         } else if (hpPercent <= 50) {
-          document.title = `🗡️ Boss ${hpPercent}% HP · ${originalTitle.current}`;
+          document.title = `🗡️ Boss ${hpPercent}% HP · InterSelf`;
         } else {
-          document.title = originalTitle.current;
+          document.title = "InterSelf — Jadikan Dirimu Karakter Terkuat";
         }
       } catch {
         // ignore

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { BossBattleState, BossBattleSummary } from "@/types/boss";
 import { subscribeToTasksUpdate, subscribeToBossDamage, BossDamagePayload } from "@/lib/events";
 import { useGameAudio } from "@/hooks/use-game-audio";
+import { getBossSprite, BOSS_AURA_COLORS } from "@/lib/boss-sprites";
 
 const formatter = new Intl.NumberFormat();
 
@@ -72,7 +73,6 @@ export function BossBattlePanel({ productivityCompletion = 0 }: BossBattlePanelP
   const [player, setPlayer] = useState<PlayerInfo | null>(null);
   const [energy, setEnergy] = useState(70);
   const [skillCooldowns, setSkillCooldowns] = useState<Record<string, number>>({});
-  const [monsterVariant, setMonsterVariant] = useState<number>(0);
   const { play } = useGameAudio();
   const prefersReduced = useReducedMotion();
 
@@ -96,7 +96,6 @@ export function BossBattlePanel({ productivityCompletion = 0 }: BossBattlePanelP
     } else if (!data.boss) {
       setPhase("READY");
     }
-    setMonsterVariant((prev) => (data.boss && prev === 0 ? Math.max(1, data.boss.id % 3) : prev || 1));
   }, []);
 
   useEffect(() => {
@@ -285,21 +284,16 @@ export function BossBattlePanel({ productivityCompletion = 0 }: BossBattlePanelP
   const cooldownRemainingMs = state?.cooldownRemainingMs ?? 0;
   const percentageRemaining = state?.percentageRemaining ?? 0;
   const phaseLabel = phase === "BOSS_HIT" ? "Player Hit" : phase.replace("_", " ");
-  const monsterVisual = useMemo(() => {
-    if (!boss) {
-      return {
-        aura: "from-rose-500/20 to-purple-500/10",
-        sigil: "★",
-      };
-    }
-    const variants = [
-      { aura: "from-rose-600/40 to-amber-500/20", sigil: "ψ" },
-      { aura: "from-fuchsia-600/40 to-indigo-500/20", sigil: "Ω" },
-      { aura: "from-emerald-500/30 to-cyan-500/20", sigil: "§" },
-    ];
-    return variants[(monsterVariant - 1 + variants.length) % variants.length];
-  }, [boss, monsterVariant]);
   const isOnCooldown = cooldownRemainingMs > 0;
+
+  const bossVisuals = useMemo(() => {
+    if (!boss) return null;
+    const BossSprite = getBossSprite(boss.name);
+    const bossKey = boss.name.toLowerCase();
+    const auraColor = BOSS_AURA_COLORS[bossKey]?.ring ?? "#dc2626";
+    const hpGradient = BOSS_AURA_COLORS[bossKey]?.hp ?? "from-red-800 via-red-500 to-red-300";
+    return { BossSprite, auraColor, hpGradient };
+  }, [boss]);
 
   if (!state || !boss) {
     return (
@@ -342,7 +336,7 @@ export function BossBattlePanel({ productivityCompletion = 0 }: BossBattlePanelP
 
         <div className="grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
           <div className="space-y-4">
-            <BossCard boss={boss} progress={progress} counterVisible={counterVisible} visual={monsterVisual} percentageRemaining={percentageRemaining ?? 0} />
+            <BossCard boss={boss} progress={progress} counterVisible={counterVisible} shake={shake} percentageRemaining={percentageRemaining ?? 0} bossVisuals={bossVisuals} />
             <div className="grid gap-4 sm:grid-cols-2">
               <PlayerCard player={player} phase={phase} />
               <ProductivityPanel energy={energy} completion={productivitySync} cooldownMs={cooldownRemainingMs} />
@@ -409,14 +403,16 @@ function BossCard({
   boss,
   progress,
   counterVisible,
-  visual,
+  shake,
   percentageRemaining,
+  bossVisuals,
 }: {
   boss: BossBattleState["boss"];
   progress: BossBattleState["progress"];
   counterVisible: boolean;
-  visual: { aura: string; sigil: string };
+  shake: boolean;
   percentageRemaining: number;
+  bossVisuals: { BossSprite: React.ComponentType<{ className?: string; isHit?: boolean }>; auraColor: string; hpGradient: string } | null;
 }) {
   return (
     <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-black/30 p-5">
@@ -429,12 +425,27 @@ function BossCard({
             HP {formatter.format(progress?.currentHp ?? 0)} / {formatter.format(boss?.maxHp ?? 0)}
           </p>
         </div>
-        <div className={`relative h-40 w-40 overflow-hidden rounded-3xl border border-white/20 bg-gradient-to-br ${visual.aura}`}>
-          <div className="absolute inset-0 opacity-40" style={{ backgroundImage: "radial-gradient(circle at 40% 40%, rgba(255,255,255,0.25), transparent 60%)" }} />
-          <p className="relative z-10 flex h-full items-center justify-center text-6xl font-black text-white/80">
-            {visual.sigil}
-          </p>
-        </div>
+        {/* Boss sprite visual */}
+        {bossVisuals && (
+          <div className="relative flex flex-col items-center justify-center">
+            {/* Aura rings */}
+            <div
+              className="absolute w-48 h-48 rounded-full opacity-15 blur-2xl"
+              style={{ background: bossVisuals.auraColor, animation: "boss-breathe 4s ease-in-out infinite" }}
+            />
+            {/* Boss sprite */}
+            <div style={{ animation: "boss-breathe 4s ease-in-out infinite" }}>
+              <bossVisuals.BossSprite
+                className="w-36 h-40 drop-shadow-2xl"
+                isHit={shake}
+              />
+            </div>
+            {/* Boss name lore */}
+            <p className="mt-2 text-xs italic text-white/40 text-center">
+              {boss?.description?.split(".")[0] ?? ""}
+            </p>
+          </div>
+        )}
       </div>
       <div className="mt-6 space-y-3">
         <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/60">
@@ -443,7 +454,7 @@ function BossCard({
         </div>
         <div className="h-3 w-full overflow-hidden rounded-full bg-white/10">
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-rose-500 via-amber-400 to-amber-200"
+            className={`h-full rounded-full bg-gradient-to-r ${bossVisuals?.hpGradient ?? "from-red-800 via-red-500 to-red-300"}`}
             animate={{ width: `${percentageRemaining}%` }}
             transition={{ duration: 0.6 }}
           />

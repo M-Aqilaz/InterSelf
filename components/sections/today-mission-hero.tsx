@@ -1,12 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, Flame, Target, Zap } from "lucide-react";
-import { useCallback, type ReactNode } from "react";
-import { CLASS_DEFINITIONS } from "@/lib/classes";
+import { motion } from "framer-motion";
+import { useCallback } from "react";
 
-export type TodayMissionHeroProps = {
+type Props = {
   username: string;
   missionTitle: string;
   dailyCompletion: number;
@@ -15,156 +12,221 @@ export type TodayMissionHeroProps = {
   expPercent: number;
   rank: string;
   energyPercent: number;
-  characterClass?: string | null;
 };
 
+const RANK_DATA: Record<string, { title: string; color: string; border: string }> = {
+  BRONZE:  { title: "Initiate",       color: "var(--gold-dim)",   border: "rgba(212,168,67,0.3)"  },
+  SILVER:  { title: "Awakened",       color: "var(--t2)",          border: "rgba(148,163,184,0.3)" },
+  GOLD:    { title: "Vanguard",       color: "var(--gold)",        border: "rgba(212,168,67,0.5)"  },
+  ELITE:   { title: "Phantom Blade",  color: "#a78bfa",            border: "rgba(167,139,250,0.4)" },
+  MONARCH: { title: "Apex Sovereign", color: "var(--rose-light)",  border: "rgba(224,90,106,0.4)"  },
+};
+
+function streakNarrative(streak: number): { text: string; color: string } {
+  if (streak === 0) return { text: "Konsistensimu sedang tidur. Bangkitkan.", color: "var(--rose-light)" };
+  if (streak < 3)   return { text: `${streak} hari momentum. Jangan putus sekarang.`, color: "var(--gold)" };
+  if (streak < 7)   return { text: `${streak} hari berturut. Satu minggu menanti.`, color: "var(--gold)" };
+  if (streak < 14)  return { text: `${streak} hari. Kegelapan mulai gentar.`, color: "var(--jade-light)" };
+  if (streak < 30)  return { text: `${streak} hari. Kamu berbeda dari kebanyakan.`, color: "var(--jade-light)" };
+  return { text: `${streak} hari. Legenda sedang ditulis.`, color: "#a78bfa" };
+}
+
+function completionNarrative(pct: number): string {
+  if (pct === 0)  return "Belum ada yang bergerak hari ini.";
+  if (pct < 25)   return "Awal yang lambat — tapi sudah mulai.";
+  if (pct < 50)   return "Setengah jalan menuju kemenangan harian.";
+  if (pct < 75)   return "Lebih dari separuh. Kegelapan mulai surut.";
+  if (pct < 100)  return "Hampir sempurna. Satu langkah lagi.";
+  return "Semua misi hari ini ditaklukkan. ⚔️";
+}
+
 export function TodayMissionHero({
-  username,
-  missionTitle,
-  dailyCompletion,
-  streak,
-  level,
-  expPercent,
-  rank,
-  energyPercent,
-  characterClass,
-}: TodayMissionHeroProps) {
-  const prefersReduced = useReducedMotion();
-  const goToTab = useCallback((tabId: string) => {
-    if (typeof window === "undefined") return;
-    window.history.replaceState(null, "", `#${tabId}`);
+  username, missionTitle, dailyCompletion,
+  streak, level, expPercent, rank, energyPercent,
+}: Props) {
+  const rankData = RANK_DATA[rank] ?? RANK_DATA.BRONZE!;
+  const streakNarr = streakNarrative(streak);
+  const completion = Math.max(0, Math.min(100, dailyCompletion));
+  const exp = Math.max(0, Math.min(100, expPercent));
+  const energy = Math.max(0, Math.min(100, energyPercent));
+
+  const goTo = useCallback((hash: string) => {
+    window.history.replaceState(null, "", hash);
     window.dispatchEvent(new HashChangeEvent("hashchange"));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  const displayName = username || "Hunter";
-  const expValue = Math.max(0, Math.min(100, expPercent));
-  const completionValue = Math.max(0, Math.min(100, dailyCompletion));
-  const energyValue = Math.max(0, Math.min(100, energyPercent));
-
   return (
     <motion.div
-      className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-[#0c1224] via-[#0a1d2e] to-[#07121f] p-6 text-white shadow-xl md:p-8"
-      initial={prefersReduced ? false : { opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: 0.35 }}
+      style={{
+        borderRadius: "18px",
+        border: "1px solid var(--border)",
+        background: "var(--bg-1)",
+        padding: "20px",
+        position: "relative",
+        overflow: "hidden",
+      }}
     >
-      <div className="relative grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="flex flex-col gap-6">
-          <div>
-            <p className="text-sm text-white/70">Selamat datang kembali, {displayName}</p>
-            <h1 className="mt-1 text-3xl font-black leading-tight text-white md:text-4xl">Misi Hari Ini</h1>
-            <p className="mt-2 text-sm text-white/55 font-mono tracking-wider uppercase">Misi Aktif</p>
-            <p className="mt-1 text-base font-semibold text-cyan-200">{missionTitle}</p>
+      {/* Ambient */}
+      <div aria-hidden style={{ position: "absolute", top: "-40px", left: "-30px", width: "200px", height: "200px", borderRadius: "50%", background: "var(--gold)", filter: "blur(80px)", opacity: 0.04, pointerEvents: "none" }} />
+      <div aria-hidden style={{ position: "absolute", bottom: "-30px", right: "-20px", width: "150px", height: "150px", borderRadius: "50%", background: "var(--jade)", filter: "blur(70px)", opacity: 0.03, pointerEvents: "none" }} />
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "16px", position: "relative" }} className="hero-inner">
+
+        {/* LEFT */}
+        <div>
+          {/* Identity */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
+            <div style={{ height: "1px", width: "14px", background: "var(--gold-dim)" }} />
+            <span style={{ fontSize: "8px", fontWeight: 600, letterSpacing: "0.3em", textTransform: "uppercase", color: "var(--t4)", fontFamily: "var(--font-mono)" }}>
+              Field Agent
+            </span>
+            <div style={{ width: "3px", height: "3px", borderRadius: "50%", background: "var(--t4)" }} />
+            <span style={{ fontSize: "8px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "var(--font-mono)", color: rankData.color }}>
+              {rankData.title}
+            </span>
           </div>
 
-          <div className="flex flex-wrap gap-4">
-            <Button
-              className="bg-cyan-400 px-6 py-2 text-base font-semibold text-slate-950 hover:bg-cyan-300"
-              onClick={() => goToTab("battle")}
+          {/* Name + Level badge */}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "5px" }}>
+            <h1 style={{ fontSize: "clamp(20px,2.5vw,26px)", fontWeight: 700, color: "var(--t1)", lineHeight: 1 }}>
+              {username}
+            </h1>
+            <div
+              style={{
+                width: "48px", height: "48px", borderRadius: "12px",
+                border: `2px solid ${rankData.border}`,
+                background: "rgba(0,0,0,0.5)",
+                display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+              }}
             >
-              Mulai Sesi Fokus
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              className="border border-white/20 px-6 py-2 text-base text-white hover:bg-white/10"
-              onClick={() => goToTab("status")}
-            >
-              Lihat Status
-            </Button>
+              <span style={{ fontSize: "7px", color: "var(--t4)", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "var(--font-mono)", lineHeight: 1 }}>LVL</span>
+              <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--t1)", lineHeight: 1.1, fontFamily: "var(--font-mono)" }}>{level}</span>
+            </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <HeroMetric
-              label="Penyelesaian"
-              value={`${completionValue}%`}
-              description="Momentum harian"
-              icon={<Target className="h-4 w-4 text-cyan-300" />}
-            />
-            <HeroMetric
-              label="Streak"
-              value={`${streak} hari`}
-              description="Konsistensi"
-              icon={<Flame className="h-4 w-4 text-amber-300" />}
-            />
+
+          {/* Active mission box */}
+          <div
+            style={{
+              borderRadius: "10px",
+              border: "1px solid rgba(58,170,122,0.18)",
+              background: "rgba(58,170,122,0.05)",
+              padding: "10px 12px",
+              marginBottom: "12px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+              <div
+                style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--jade)", flexShrink: 0 }}
+                className="anim-pulse-dot"
+              />
+              <span style={{ fontSize: "8px", fontWeight: 600, letterSpacing: "0.28em", textTransform: "uppercase", color: "rgba(58,170,122,0.7)", fontFamily: "var(--font-mono)" }}>
+                Misi Aktif
+              </span>
+            </div>
+            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--t1)", lineHeight: 1.3 }}>{missionTitle}</p>
+            <p style={{ fontSize: "10px", color: "var(--t3)", marginTop: "3px", fontStyle: "italic" }}>
+              {completionNarrative(completion)}
+            </p>
+          </div>
+
+          {/* Streak */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
+              <span style={{ fontSize: "16px" }}>🔥</span>
+              <span style={{ fontSize: "24px", fontWeight: 700, color: "var(--t1)", fontFamily: "var(--font-mono)" }}>{streak}</span>
+              <span style={{ fontSize: "11px", color: "var(--t3)" }}>hari</span>
+            </div>
+            <div style={{ width: "1px", height: "28px", background: "var(--border-2)" }} />
+            <p style={{ fontSize: "11px", color: streakNarr.color, lineHeight: 1.4 }}>{streakNarr.text}</p>
+          </div>
+
+          {/* CTA buttons */}
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <button className="btn-rose" onClick={() => goTo("#battle")}>
+              ⚔ Mulai Pertempuran
+            </button>
+            <button className="btn-ghost" style={{ padding: "7px 16px", fontSize: "11px" }} onClick={() => goTo("#status")}>
+              ◉ Lihat Karakter
+            </button>
           </div>
         </div>
-        <div className="rounded-3xl border border-white/5 bg-white/5 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-white/60">Level {level}</p>
-              <p className="text-2xl font-bold text-white">Peringkat {rank}</p>
-              {characterClass && (
-                <span className="text-xs font-semibold text-white/50">
-                  {CLASS_DEFINITIONS.find(c => c.id === characterClass)?.icon ?? ""} {characterClass.charAt(0) + characterClass.slice(1).toLowerCase()}
-                </span>
-              )}
+
+        {/* RIGHT — Stats */}
+        <div
+          style={{
+            width: "200px", flexShrink: 0,
+            borderRadius: "14px",
+            border: "1px solid var(--border)",
+            background: "rgba(0,0,0,0.4)",
+            padding: "14px",
+            display: "flex", flexDirection: "column", gap: "10px",
+          }}
+          className="hero-stats"
+        >
+          <div style={{ fontSize: "7px", fontWeight: 600, letterSpacing: "0.25em", textTransform: "uppercase", color: "var(--t4)", fontFamily: "var(--font-mono)" }}>
+            Status Tempur
+          </div>
+
+          {/* Bars */}
+          {[
+            { label: "EXP",    value: exp,        colorClass: "bar-gold" },
+            { label: "⚡ Energi", value: energy,  colorClass: "bar-jade" },
+            { label: "Daily",  value: completion, colorClass: completion === 100 ? "bar-gold" : "bar-jade" },
+          ].map((bar) => (
+            <div key={bar.label}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "9px", color: "var(--t3)", marginBottom: "3px", fontFamily: "var(--font-mono)" }}>
+                <span>{bar.label}</span>
+                <span style={{ color: "var(--t1)" }}>{bar.value}%</span>
+              </div>
+              <div className="bar-track" style={{ height: "4px" }}>
+                <div className={`bar-fill ${bar.colorClass}`} style={{ width: `${bar.value}%` }} />
+              </div>
             </div>
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/20 bg-black/40 text-lg font-black text-white">
-              {level}
+          ))}
+
+          <div style={{ borderTop: "1px solid var(--border)", paddingTop: "10px" }}>
+            <div style={{ fontSize: "7px", fontWeight: 600, letterSpacing: "0.25em", textTransform: "uppercase", color: "var(--t4)", fontFamily: "var(--font-mono)", marginBottom: "6px" }}>
+              Ancaman Aktif
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+              <span style={{ fontSize: "14px" }}>💀</span>
+              <div>
+                <p style={{ fontSize: "10px", fontWeight: 600, color: "var(--rose-light)" }}>Prokrastinasi Abyssal</p>
+                <p style={{ fontSize: "8px", color: "var(--t4)" }}>Serang lewat War Chamber →</p>
+              </div>
             </div>
           </div>
-          <div className="mt-5 space-y-4">
-            <ProgressMeter label="EXP" value={expValue} accent="bg-violet-400" />
-            <ProgressMeter label="Energi" value={energyValue} accent="bg-emerald-400" icon={<Zap className="h-3 w-3" />} />
-          </div>
-          <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white/80">
-            <p className="font-semibold text-white">Penyelesaian Harian</p>
-            <p className="text-4xl font-black text-white">{completionValue}%</p>
-            <p className="mt-1 text-xs text-white/60">Terus berjuang menyelesaikan misi hari ini.</p>
+
+          <div
+            style={{
+              borderRadius: "8px",
+              border: "1px solid rgba(212,168,67,0.18)",
+              background: "rgba(212,168,67,0.05)",
+              padding: "7px 9px",
+            }}
+          >
+            <p style={{ fontSize: "7px", textTransform: "uppercase", letterSpacing: "0.18em", color: "rgba(212,168,67,0.5)", fontFamily: "var(--font-mono)", marginBottom: "2px" }}>
+              World Event
+            </p>
+            <p style={{ fontSize: "9px", fontWeight: 600, color: "rgba(212,168,67,0.8)" }}>
+              Perang Konsistensi Minggu Ini Aktif
+            </p>
           </div>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .hero-inner { grid-template-columns: 1fr !important; }
+          .hero-stats { width: 100% !important; }
+        }
+      `}</style>
     </motion.div>
-  );
-}
-
-function HeroMetric({
-  label,
-  value,
-  description,
-  icon,
-}: {
-  label: string;
-  value: string;
-  description: string;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-white">
-        <span className="text-white/70">{label}</span>
-        {icon}
-      </div>
-      <p className="mt-1 text-2xl font-black text-white">{value}</p>
-      <p className="text-xs text-white/60">{description}</p>
-    </div>
-  );
-}
-
-function ProgressMeter({
-  label,
-  value,
-  accent,
-  icon,
-}: {
-  label: string;
-  value: number;
-  accent: string;
-  icon?: ReactNode;
-}) {
-  return (
-    <div>
-      <div className="mb-1 flex items-center justify-between text-xs text-white/60">
-        <span className="flex items-center gap-1 text-white/70">
-          {icon}
-          {label}
-        </span>
-        <span className="text-white">{value}%</span>
-      </div>
-      <div className="h-2 rounded-full bg-white/10">
-        <div className={`h-full rounded-full ${accent}`} style={{ width: `${value}%` }} />
-      </div>
-    </div>
   );
 }
