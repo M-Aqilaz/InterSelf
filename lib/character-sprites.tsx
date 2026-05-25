@@ -1,10 +1,11 @@
 export type SpriteProps = {
   className?: string;
+  style?: React.CSSProperties;
 };
 
-export function SageSprite({ className = "" }: SpriteProps) {
+export function SageSprite({ className = "", style }: SpriteProps) {
   return (
-    <svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" className={className} style={style}>
       <ellipse cx="60" cy="140" rx="40" ry="8" fill="#7c3aed" opacity=".15"/>
       <path d="M30 80 Q20 120 25 150 Q60 145 95 150 Q100 120 90 80 Q75 70 60 68 Q45 70 30 80Z" fill="#1e1040"/>
       <path d="M35 85 Q25 118 28 148 Q60 143 92 148 Q95 118 85 85" fill="#2a1858"/>
@@ -33,9 +34,9 @@ export function SageSprite({ className = "" }: SpriteProps) {
   );
 }
 
-export function IroncladSprite({ className = "" }: SpriteProps) {
+export function IroncladSprite({ className = "", style }: SpriteProps) {
   return (
-    <svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" className={className} style={style}>
       <ellipse cx="60" cy="142" rx="42" ry="9" fill="#dc2626" opacity=".12"/>
       <path d="M25 85 Q15 128 20 152 Q60 148 100 152 Q105 128 95 85 Q78 72 60 70 Q42 72 25 85Z" fill="#1c0a0a"/>
       <path d="M32 92 Q24 124 26 150 Q60 146 94 150 Q96 124 88 92" fill="#2d1010"/>
@@ -68,9 +69,9 @@ export function IroncladSprite({ className = "" }: SpriteProps) {
   );
 }
 
-export function PhantomSprite({ className = "" }: SpriteProps) {
+export function PhantomSprite({ className = "", style }: SpriteProps) {
   return (
-    <svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" className={className} style={style}>
       <ellipse cx="60" cy="142" rx="38" ry="7" fill="#6d28d9" opacity=".1"/>
       <path d="M28 82 Q16 125 22 155 Q60 148 98 155 Q104 125 92 82 Q76 68 60 66 Q44 68 28 82Z" fill="#0d0818" opacity=".9"/>
       <path d="M34 88 Q24 120 26 152 Q60 146 94 152 Q96 120 86 88" fill="#140d24" opacity=".8"/>
@@ -104,9 +105,9 @@ export function PhantomSprite({ className = "" }: SpriteProps) {
   );
 }
 
-export function MerchantSprite({ className = "" }: SpriteProps) {
+export function MerchantSprite({ className = "", style }: SpriteProps) {
   return (
-    <svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" className={className} style={style}>
       <ellipse cx="60" cy="142" rx="42" ry="8" fill="#d97706" opacity=".12"/>
       <path d="M28 82 Q18 124 22 152 Q60 146 98 152 Q102 124 92 82 Q76 70 60 68 Q44 70 28 82Z" fill="#1c1204"/>
       <path d="M34 88 Q26 120 28 150 Q60 144 92 150 Q94 120 86 88" fill="#2d1e06"/>

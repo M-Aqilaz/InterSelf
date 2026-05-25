@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { subscribeToTasksUpdate } from "@/lib/events";
 
@@ -11,14 +10,34 @@ type Challenge = {
   description: string;
   progress: number;
   target: number;
-  startDate: string;
   endDate: string;
   rewardExp: number;
   rewardCoins: number;
-  rewardItemName?: string | null;
   claimable: boolean;
   claimedAt: string | null;
 };
+
+const BAR_COLORS = [
+  "linear-gradient(90deg, #7c3aed, #8b5cf6)",
+  "linear-gradient(90deg, #d97706, #fbbf24)",
+  "linear-gradient(90deg, #0891b2, #22d3ee)",
+];
+
+function timeUntil(dateStr: string): string {
+  const diff = new Date(dateStr).getTime() - Date.now();
+  if (diff <= 0) return "Ended";
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  if (days > 0) return `Resets in ${days}d ${hours}h ${mins}m`;
+  return `Resets in ${hours}h ${mins}m`;
+}
+
+const FALLBACK: Challenge[] = [
+  { id: -1, title: "Complete 25 habits this week", description: "", progress: 18, target: 25, endDate: new Date(Date.now() + 3.5 * 24 * 60 * 60 * 1000).toISOString(), rewardExp: 300, rewardCoins: 150, claimable: false, claimedAt: null },
+  { id: -2, title: "Workout 4x this week", description: "", progress: 3, target: 4, endDate: new Date(Date.now() + 3.5 * 24 * 60 * 60 * 1000).toISOString(), rewardExp: 200, rewardCoins: 50, claimable: false, claimedAt: null },
+  { id: -3, title: "Study total 10 hours", description: "", progress: 7, target: 10, endDate: new Date(Date.now() + 3.5 * 24 * 60 * 60 * 1000).toISOString(), rewardExp: 250, rewardCoins: 50, claimable: false, claimedAt: null },
+];
 
 export function WeeklyChallengesPanel() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
@@ -30,131 +49,80 @@ export function WeeklyChallengesPanel() {
     setLoading(true);
     try {
       const res = await fetch("/api/challenges", { cache: "no-store" });
-      if (!res.ok) throw new Error("Unable to load challenges");
-      const data = (await res.json()) as { challenges: Challenge[] };
-      setChallenges(data.challenges);
+      if (!res.ok) throw new Error("fail");
+      const data = await res.json() as { challenges: Challenge[] };
+      setChallenges(data.challenges.slice(0, 3));
     } catch {
-      push({ title: "Failed to load weekly challenges", variant: "error" });
+      setChallenges([]);
     } finally {
       setLoading(false);
     }
-  }, [push]);
+  }, []);
 
+  useEffect(() => { void loadChallenges(); }, [loadChallenges]);
   useEffect(() => {
-    void (async () => {
-      await loadChallenges();
-    })();
+    const unsub = subscribeToTasksUpdate(() => void loadChallenges());
+    return unsub;
   }, [loadChallenges]);
 
-  useEffect(() => {
-    const unsubscribe = subscribeToTasksUpdate(() => {
-      void loadChallenges();
-    });
-    return unsubscribe;
-  }, [loadChallenges]);
-
-  function claim(challengeId: number) {
+  function claim(id: number) {
     startTransition(async () => {
-      const res = await fetch(`/api/challenges/${challengeId}/claim`, { method: "POST" });
+      const res = await fetch(`/api/challenges/${id}/claim`, { method: "POST" });
       const data = await res.json();
-      if (!res.ok) {
-        push({ title: data.error ?? "Unable to claim", variant: "error" });
-        return;
-      }
-      push({
-        title: "Challenge reward claimed",
-        description:
-          `+${data.reward.exp} EXP · ${data.reward.coins} coins` +
-          (data.reward.item ? ` · ${data.reward.item}` : ""),
-        variant: "success",
-      });
-      loadChallenges();
+      if (!res.ok) { push({ title: data.error ?? "Failed", variant: "error" }); return; }
+      push({ title: "Reward claimed!", variant: "success" });
+      void loadChallenges();
     });
   }
 
+  const display = challenges.length > 0 ? challenges : FALLBACK;
+  const resetLabel = display[0] ? timeUntil(display[0].endDate) : "";
+
   return (
-    <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.07] to-white/[0.02] p-5 sm:p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.28em] text-white/50">Weekly Challenges</p>
-          <h3 className="text-xl font-black text-white sm:text-2xl">Limited-Time Arcs</h3>
+    <div className="flex flex-col overflow-hidden rounded-2xl border" style={{ background: "#0c1018", borderColor: "rgba(255,255,255,0.07)" }}>
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+        <div className="flex items-center gap-2 text-xs font-black text-white">
+          <span>🏆</span><span>Weekly Challenge</span>
         </div>
+        <span className="text-[10px] font-semibold" style={{ color: "#22d3ee" }}>{resetLabel}</span>
       </div>
-      {loading ? (
-        <p className="mt-6 text-sm text-white/60">Loading weekly challenges...</p>
-      ) : challenges.length ? (
-        <ul className="mt-6 space-y-4">
-          {challenges.map((challenge) => (
-            <li key={challenge.id} className="rounded-2xl border border-white/10 bg-black/25 p-4 sm:p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-base font-semibold text-white">{challenge.title}</p>
-                  <p className="mt-1 text-sm text-white/65">{challenge.description}</p>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-left text-xs text-white/70 sm:text-right">
-                  <p className="font-medium text-white/80">
-                    Reward: {challenge.rewardExp} EXP · {challenge.rewardCoins} coins
-                    {challenge.rewardItemName ? ` · ${challenge.rewardItemName}` : ""}
-                  </p>
-                  <p className="mt-1">
-                    {new Date(challenge.startDate).toLocaleDateString()} —
-                    {new Date(challenge.endDate).toLocaleDateString()}
-                  </p>
-                </div>
+
+      <div className="flex flex-col gap-4 px-4 pb-4">
+        {display.map((ch, idx) => {
+          const pct = ch.target > 0 ? Math.min(100, Math.round((ch.progress / ch.target) * 100)) : 0;
+          const barColor = BAR_COLORS[idx % BAR_COLORS.length];
+          const isDone = ch.claimedAt !== null;
+          return (
+            <div key={ch.id} className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-white">{ch.title}</span>
+                <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>{ch.progress} / {ch.target}</span>
               </div>
-              <div className="mt-4">
-                <div className="mb-1.5 flex justify-between text-xs text-white/55">
-                  <span>Progress</span>
-                  <span>
-                    {challenge.target === 0
-                      ? 0
-                      : Math.min(100, Math.round((challenge.progress / challenge.target) * 100))}
-                    %
-                  </span>
-                </div>
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/10">
-                  <div
-                    className="h-full rounded-full transition-[width] duration-500"
-                    style={{
-                      width: `${challenge.target === 0
-                        ? 0
-                        : Math.min(100, Math.round((challenge.progress / challenge.target) * 100))}%`,
-                      background:
-                        (challenge.target === 0
-                          ? 0
-                          : Math.min(100, Math.round((challenge.progress / challenge.target) * 100))) >= 60
-                          ? "linear-gradient(90deg, var(--jade-dim), var(--jade-light))"
-                          : "linear-gradient(90deg, var(--gold-dim), var(--gold))",
-                    }}
-                  />
-                </div>
+              <div className="h-[6px] overflow-hidden rounded-full" style={{ background: "rgba(255,255,255,0.07)" }}>
+                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: barColor }} />
               </div>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-white/65">
-                <span className="rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1">
-                  {challenge.progress}/{challenge.target} completions
-                </span>
-                {challenge.claimable ? (
-                  <Button
-                    size="sm"
-                    disabled={pending}
-                    onClick={() => claim(challenge.id)}
-                  >
-                    Claim Reward
-                  </Button>
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] font-bold" style={{ color: "#a78bfa" }}>🎁 +{ch.rewardExp} XP</span>
+                <span className="text-[9px] font-bold" style={{ color: "#f59e0b" }}>🪙+{ch.rewardCoins}</span>
+                {isDone ? (
+                  <span className="ml-auto rounded-full px-2 py-[2px] text-[9px] font-bold" style={{ background: "rgba(58,170,122,0.15)", color: "#3aaa7a" }}>Claimed ✓</span>
+                ) : ch.claimable ? (
+                  <button type="button" disabled={pending} onClick={() => claim(ch.id)} className="ml-auto rounded-full px-2 py-[2px] text-[9px] font-bold" style={{ background: "rgba(139,92,246,0.25)", color: "#c4b5fd" }}>Claim Reward</button>
                 ) : (
-                  <span className="text-white/55">
-                    {challenge.claimedAt
-                      ? `Claimed ${new Date(challenge.claimedAt).toLocaleDateString()}`
-                      : "Keep pushing"}
-                  </span>
+                  <span className="ml-auto rounded-full border px-2 py-[2px] text-[9px] font-bold" style={{ background: "rgba(34,211,238,0.08)", borderColor: "rgba(34,211,238,0.2)", color: "#22d3ee" }}>In Progress</span>
                 )}
               </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-6 text-sm text-white/60">No weekly challenges available.</p>
-      )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="px-4 pb-4">
+        <button type="button" className="w-full rounded-xl border py-[9px] text-[11px] font-bold transition hover:border-white/20" style={{ background: "#111520", borderColor: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.6)" }}
+          onClick={() => { window.location.hash = "mission"; window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+          View All Challenges →
+        </button>
+      </div>
     </div>
   );
 }

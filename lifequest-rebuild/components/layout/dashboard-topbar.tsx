@@ -18,11 +18,17 @@ export function DashboardTopbar({
   energy = 5,
   energyMax = 5,
   notifCount = 3,
+  characterClass,
 }: DashboardTopbarProps) {
+  const router = useRouter();
+
   return (
     <header
       className="sticky top-0 z-40 flex h-[52px] items-center justify-between border-b px-5"
-      style={{ background: "#0a0e17", borderColor: "rgba(255,255,255,0.07)" }}
+      style={{
+        background: "#0a0e17",
+        borderColor: "rgba(255,255,255,0.07)",
+      }}
     >
       {/* LEFT: Brand */}
       <div className="flex items-center gap-3">
@@ -36,34 +42,57 @@ export function DashboardTopbar({
         </div>
         <div>
           <div className="text-sm font-black tracking-wider text-white">LifeQuest</div>
-          <div className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/40">RPG Your Life</div>
+          <div className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/40">
+            RPG Your Life
+          </div>
         </div>
       </div>
 
       {/* CENTER: Stat Pills */}
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 rounded-xl border px-3 py-[6px]" style={{ background: "#111520", borderColor: "rgba(255,255,255,0.08)" }}>
+        {/* Coins */}
+        <div
+          className="flex items-center gap-2 rounded-xl border px-3 py-[6px]"
+          style={{ background: "#111520", borderColor: "rgba(255,255,255,0.08)" }}
+        >
           <span className="text-sm">🪙</span>
           <div>
             <div className="text-xs font-bold text-white">{coins.toLocaleString()}</div>
             <div className="font-mono text-[9px] text-white/40">Coins</div>
           </div>
         </div>
-        <div className="flex items-center gap-2 rounded-xl border px-3 py-[6px]" style={{ background: "#111520", borderColor: "rgba(255,255,255,0.08)" }}>
+        {/* Gems */}
+        <div
+          className="flex items-center gap-2 rounded-xl border px-3 py-[6px]"
+          style={{ background: "#111520", borderColor: "rgba(255,255,255,0.08)" }}
+        >
           <span className="text-sm">💎</span>
           <div>
             <div className="text-xs font-bold text-white">{gems.toLocaleString()}</div>
             <div className="font-mono text-[9px] text-white/40">Gems</div>
           </div>
         </div>
-        <div className="flex items-center gap-2 rounded-xl border px-3 py-[6px]" style={{ background: "#111520", borderColor: "rgba(255,255,255,0.08)" }}>
+        {/* Energy */}
+        <div
+          className="flex items-center gap-2 rounded-xl border px-3 py-[6px]"
+          style={{ background: "#111520", borderColor: "rgba(255,255,255,0.08)" }}
+        >
           <span className="text-sm">⚡</span>
           <div>
-            <div className="text-xs font-bold text-white">{energy}/{energyMax}</div>
+            <div className="text-xs font-bold text-white">
+              {energy}/{energyMax}
+            </div>
             <div className="font-mono text-[9px] text-white/40">Energy</div>
           </div>
         </div>
-        <button type="button" className="flex h-8 w-8 items-center justify-center rounded-xl border text-sm text-white/50 transition hover:text-white" style={{ background: "#111520", borderColor: "rgba(255,255,255,0.08)" }}>+</button>
+        {/* Plus button */}
+        <button
+          type="button"
+          className="flex h-8 w-8 items-center justify-center rounded-xl border text-sm text-white/50 transition hover:text-white"
+          style={{ background: "#111520", borderColor: "rgba(255,255,255,0.08)" }}
+        >
+          +
+        </button>
       </div>
 
       {/* RIGHT: Notif + Avatar */}
@@ -71,14 +100,22 @@ export function DashboardTopbar({
         <button type="button" className="relative flex h-8 w-8 items-center justify-center">
           <span className="text-lg text-white/60">🔔</span>
           {notifCount > 0 && (
-            <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black text-white" style={{ background: "#e05a6a" }}>
+            <span
+              className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black text-white"
+              style={{ background: "#e05a6a" }}
+            >
               {notifCount}
             </span>
           )}
         </button>
-        <div className="flex h-[34px] w-[34px] items-center justify-center overflow-hidden rounded-full border" style={{ borderColor: "rgba(139,92,246,0.5)", background: "#1e1040" }}>
+        <button
+          type="button"
+          className="flex h-[34px] w-[34px] items-center justify-center overflow-hidden rounded-full border"
+          style={{ borderColor: "rgba(139,92,246,0.5)", background: "#1e1040" }}
+          onClick={() => router.push("/dashboard#status")}
+        >
           <SageSprite className="h-10 w-8 translate-y-1" />
-        </div>
+        </button>
       </div>
     </header>
   );
