@@ -2,134 +2,96 @@
 
 import { CLASS_COLORS, getCharacterSprite } from "@/lib/character-sprites";
 
-type CharacterCardProps = {
+type Props = {
   username: string;
   title: string;
   level: number;
   expIntoLevel: number;
   expForNextLevel: number;
-  hp?: number;
-  hpMax?: number;
-  energy?: number;
-  energyMax?: number;
+  hp?: number; hpMax?: number;
+  energy?: number; energyMax?: number;
   coins: number;
   characterClass?: string | null;
 };
 
-export function CharacterCard({
-  username,
-  title,
-  level,
-  expIntoLevel,
-  expForNextLevel,
-  hp = 90,
-  hpMax = 100,
-  energy = 5,
-  energyMax = 5,
-  coins,
-  characterClass,
-}: CharacterCardProps) {
+export function CharacterCard({ username, level, expIntoLevel, expForNextLevel, hp = 90, hpMax = 100, energy = 5, energyMax = 5, coins, characterClass }: Props) {
   const charClass = characterClass ?? "SAGE";
   const colors = CLASS_COLORS[charClass] ?? CLASS_COLORS.DEFAULT;
   const Sprite = getCharacterSprite(charClass);
-  const expPercent = expForNextLevel > 0
-    ? Math.min(100, Math.round((expIntoLevel / expForNextLevel) * 100))
-    : 70;
-
-  const classLabels: Record<string, string> = {
-    IRONCLAD: "Iron Warden",
-    SAGE: "Discipline Hunter",
-    PHANTOM: "Shadow Stalker",
-    MERCHANT: "Coin Collector",
-  };
-  const classIcons: Record<string, string> = {
-    IRONCLAD: "🛡️", SAGE: "🛡️", PHANTOM: "🗡️", MERCHANT: "💰",
-  };
+  const expPct = expForNextLevel > 0 ? Math.min(100, Math.round((expIntoLevel / expForNextLevel) * 100)) : 70;
+  const labels: Record<string, string> = { IRONCLAD: "Iron Warden", SAGE: "Discipline Hunter", PHANTOM: "Shadow Stalker", MERCHANT: "Coin Collector" };
+  const icons: Record<string, string> = { IRONCLAD: "🛡️", SAGE: "🛡️", PHANTOM: "🗡️", MERCHANT: "💰" };
 
   return (
-    <div
-      className="relative flex flex-col overflow-hidden rounded-2xl border"
-      style={{
-        background: `linear-gradient(160deg, ${colors.primary}28 0%, #0e0a1f 55%, #080b15 100%)`,
-        borderColor: `${colors.accent}30`,
-        minHeight: 420,
-      }}
-    >
-      {/* glow */}
-      <div className="pointer-events-none absolute inset-0"
-        style={{ background: `radial-gradient(ellipse at 30% 0%, ${colors.primary}18 0%, transparent 60%)` }} />
+    <div style={{
+      position: "relative", display: "flex", flexDirection: "column",
+      overflow: "hidden", borderRadius: 16,
+      border: `1px solid ${colors.accent}35`,
+      background: `linear-gradient(160deg, ${colors.primary}30 0%, #12093a 35%, #080b15 100%)`,
+      minHeight: 440,
+    }}>
+      {/* Glow */}
+      <div style={{ position: "absolute", inset: 0, background: `radial-gradient(ellipse at 50% 10%, ${colors.primary}25 0%, transparent 55%)`, pointerEvents: "none" }} />
 
       {/* LEVEL badge */}
-      <div
-        className="absolute left-1/2 top-0 -translate-x-1/2 rounded-b-lg px-3 py-[3px] font-mono text-[9px] font-black uppercase tracking-wider text-black"
-        style={{ background: "#ffffff", whiteSpace: "nowrap" }}
-      >
+      <div style={{
+        position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+        background: "#fff", color: "#111", fontFamily: "monospace", fontSize: 10,
+        fontWeight: 900, padding: "4px 14px", borderRadius: "0 0 10px 10px",
+        letterSpacing: "0.1em", whiteSpace: "nowrap", zIndex: 10,
+      }}>
         LEVEL {level}
       </div>
 
-      {/* Character sprite — BESAR */}
-      <div className="relative flex justify-center pt-6">
-        <div
-          className="relative flex items-end justify-center"
-          style={{
-            height: 220,
-            width: "100%",
-            background: `radial-gradient(ellipse at 50% 80%, ${colors.primary}18 0%, transparent 65%)`,
-          }}
-        >
-          <Sprite className="relative z-10" style={{ height: 200, width: 160 }} />
-          <div
-            className="absolute bottom-0 left-1/2 h-5 w-32 -translate-x-1/2 rounded-full blur-md"
-            style={{ background: `${colors.primary}30` }}
-          />
+      {/* Sprite area */}
+      <div style={{ position: "relative", display: "flex", justifyContent: "center", paddingTop: 28, height: 240 }}>
+        <div style={{
+          position: "relative", width: "100%", height: "100%",
+          display: "flex", alignItems: "flex-end", justifyContent: "center",
+          background: `radial-gradient(ellipse at 50% 90%, ${colors.primary}22 0%, transparent 60%)`,
+        }}>
+          <Sprite style={{ height: 210, width: 175, position: "relative", zIndex: 1 }} />
+          <div style={{
+            position: "absolute", bottom: 4, left: "50%", transform: "translateX(-50%)",
+            width: 80, height: 10, background: `${colors.primary}45`, borderRadius: "50%", filter: "blur(8px)",
+          }} />
         </div>
       </div>
 
       {/* Info */}
-      <div className="relative px-4 pb-4 pt-2">
-        <div className="mb-[2px] flex items-center gap-2">
-          <div
-            className="flex h-5 w-5 items-center justify-center rounded-md text-[11px]"
-            style={{ background: `${colors.primary}30` }}
-          >
-            {classIcons[charClass] ?? "🛡️"}
+      <div style={{ position: "relative", padding: "10px 16px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+          <div style={{ width: 20, height: 20, background: `${colors.primary}35`, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11 }}>
+            {icons[charClass] ?? "🛡️"}
           </div>
-          <span className="text-[15px] font-black text-white">{username}</span>
+          <span style={{ fontSize: 15, fontWeight: 900, color: "#fff" }}>{username}</span>
         </div>
-        <div className="mb-3 text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>
-          {classLabels[charClass] ?? "Adventurer"}
+        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginBottom: 12 }}>
+          {labels[charClass] ?? "Adventurer"}
         </div>
 
         {/* EXP */}
-        <div className="mb-1 flex justify-between text-[10px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "rgba(255,255,255,0.45)", marginBottom: 4 }}>
           <span>EXP Progress</span>
-          <span>
-            {expIntoLevel.toLocaleString()} / {expForNextLevel.toLocaleString()}&nbsp;
-            <span className="font-bold" style={{ color: colors.accent }}>{expPercent}%</span>
-          </span>
+          <span>{expIntoLevel.toLocaleString()} / {expForNextLevel.toLocaleString()} <span style={{ fontWeight: 700, color: colors.accent }}>{expPct}%</span></span>
         </div>
-        <div className="mb-4 h-[6px] overflow-hidden rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
-          <div className="h-full rounded-full"
-            style={{ width: `${expPercent}%`, background: `linear-gradient(90deg, ${colors.primary}, ${colors.accent})` }} />
+        <div style={{ height: 7, background: "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden", marginBottom: 16 }}>
+          <div style={{ height: "100%", width: `${expPct}%`, background: `linear-gradient(90deg, ${colors.primary}, ${colors.accent})`, borderRadius: 4 }} />
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="text-center">
-            <div className="text-sm">❤️</div>
-            <div className="text-xs font-bold text-white">{hp}/{hpMax}</div>
-            <div className="font-mono text-[9px]" style={{ color: "rgba(255,255,255,0.35)" }}>HP</div>
-          </div>
-          <div className="text-center">
-            <div className="text-sm">⚡</div>
-            <div className="text-xs font-bold text-white">{energy}/{energyMax}</div>
-            <div className="font-mono text-[9px]" style={{ color: "rgba(255,255,255,0.35)" }}>Energy</div>
-          </div>
-          <div className="text-center">
-            <div className="text-sm">🪙</div>
-            <div className="text-xs font-bold" style={{ color: "#f59e0b" }}>{coins.toLocaleString()}</div>
-            <div className="font-mono text-[9px]" style={{ color: "rgba(255,255,255,0.35)" }}>Coins</div>
-          </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+          {[
+            { icon: "❤️", val: `${hp}/${hpMax}`, lbl: "HP" },
+            { icon: "⚡", val: `${energy}/${energyMax}`, lbl: "Energy" },
+            { icon: "🪙", val: coins.toLocaleString(), lbl: "Coins", color: "#f59e0b" },
+          ].map((s) => (
+            <div key={s.lbl} style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 16, marginBottom: 2 }}>{s.icon}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: s.color ?? "#fff" }}>{s.val}</div>
+              <div style={{ fontFamily: "monospace", fontSize: 9, color: "rgba(255,255,255,0.35)" }}>{s.lbl}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

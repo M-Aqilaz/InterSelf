@@ -279,15 +279,10 @@ export default async function DashboardPage() {
                   </div>
                 </div>
               }
-              vaultDetail={
-                <>
-                  <div className="grid gap-4 xl:grid-cols-2">
-                    <InventoryPanel />
-                    <ShopPanel />
-                  </div>
-                  <AchievementsPanel />
-                </>
-              }
+              vaultDetail={<InventoryPanel />}
+              inventoryDetail={<InventoryPanel />}
+              shopDetail={<ShopPanel />}
+              achievementsDetail={<AchievementsPanel />}
               oracleDetail={
                 <>
                   <LeaderboardPanel />
@@ -299,6 +294,9 @@ export default async function DashboardPage() {
               }
               arenaDetail={<PvpPreviewPanel />}
               guildDetail={<FriendsPanel />}
+              inventoryDetail={<InventoryPanel />}
+              shopDetail={<ShopPanel />}
+              achievementsDetail={<AchievementsPanel />}
             />
           </main>
         </div>
@@ -314,3 +312,5 @@ export default async function DashboardPage() {
 
 import { DashboardContentRouter } from "@/components/layout/dashboard-content-router";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
+
+

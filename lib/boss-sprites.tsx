@@ -1,14 +1,16 @@
 export type BossSpriteProps = {
+  style?: React.CSSProperties;
   className?: string;
   isHit?: boolean;
 };
 
-export function ProkrastinasiAbyssalSprite({ className = "", isHit = false }: BossSpriteProps) {
+export function ProkrastinasiAbyssalSprite({ className = "", isHit = false, style }: BossSpriteProps) {
   return (
     <svg
       viewBox="0 0 140 160"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
+      style={style}
       style={isHit ? { filter: "brightness(2) saturate(0)" } : undefined}
     >
       <ellipse cx="70" cy="145" rx="50" ry="10" fill="#dc2626" opacity=".15"/>
@@ -48,9 +50,10 @@ export function ProkrastinasiAbyssalSprite({ className = "", isHit = false }: Bo
   );
 }
 
-export function EchoTitanSprite({ className = "", isHit = false }: BossSpriteProps) {
+export function EchoTitanSprite({ className = "", isHit = false, style }: BossSpriteProps) {
   return (
     <svg viewBox="0 0 140 160" xmlns="http://www.w3.org/2000/svg" className={className}
+      style={style}
       style={isHit ? { filter: "brightness(2) saturate(0)" } : undefined}>
       <ellipse cx="70" cy="145" rx="55" ry="10" fill="#22d3ee" opacity=".12"/>
       <path d="M18 78 Q10 130 15 158 Q70 150 125 158 Q130 130 122 78 Q100 62 70 60 Q40 62 18 78Z" fill="#021a1a"/>
