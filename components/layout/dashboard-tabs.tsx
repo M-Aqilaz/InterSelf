@@ -3,14 +3,13 @@
 import { useCallback, useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import {
   Archive,
-  BookOpen,
   Coins,
   Compass,
   Shield,
   Sparkles,
   Swords,
+  Trophy,
   Users,
-  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,7 +23,7 @@ import {
   type SpriteProps,
 } from "@/lib/character-sprites";
 
-type DashboardTabId = "mission" | "battle" | "status" | "oracle" | "vault" | "arena" | "guild";
+type DashboardTabId = "mission" | "status" | "oracle" | "vault" | "arena" | "guild";
 
 type DashboardPanelsProps = Record<DashboardTabId, ReactNode>;
 
@@ -53,26 +52,20 @@ const tabs: DashboardTab[] = [
   {
     id: "mission",
     label: "Mission",
-    description: "Daily quest briefing and task list.",
+    description: "Quest board, combat, dungeon, and focus mode.",
     icon: Compass,
   },
   {
-    id: "battle",
-    label: "Battle",
-    description: "Focus sessions, boss raids, dungeon, and PvP.",
-    icon: Zap,
-  },
-  {
     id: "status",
-    label: "Status",
-    description: "Character stats, habits, and goals.",
+    label: "Profile",
+    description: "Character card, stats, habits, and goals.",
     icon: Shield,
   },
   {
     id: "oracle",
-    label: "Oracle",
-    description: "Weekly arcs, AI coach, and analytics.",
-    icon: BookOpen,
+    label: "Ranking",
+    description: "Leaderboard, analytics, and coach insight.",
+    icon: Trophy,
   },
   {
     id: "vault",
@@ -116,7 +109,7 @@ function getTabFromHash(): DashboardTabId {
   return tabIds.has(hash) ? hash : "mission";
 }
 
-export function DashboardTabs({ profile, mission, battle, status, oracle, vault, arena, guild }: DashboardTabsProps) {
+export function DashboardTabs({ profile, mission, status, oracle, vault, arena, guild }: DashboardTabsProps) {
   const [activeTab, setActiveTab] = useState<DashboardTabId>("mission");
   const { play } = useGameAudio();
   const activeMeta = useMemo(
@@ -154,7 +147,6 @@ export function DashboardTabs({ profile, mission, battle, status, oracle, vault,
 
   const panels: DashboardPanelsProps = {
     mission,
-    battle,
     status,
     oracle,
     vault,
@@ -166,7 +158,7 @@ export function DashboardTabs({ profile, mission, battle, status, oracle, vault,
     <div className="grid w-full gap-5 lg:grid-cols-[18rem_minmax(0,1fr)] xl:grid-cols-[19.5rem_minmax(0,1fr)] 2xl:grid-cols-[21rem_minmax(0,1fr)]">
       <aside className="lg:sticky lg:top-[5.25rem] lg:h-[calc(100vh-6.5rem)] lg:self-start">
         <div className="flex h-full flex-col gap-3 rounded-3xl border border-white/[0.08] bg-[#0b0f18]/88 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:p-4">
-          <PlayerCard profile={profile} />
+          <PlayerCard profile={profile} onOpenStatus={() => switchTab("status")} />
 
           <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
             <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-cyan-300/60">
@@ -239,7 +231,13 @@ export function DashboardTabs({ profile, mission, battle, status, oracle, vault,
   );
 }
 
-function PlayerCard({ profile }: { profile: DashboardProfile }) {
+function PlayerCard({
+  profile,
+  onOpenStatus,
+}: {
+  profile: DashboardProfile;
+  onOpenStatus: () => void;
+}) {
   const characterClass = profile.characterClass ?? "SAGE";
   const className = classLabels[characterClass] ?? "Adventurer";
   const colors = CLASS_COLORS[characterClass] ?? CLASS_COLORS.DEFAULT;
@@ -249,8 +247,11 @@ function PlayerCard({ profile }: { profile: DashboardProfile }) {
   const expPercent = Math.min(100, Math.round((expValue / expTarget) * 100));
 
   return (
-    <div
-      className="relative overflow-hidden rounded-3xl border p-4"
+    <button
+      type="button"
+      className="group relative overflow-hidden rounded-3xl border p-4 text-left transition duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-300/70"
+      onClick={onOpenStatus}
+      aria-label="Open character profile"
       style={{
         borderColor: `${colors.accent}45`,
         background:
@@ -322,6 +323,9 @@ function PlayerCard({ profile }: { profile: DashboardProfile }) {
           </p>
         </div>
       </div>
-    </div>
+      <div className="relative mt-3 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2 text-center text-[10px] font-black uppercase tracking-[0.22em] text-white/45 transition group-hover:border-amber-300/35 group-hover:text-amber-200">
+        Open Profile
+      </div>
+    </button>
   );
 }

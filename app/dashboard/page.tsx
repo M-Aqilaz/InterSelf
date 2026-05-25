@@ -187,14 +187,12 @@ export default async function DashboardPage() {
                   <DailyTasksPanel />
                   <WeeklyChallengesPanel />
                 </div>
-              </>
-            }
-            battle={
-              <>
-                <BossBattlePanel productivityCompletion={dailyCompletionPercent} />
-                <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                  <DungeonNavigationPanel />
-                  <FocusModePanel />
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+                  <BossBattlePanel productivityCompletion={dailyCompletionPercent} />
+                  <div className="grid grid-cols-1 gap-4">
+                    <DungeonNavigationPanel />
+                    <FocusModePanel />
+                  </div>
                 </div>
               </>
             }
@@ -223,11 +221,11 @@ export default async function DashboardPage() {
             }
             oracle={
               <>
+                <LeaderboardPanel />
                 <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                   <AiCoachPanel />
                   <ProductivityAnalyticsPanel />
                 </div>
-                <LeaderboardPanel />
               </>
             }
             vault={
