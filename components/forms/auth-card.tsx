@@ -31,11 +31,25 @@ interface AuthCardProps {
   mode: "login" | "register";
 }
 
+type AuthFieldProps = {
+  label: string;
+  type: string;
+  name: string;
+  value: string;
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  placeholder: string;
+  autoComplete: string;
+  minLength?: number;
+};
+
 export function AuthCard({ mode }: AuthCardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectParam = searchParams?.get("redirect");
-  const redirectTo = redirectParam?.startsWith("/") && !redirectParam.startsWith("//") ? redirectParam : "/dashboard";
+  const redirectTo =
+    redirectParam?.startsWith("/") && !redirectParam.startsWith("//")
+      ? redirectParam
+      : "/dashboard";
   const googleHref = `/api/auth/google?redirect=${encodeURIComponent(redirectTo)}`;
   const oauthError = getOauthErrorMessage(searchParams?.get("error"));
 
@@ -49,6 +63,7 @@ export function AuthCard({ mode }: AuthCardProps) {
   const [pending, startTransition] = useTransition();
 
   const labels = copy[mode];
+  const isLogin = mode === "login";
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -59,7 +74,7 @@ export function AuthCard({ mode }: AuthCardProps) {
     setError(null);
     setSuccess(null);
 
-    const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/register";
+    const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
     const payload: Record<string, string> = {
       email: formData.email.trim().toLowerCase(),
       password: formData.password,
@@ -95,102 +110,127 @@ export function AuthCard({ mode }: AuthCardProps) {
   }
 
   return (
-    <Card
-      style={{
-        maxWidth: "400px",
-        margin: "0 auto",
-        borderRadius: "20px",
-        border: "1px solid var(--border-2)",
-        background: "rgba(12,16,24,0.85)",
-        backdropFilter: "blur(24px)",
-        padding: "32px",
-      }}
-    >
-      <div className="mb-6 space-y-3 text-center">
-        <Badge variant="void" className="mx-auto w-fit">
-          {mode === "login" ? "Returning Hunter" : "New Awakened"}
-        </Badge>
-        <h1 className="text-3xl font-black text-white">{labels.title}</h1>
-        <p className="text-sm text-white/70">{labels.subtitle}</p>
+    <Card className="mx-auto w-full max-w-[34rem] overflow-hidden border-white/10 bg-[#10131c]/90 p-0 shadow-[0_24px_90px_rgba(0,0,0,0.45)]">
+      <div className="border-b border-white/10 px-5 py-6 sm:px-8 sm:py-8">
+        <div className="space-y-3 text-center">
+          <Badge variant="void" className="mx-auto w-fit">
+            {isLogin ? "Returning Hunter" : "New Awakened"}
+          </Badge>
+          <h1 className="text-balance text-3xl font-black leading-tight text-white sm:text-4xl">
+            {labels.title}
+          </h1>
+          <p className="text-sm leading-relaxed text-white/70 sm:text-base">{labels.subtitle}</p>
+        </div>
       </div>
-      <form className="space-y-5" onSubmit={handleSubmit}>
-        <label className="flex flex-col gap-2 text-sm font-semibold uppercase tracking-[0.3em] text-white/70">
-          Email
-          <input
+
+      <div className="px-5 py-5 sm:px-8 sm:py-6">
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          <AuthField
+            label="Email"
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
-            required
-            className="input-dark"
             placeholder="hunter@interself.gg"
+            autoComplete="email"
           />
-        </label>
-        {mode === "register" && (
-          <label className="flex flex-col gap-2 text-sm font-semibold uppercase tracking-[0.3em] text-white/70">
-            Username
-            <input
+          {mode === "register" && (
+            <AuthField
+              label="Username"
               type="text"
               name="username"
               value={formData.username}
               onChange={handleChange}
-              required={mode === "register"}
-              minLength={3}
-              className="input-dark"
               placeholder="shadow_breaker"
+              autoComplete="username"
+              minLength={3}
             />
-          </label>
-        )}
-        <label className="flex flex-col gap-2 text-sm font-semibold uppercase tracking-[0.3em] text-white/70">
-          Password
-          <input
+          )}
+          <AuthField
+            label="Password"
             type="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
-            required
-            minLength={mode === "register" ? 8 : 1}
-            className="input-dark"
             placeholder="••••••••"
+            autoComplete={isLogin ? "current-password" : "new-password"}
+            minLength={isLogin ? 1 : 8}
           />
-        </label>
-        {error ? (
-          <p className="text-sm text-red-400">{error}</p>
-        ) : success ? (
-          <p className="text-sm text-emerald-300">{success}</p>
-        ) : null}
-        <Button type="submit" className="btn-gold w-full justify-center" disabled={pending}>
-          {pending ? "Synchronizing..." : labels.submitLabel}
+          {error ? (
+            <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm leading-relaxed text-red-300">
+              {error}
+            </p>
+          ) : success ? (
+            <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+              {success}
+            </p>
+          ) : null}
+          <Button type="submit" className="h-14 w-full rounded-full text-base" disabled={pending}>
+            {pending ? "Synchronizing..." : labels.submitLabel}
+          </Button>
+        </form>
+
+        <div className="my-5 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.3em] text-white/35">
+          <span className="h-px flex-1 bg-white/10" />
+          Or
+          <span className="h-px flex-1 bg-white/10" />
+        </div>
+
+        <Button asChild variant="secondary" className="h-14 w-full rounded-full text-base">
+          <Link href={googleHref}>Continue with Google</Link>
         </Button>
-      </form>
-      <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-[0.3em] text-white/40">
-        <span className="h-px flex-1 bg-white/10" />
-        Or
-        <span className="h-px flex-1 bg-white/10" />
+
+        <p className="mt-5 text-center text-sm text-white/70 sm:text-base">
+          {labels.switchLabel}{" "}
+          <Link className="font-semibold text-cyan-300 hover:text-white" href={labels.switchHref}>
+            {labels.switchAction}
+          </Link>
+        </p>
       </div>
-      <Button asChild variant="secondary" className="w-full rounded-full">
-        <Link href={googleHref}>Continue with Google</Link>
-      </Button>
-      <p className="mt-6 text-center text-sm text-white/70">
-        {labels.switchLabel}{" "}
-        <Link className="text-cyan-300 hover:text-white" href={labels.switchHref}>
-          {labels.switchAction}
-        </Link>
-      </p>
     </Card>
+  );
+}
+
+function AuthField({
+  label,
+  type,
+  name,
+  value,
+  onChange,
+  placeholder,
+  autoComplete,
+  minLength,
+}: AuthFieldProps) {
+  return (
+    <label className="block min-w-0 space-y-2">
+      <span className="block text-xs font-bold uppercase tracking-[0.28em] text-white/60">
+        {label}
+      </span>
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        required
+        minLength={minLength}
+        autoComplete={autoComplete}
+        className="block h-14 w-full min-w-0 rounded-2xl border border-white/15 bg-black/35 px-4 text-base font-medium normal-case tracking-normal text-white placeholder:text-white/35 focus:border-cyan-300/70 focus:outline-none focus:ring-2 focus:ring-cyan-300/15"
+        placeholder={placeholder}
+      />
+    </label>
   );
 }
 
 function getOauthErrorMessage(error: string | null | undefined) {
   switch (error) {
     case "google_oauth_not_configured":
-      return "Google login is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.";
+      return "Google login belum dikonfigurasi. Isi GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET.";
     case "google_oauth_denied":
-      return "Google login was cancelled.";
+      return "Google login dibatalkan.";
     case "google_oauth_invalid":
-      return "Google login expired. Please try again.";
+      return "Sesi Google login kedaluwarsa. Coba lagi dari tombol Google.";
     case "google_oauth_failed":
-      return "Unable to complete Google login. Please try again.";
+      return "Google login gagal. Pastikan redirect URI Google OAuth cocok dengan URL app ini.";
     default:
       return null;
   }

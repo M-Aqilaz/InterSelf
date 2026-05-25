@@ -139,4 +139,3 @@ export function LandingFeatures() {
     </section>
   );
 }
-

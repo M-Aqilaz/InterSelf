@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
 type HeaderUser = {
@@ -12,9 +12,14 @@ type HeaderUser = {
 
 export function SiteHeader({ user }: { user: HeaderUser }) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
   const router = useRouter();
   const username = user?.profile?.username ?? user?.name ?? "Explorer";
   const isAuth = Boolean(user);
+
+  if (pathname?.startsWith("/dashboard") || pathname?.startsWith("/onboarding")) {
+    return null;
+  }
 
   return (
     <header className="w-full sticky top-0 z-50">

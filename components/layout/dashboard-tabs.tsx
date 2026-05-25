@@ -1,142 +1,198 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  Archive,
+  BookOpen,
+  Compass,
+  Shield,
+  Swords,
+  Users,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useGameAudio } from "@/hooks/use-game-audio";
 
-type TabId = "mission"|"battle"|"status"|"oracle"|"vault"|"arena"|"guild";
+type DashboardTabId = "mission" | "battle" | "status" | "oracle" | "vault" | "arena" | "guild";
 
-export type DashboardTabsProps = {
-  mission: ReactNode; battle: ReactNode; status: ReactNode;
-  oracle: ReactNode; vault: ReactNode; arena: ReactNode; guild: ReactNode;
+type DashboardTabsProps = Record<DashboardTabId, ReactNode>;
+
+type DashboardTab = {
+  id: DashboardTabId;
+  label: string;
+  description: string;
+  icon: LucideIcon;
 };
 
-const TABS = [
-  { id:"mission" as TabId, icon:"◈", world:"Command Room",  flavor:"Chest, misi & weekly arc",  color:"#50c890", accent:"#3aaa7a" },
-  { id:"battle"  as TabId, icon:"⚔", world:"War Chamber",   flavor:"Boss, dungeon & focus",      color:"#f07080", accent:"#e05a6a" },
-  { id:"status"  as TabId, icon:"◉", world:"Character",     flavor:"Stat, habit & growth",       color:"#a78bfa", accent:"#7c3aed" },
-  { id:"oracle"  as TabId, icon:"✦", world:"Oracle's Den",  flavor:"AI, analytics & ranking",    color:"#d4a843", accent:"#d4a843" },
-  { id:"vault"   as TabId, icon:"⬡", world:"The Sanctum",   flavor:"Item, shop & achievement",   color:"#50c890", accent:"#3aaa7a" },
-  { id:"arena"   as TabId, icon:"⚡", world:"Arena",         flavor:"PvP challenge & duel",       color:"#f472b6", accent:"#ec4899" },
-  { id:"guild"   as TabId, icon:"◆", world:"Guild",          flavor:"Friends & allies",           color:"#fb923c", accent:"#f97316" },
+const tabs: DashboardTab[] = [
+  {
+    id: "mission",
+    label: "Mission",
+    description: "Daily quest briefing and task list.",
+    icon: Compass,
+  },
+  {
+    id: "battle",
+    label: "Battle",
+    description: "Focus sessions, boss raids, dungeon, and PvP.",
+    icon: Zap,
+  },
+  {
+    id: "status",
+    label: "Status",
+    description: "Character stats, habits, and goals.",
+    icon: Shield,
+  },
+  {
+    id: "oracle",
+    label: "Oracle",
+    description: "Weekly arcs, AI coach, and analytics.",
+    icon: BookOpen,
+  },
+  {
+    id: "vault",
+    label: "Vault",
+    description: "Inventory, achievements, ranking, and friends.",
+    icon: Archive,
+  },
+  {
+    id: "arena",
+    label: "Arena",
+    description: "PvP preview and competitive systems.",
+    icon: Swords,
+  },
+  {
+    id: "guild",
+    label: "Guild",
+    description: "Friends, requests, and party activity.",
+    icon: Users,
+  },
 ];
 
-const LORE: Record<TabId,string> = {
-  mission: '"Setiap task yang selesai melemahkan Kegelapan. Setiap hari yang dilewati memperkuatnya."',
-  battle:  '"Prokrastinasi tidak menunggu. Setiap detik tanpa aksi adalah HP yang dipulihkan musuhmu."',
-  status:  '"Kekuatan sejati tidak datang dari item — tapi dari kebiasaan yang dibangun setiap hari."',
-  oracle:  '"Data adalah senjata. Mereka yang memahami pola mereka sendiri tidak bisa dikalahkan."',
-  vault:   '"Koleksi bukan tujuan — ia adalah bukti perjalanan yang telah kamu tempuh."',
-  arena:   '"Kompetisi terbaik adalah melawan dirimu kemarin."',
-  guild:   '"Tidak ada petualang yang menaklukkan dungeon sendirian."',
-};
+const tabIds = new Set<DashboardTabId>(tabs.map((tab) => tab.id));
 
-const IDS = new Set(TABS.map(t=>t.id));
-function getHash(): TabId {
-  if(typeof window==="undefined") return "mission";
-  const h = window.location.hash.replace("#","") as TabId;
-  return IDS.has(h) ? h : "mission";
+function getTabFromHash(): DashboardTabId {
+  if (typeof window === "undefined") return "mission";
+  const hash = window.location.hash.replace("#", "") as DashboardTabId;
+  return tabIds.has(hash) ? hash : "mission";
 }
 
-export function DashboardTabs(props: DashboardTabsProps) {
-  const [active, setActive] = useState<TabId>("mission");
+export function DashboardTabs({ mission, battle, status, oracle, vault, arena, guild }: DashboardTabsProps) {
+  const [activeTab, setActiveTab] = useState<DashboardTabId>("mission");
+  const { play } = useGameAudio();
+  const activeMeta = useMemo(
+    () => tabs.find((tab) => tab.id === activeTab) ?? tabs[0],
+    [activeTab]
+  );
 
-  useEffect(()=>{
-    const f = requestAnimationFrame(()=>setActive(getHash()));
-    const fn = ()=>setActive(getHash());
-    window.addEventListener("hashchange",fn);
-    return ()=>{ cancelAnimationFrame(f); window.removeEventListener("hashchange",fn); };
-  },[]);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setActiveTab(getTabFromHash());
+    });
 
-  const go = useCallback((id:TabId)=>{
-    setActive(id);
-    window.history.replaceState(null,"",`#${id}`);
-    window.scrollTo({top:0,behavior:"smooth"});
-  },[]);
+    const handleHashChange = () => {
+      setActiveTab(getTabFromHash());
+    };
 
-  const activeTab = TABS.find(t=>t.id===active)??TABS[0]!;
+    window.addEventListener("hashchange", handleHashChange);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("hashchange", handleHashChange);
+    };
+  }, []);
+
+  const switchTab = useCallback(
+    (id: DashboardTabId) => {
+      setActiveTab(id);
+      void play("nav", 100);
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", `#${id}`);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    },
+    [play]
+  );
+
+  const panels: DashboardTabsProps = {
+    mission,
+    battle,
+    status,
+    oracle,
+    vault,
+    arena,
+    guild,
+  };
 
   return (
-    <div style={{display:"flex",width:"100%"}} className="dash-layout">
-
-      {/* SIDEBAR desktop */}
-      <aside style={{width:200,flexShrink:0,position:"sticky",top:57,height:"calc(100vh - 57px)",overflowY:"auto",padding:"14px 10px",borderRight:"1px solid rgba(255,255,255,0.06)",background:"#0c1018",display:"flex",flexDirection:"column",gap:2}} className="dash-sidebar">
-        <div style={{padding:"4px 8px 12px",marginBottom:2,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
-          <div style={{fontSize:8,fontWeight:700,letterSpacing:"0.3em",textTransform:"uppercase",color:"#2a3148",fontFamily:"monospace"}}>Navigation</div>
+    <div className="flex w-full flex-col gap-5 lg:gap-6">
+      <div className="rounded-3xl border border-white/[0.08] bg-[#0b0f18]/80 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.25)] backdrop-blur-xl">
+        <div className="mb-3 flex flex-col gap-1 px-2 py-2 sm:px-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-cyan-300/60">
+            Active Deck
+          </p>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <h2 className="text-2xl font-black text-white">{activeMeta.label}</h2>
+            <p className="max-w-xl text-sm text-white/55">{activeMeta.description}</p>
+          </div>
         </div>
-        <nav role="tablist" style={{display:"flex",flexDirection:"column",gap:1}}>
-          {TABS.map(tab=>{
-            const on = tab.id===active;
+
+        <nav
+          role="tablist"
+          aria-label="Dashboard sections"
+          className="grid grid-flow-col auto-cols-[minmax(8.5rem,1fr)] gap-2 overflow-x-auto pb-1 lg:grid-flow-row lg:grid-cols-7 lg:overflow-visible lg:pb-0"
+        >
+          {tabs.map((tab, index) => {
+            const Icon = tab.icon;
+            const isActive = tab.id === activeTab;
+
             return (
-              <button key={tab.id} role="tab" aria-selected={on} onClick={()=>go(tab.id)}
-                style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 10px",borderRadius:10,border:`1px solid ${on?"rgba(255,255,255,0.08)":"transparent"}`,background:on?"rgba(255,255,255,0.05)":"transparent",cursor:"pointer",textAlign:"left",fontFamily:"inherit",position:"relative",width:"100%"}}>
-                {on && (
-                  <motion.div layoutId="sidebar-bar"
-                    style={{position:"absolute",left:0,top:8,bottom:8,width:2,borderRadius:1,background:tab.accent}}
-                    transition={{type:"spring",stiffness:500,damping:35}} />
+              <button
+                key={tab.id}
+                role="tab"
+                type="button"
+                aria-selected={isActive}
+                onClick={() => switchTab(tab.id)}
+                className={cn(
+                  "group relative flex min-h-20 min-w-0 flex-col justify-between rounded-2xl border px-3 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400/60",
+                  isActive
+                    ? "border-cyan-300/35 bg-cyan-300/12 text-white shadow-[0_0_28px_rgba(34,211,238,0.10)]"
+                    : "border-white/[0.06] bg-white/[0.025] text-white/50 hover:border-white/15 hover:bg-white/[0.055] hover:text-white/80"
                 )}
-                <span style={{fontSize:14,marginTop:1,flexShrink:0,color:on?tab.color:"#2a3148",transition:"color 0.12s"}}>{tab.icon}</span>
-                <div style={{minWidth:0}}>
-                  <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",color:on?"#eef0f5":"#454e65",transition:"color 0.12s"}}>{tab.world}</div>
-                  <div style={{fontSize:9,color:on?"#454e65":"#2a3148",lineHeight:1.3,marginTop:1}}>{tab.flavor}</div>
-                </div>
+              >
+                {isActive && (
+                  <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent" />
+                )}
+
+                <span className="flex items-center justify-between gap-2">
+                  <Icon
+                    className={cn(
+                      "h-5 w-5 shrink-0 transition-all",
+                      isActive && "text-cyan-200 drop-shadow-[0_0_8px_rgba(34,211,238,0.65)]"
+                    )}
+                  />
+                  <span className="font-mono text-[9px] tracking-[0.25em] text-white/25">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                </span>
+
+                <span>
+                  <span className="block text-xs font-black uppercase tracking-[0.18em]">
+                    {tab.label}
+                  </span>
+                  <span className="mt-1 hidden text-[11px] leading-snug text-white/40 xl:block">
+                    {tab.description}
+                  </span>
+                </span>
               </button>
             );
           })}
         </nav>
-        <div style={{marginTop:"auto",padding:"8px 6px"}}>
-          <div style={{borderRadius:10,border:"1px solid rgba(255,255,255,0.06)",background:"rgba(255,255,255,0.02)",padding:"10px 12px"}}>
-            <div style={{fontSize:7,fontWeight:600,letterSpacing:"0.2em",textTransform:"uppercase",color:"#2a3148",fontFamily:"monospace",marginBottom:6}}>World Lore</div>
-            <AnimatePresence mode="wait">
-              <motion.p key={active} initial={{opacity:0,y:4}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-4}} transition={{duration:0.2}}
-                style={{fontSize:9,color:"#2a3148",lineHeight:1.65,fontStyle:"italic"}}>
-                {LORE[active]}
-              </motion.p>
-            </AnimatePresence>
-          </div>
-        </div>
-      </aside>
-
-      {/* MOBILE nav */}
-      <nav role="tablist" className="dash-mobile-nav scrollbar-none"
-        style={{display:"none",borderBottom:"1px solid rgba(255,255,255,0.06)",background:"#0c1018",overflowX:"auto"}}>
-        {TABS.map((tab,i)=>{
-          const on = tab.id===active;
-          return (
-            <button key={tab.id} role="tab" aria-selected={on} onClick={()=>go(tab.id)}
-              style={{flex:"1 0 auto",minWidth:52,display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"10px 8px",background:"transparent",border:"none",cursor:"pointer",fontFamily:"inherit",color:on?tab.color:"#2a3148",position:"relative",transition:"color 0.12s",borderRight:i<TABS.length-1?"1px solid rgba(255,255,255,0.06)":"none"}}>
-              {on && <div style={{position:"absolute",top:0,left:0,right:0,height:1.5,background:tab.accent}} />}
-              <span style={{fontSize:14,lineHeight:1}}>{tab.icon}</span>
-              <span style={{fontSize:8,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em"}}>{tab.world.split(" ")[0]}</span>
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* CONTENT */}
-      <div style={{flex:1,minWidth:0,padding:20,overflowX:"hidden"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18}}>
-          <span style={{fontSize:18,color:activeTab.color}}>{activeTab.icon}</span>
-          <div>
-            <h2 style={{fontSize:15,fontWeight:700,color:"#eef0f5",lineHeight:1}}>{activeTab.world}</h2>
-            <p style={{fontSize:10,color:"#454e65",marginTop:2}}>{activeTab.flavor}</p>
-          </div>
-        </div>
-        <AnimatePresence mode="wait">
-          <motion.section key={active} role="tabpanel" id={active}
-            initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-5}} transition={{duration:0.16}}
-            style={{display:"flex",flexDirection:"column",gap:16,width:"100%"}}>
-            {props[active]}
-          </motion.section>
-        </AnimatePresence>
       </div>
 
-      <style>{`
-        @media(max-width:1024px){
-          .dash-sidebar{display:none!important}
-          .dash-mobile-nav{display:flex!important}
-          .dash-layout{flex-direction:column}
-        }
-      `}</style>
+      <section id={activeTab} role="tabpanel" className="flex w-full flex-col gap-4 lg:gap-5">
+        {panels[activeTab]}
+      </section>
     </div>
   );
 }

@@ -36,30 +36,30 @@ export function ClassSelectionModal({ onClassChosen }: Props) {
   const selectedDef = CLASS_DEFINITIONS.find((c) => c.id === selected);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, scale: 0.92, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-br from-[#06091a] via-[#0a0f24] to-[#080618] p-6 text-white shadow-2xl"
+        className="my-auto w-full max-w-3xl rounded-3xl border border-white/10 bg-gradient-to-br from-[#06091a] via-[#0a0f24] to-[#080618] p-5 text-white shadow-2xl sm:p-6"
       >
         <div className="mb-6 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-white/40 mb-2">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-white/40">
             Satu kali. Pilih dengan bijak.
           </p>
-          <h2 className="text-2xl font-black">Pilih Kelasmu</h2>
-          <p className="text-sm text-white/50 mt-1">
+          <h2 className="text-2xl font-black sm:text-3xl">Pilih Kelasmu</h2>
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-white/50">
             Class menentukan stat awal dan bonus pasif yang kamu bawa seumur hidup karakter ini.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {CLASS_DEFINITIONS.map((cls) => (
             <motion.button
               key={cls.id}
               onClick={() => setSelected(cls.id)}
               whileTap={{ scale: 0.98 }}
               className={[
-                "relative rounded-2xl border p-4 text-left transition-all duration-200",
+                "relative min-h-44 rounded-2xl border p-4 text-left transition-all duration-200",
                 selected === cls.id
                   ? `${cls.borderColor} bg-white/8 ${cls.glowColor} shadow-lg`
                   : "border-white/10 bg-white/3 hover:bg-white/6 hover:border-white/20",
@@ -68,30 +68,30 @@ export function ClassSelectionModal({ onClassChosen }: Props) {
               {selected === cls.id && (
                 <motion.div
                   layoutId="class-selected"
-                  className={`absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${cls.badgeStyle}`}
+                  className={`absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full text-[10px] ${cls.badgeStyle}`}
                   initial={false}
                 >
                   ✓
                 </motion.div>
               )}
 
-              <div className="text-2xl mb-2">{cls.icon}</div>
-              <p className={`text-sm font-black mb-0.5 ${cls.color}`}>{cls.name}</p>
-              <p className="text-[11px] text-white/50 italic mb-3">{cls.tagline}</p>
+              <div className="mb-2 text-2xl">{cls.icon}</div>
+              <p className={`mb-0.5 text-sm font-black ${cls.color}`}>{cls.name}</p>
+              <p className="mb-3 text-[11px] italic text-white/50">{cls.tagline}</p>
 
-              <div className="flex flex-wrap gap-1 mb-2">
+              <div className="mb-2 flex flex-wrap gap-1">
                 {Object.entries(cls.initialStats).map(([stat, val]) => (
                   <span
                     key={stat}
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white/8 text-white/60"
+                    className="rounded-md bg-white/8 px-2 py-0.5 text-[10px] font-semibold text-white/60"
                   >
                     +{val} {stat.charAt(0) + stat.slice(1).toLowerCase()}
                   </span>
                 ))}
               </div>
 
-              <p className={`text-[11px] font-semibold ${cls.color}`}>
-                ⚡ {cls.passiveBonus}
+              <p className={`text-[11px] font-semibold leading-relaxed ${cls.color}`}>
+                Bonus: {cls.passiveBonus}
               </p>
             </motion.button>
           ))}
@@ -104,15 +104,17 @@ export function ClassSelectionModal({ onClassChosen }: Props) {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              className={`rounded-2xl border ${selectedDef.borderColor} bg-white/4 p-4 mb-5`}
+              className={`mb-5 rounded-2xl border ${selectedDef.borderColor} bg-white/4 p-4`}
             >
-              <p className="text-xs text-white/70 leading-relaxed">{selectedDef.description}</p>
+              <p className="text-xs leading-relaxed text-white/70">{selectedDef.description}</p>
             </motion.div>
           )}
         </AnimatePresence>
 
         {error && (
-          <p className="text-sm text-red-400 text-center mb-4">{error}</p>
+          <p className="mb-4 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-center text-sm text-red-300">
+            {error}
+          </p>
         )}
 
         <button
@@ -122,10 +124,13 @@ export function ClassSelectionModal({ onClassChosen }: Props) {
             "w-full rounded-2xl py-3.5 text-sm font-black uppercase tracking-wider transition-all",
             selected && !confirming
               ? `bg-gradient-to-r ${
-                  selectedDef?.id === "IRONCLAD" ? "from-red-600 to-red-500" :
-                  selectedDef?.id === "SAGE" ? "from-cyan-600 to-cyan-500" :
-                  selectedDef?.id === "PHANTOM" ? "from-purple-600 to-purple-500" :
-                  "from-amber-600 to-amber-500"
+                  selectedDef?.id === "IRONCLAD"
+                    ? "from-red-600 to-red-500"
+                    : selectedDef?.id === "SAGE"
+                      ? "from-cyan-600 to-cyan-500"
+                      : selectedDef?.id === "PHANTOM"
+                        ? "from-purple-600 to-purple-500"
+                        : "from-amber-600 to-amber-500"
                 } text-white hover:opacity-90 active:scale-[0.99]`
               : "bg-white/8 text-white/30 cursor-not-allowed",
           ].join(" ")}
@@ -133,11 +138,11 @@ export function ClassSelectionModal({ onClassChosen }: Props) {
           {confirming
             ? "Mengaktifkan class..."
             : selected
-            ? `Pilih ${selectedDef?.name} — Tidak bisa diubah`
-            : "Pilih class dulu"}
+              ? `Pilih ${selectedDef?.name} - Tidak bisa diubah`
+              : "Pilih class dulu"}
         </button>
 
-        <p className="text-center text-[10px] text-white/25 mt-3">
+        <p className="mt-3 text-center text-[10px] text-white/25">
           Class hanya bisa diubah dengan item langka &ldquo;Class Crystal&rdquo;
         </p>
       </motion.div>

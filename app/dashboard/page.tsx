@@ -150,86 +150,90 @@ export default async function DashboardPage() {
 
   return (
     <ClassGate hasChosenClass={hasChosenClass}>
-      <div style={{ minHeight:"100vh", background:"var(--bg-base)" }}>
+      <div className="min-h-screen bg-[var(--bg-base)]">
         <DashboardTopbar
           username={user.profile?.username ?? user.name ?? "Hunter"}
           coins={profileRecord?.coins ?? 0}
           hasChest={true}
         />
-        <DashboardTabs
-          mission={
-            <>
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                <DailyChestWidget />
-                <StreakStatusBar />
-              </div>
-              <TodayMissionHero
-                username={user.profile?.username ?? user.name ?? "Hunter"}
-                missionTitle={nextMission}
-                dailyCompletion={dailyCompletionPercent}
-                streak={streakValue}
-                level={heroLevel}
-                expPercent={heroExpPercent}
-                rank={heroRank}
-                energyPercent={energyPercent}
-              />
-              <DailyTasksPanel />
-              <WeeklyChallengesPanel />
-            </>
-          }
-          battle={
-            <>
-              <BossBattlePanel productivityCompletion={dailyCompletionPercent} />
+        <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+          <DashboardTabs
+            mission={
+              <>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <DailyChestWidget />
+                  <StreakStatusBar />
+                </div>
+                <TodayMissionHero
+                  username={user.profile?.username ?? user.name ?? "Hunter"}
+                  missionTitle={nextMission}
+                  dailyCompletion={dailyCompletionPercent}
+                  streak={streakValue}
+                  level={heroLevel}
+                  expPercent={heroExpPercent}
+                  rank={heroRank}
+                  energyPercent={energyPercent}
+                />
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.25fr_0.75fr]">
+                  <DailyTasksPanel />
+                  <WeeklyChallengesPanel />
+                </div>
+              </>
+            }
+            battle={
+              <>
+                <BossBattlePanel productivityCompletion={dailyCompletionPercent} />
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                  <DungeonNavigationPanel />
+                  <FocusModePanel />
+                </div>
+              </>
+            }
+            status={
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                <DungeonNavigationPanel />
-                <FocusModePanel />
+                <CharacterProfilePanel
+                  username={user.profile?.username ?? user.name ?? "Hunter"}
+                  title={user.profile?.title ?? "Awakened"}
+                  rank={heroRank}
+                  level={heroLevel}
+                  expIntoLevel={levelProgress.expIntoLevel}
+                  expForNextLevel={levelProgress.expForNextLevel}
+                  coins={profileRecord?.coins ?? 0}
+                  streak={streakValue}
+                  bestStreak={profileRecord?.bestStreak ?? 0}
+                  powerScore={powerScore}
+                  equippedSlots={equippedSlots}
+                  stats={stats.map((s) => ({ type: s.type, value: s.value }))}
+                  characterClass={profileRecord?.characterClass ?? null}
+                />
+                <div className="flex flex-col gap-4">
+                  <HabitTrackerPanel />
+                  <GoalPlannerPanel />
+                </div>
               </div>
-            </>
-          }
-          status={
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-              <CharacterProfilePanel
-                username={user.profile?.username ?? user.name ?? "Hunter"}
-                title={user.profile?.title ?? "Awakened"}
-                rank={heroRank}
-                level={heroLevel}
-                expIntoLevel={levelProgress.expIntoLevel}
-                expForNextLevel={levelProgress.expForNextLevel}
-                coins={profileRecord?.coins ?? 0}
-                streak={streakValue}
-                bestStreak={profileRecord?.bestStreak ?? 0}
-                powerScore={powerScore}
-                equippedSlots={equippedSlots}
-                stats={stats.map((s) => ({ type: s.type, value: s.value }))}
-                characterClass={profileRecord?.characterClass ?? null}
-              />
-              <div className="flex flex-col gap-4">
-                <HabitTrackerPanel />
-                <GoalPlannerPanel />
-              </div>
-            </div>
-          }
-          oracle={
-            <>
-              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                <AiCoachPanel />
-                <ProductivityAnalyticsPanel />
-              </div>
-              <LeaderboardPanel />
-            </>
-          }
-          vault={
-            <>
-              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                <InventoryPanel />
-                <ShopPanel />
-              </div>
-              <AchievementsPanel />
-            </>
-          }
-          arena={<PvpPreviewPanel />}
-          guild={<FriendsPanel />}
-        />
+            }
+            oracle={
+              <>
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                  <AiCoachPanel />
+                  <ProductivityAnalyticsPanel />
+                </div>
+                <LeaderboardPanel />
+              </>
+            }
+            vault={
+              <>
+                <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                  <InventoryPanel />
+                  <ShopPanel />
+                </div>
+                <AchievementsPanel />
+              </>
+            }
+            arena={<PvpPreviewPanel />}
+            guild={<FriendsPanel />}
+          />
+        </div>
       </div>
     </ClassGate>
   );

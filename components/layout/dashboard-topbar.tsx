@@ -1,40 +1,58 @@
 "use client";
-import Link from "next/link";
+
+import { Bell, Coins, Gift, LogOut, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-type Props = { username: string; coins: number; hasChest?: boolean };
+type DashboardTopbarProps = {
+  username: string;
+  coins: number;
+  hasChest?: boolean;
+};
 
-const NAV = [
-  { icon: "◈", label: "Command", href: "/dashboard#mission" },
-  { icon: "⚔", label: "Battle",  href: "/dashboard#battle"  },
-  { icon: "◉", label: "Char",    href: "/dashboard#status"  },
-  { icon: "✦", label: "Oracle",  href: "/dashboard#oracle"  },
-  { icon: "⬡", label: "Sanctum", href: "/dashboard#vault"   },
-  { icon: "⚡", label: "Arena",   href: "/dashboard#arena"   },
-  { icon: "◆", label: "Guild",   href: "/dashboard#guild"   },
-];
-
-export function DashboardTopbar({ username, coins, hasChest }: Props) {
+export function DashboardTopbar({ username, coins, hasChest = false }: DashboardTopbarProps) {
   const router = useRouter();
+
   return (
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 20px", background:"rgba(8,11,18,0.94)", backdropFilter:"blur(20px)", borderBottom:"1px solid rgba(255,255,255,0.06)", position:"sticky", top:0, zIndex:50 }}>
-      <Link href="/" style={{ display:"flex", alignItems:"center", gap:8, textDecoration:"none" }}>
-        <div style={{ width:26, height:26, borderRadius:7, background:"#d4a843", display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:"#080b12", fontFamily:"monospace" }}>IS</div>
-        <span style={{ fontSize:11, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", color:"rgba(136,144,168,0.8)" }}>InterSelf</span>
-      </Link>
-      <div style={{ display:"flex", gap:2 }}>
-        {NAV.map(n => (
-          <Link key={n.label} href={n.href} title={n.label} style={{ width:30, height:30, borderRadius:8, border:"1px solid rgba(255,255,255,0.06)", background:"transparent", color:"rgba(69,78,101,1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, textDecoration:"none" }}>{n.icon}</Link>
-        ))}
-      </div>
-      <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-        <span style={{ fontFamily:"monospace", fontSize:12, fontWeight:700, color:"#d4a843" }}>⬡ {coins.toLocaleString("id-ID")}</span>
-        {hasChest && <span style={{ fontSize:18 }}>🎁</span>}
-        <span style={{ fontSize:11, color:"rgba(136,144,168,0.6)" }}>{username}</span>
-        <button style={{ padding:"5px 14px", borderRadius:8, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"rgba(136,144,168,0.7)", fontSize:11, cursor:"pointer" }}
-          onClick={async () => { await fetch("/api/auth/logout", { method:"POST" }); router.push("/"); }}>
-          Logout
-        </button>
+    <div className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#080b12]/92 px-4 py-3 backdrop-blur-xl sm:px-6">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-cyan-300/60">
+            Command Deck
+          </p>
+          <h1 className="truncate text-lg font-black text-white sm:text-xl">
+            Welcome back, {username}
+          </h1>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-semibold text-amber-200 sm:flex">
+            <Coins className="h-4 w-4" />
+            {coins.toLocaleString()}
+          </div>
+          {hasChest && (
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-amber-300/25 bg-amber-300/10 text-amber-200">
+              <Gift className="h-4 w-4" />
+            </div>
+          )}
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/70">
+            <Bell className="h-4 w-4" />
+          </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-300/20 bg-cyan-300/10 text-cyan-200">
+            <UserRound className="h-4 w-4" />
+          </div>
+          <button
+            type="button"
+            className="flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 text-xs font-semibold text-white/65 transition hover:border-red-300/30 hover:bg-red-400/10 hover:text-red-200"
+            onClick={async () => {
+              await fetch("/api/auth/logout", { method: "POST" });
+              router.push("/login");
+              router.refresh();
+            }}
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
+        </div>
       </div>
     </div>
   );

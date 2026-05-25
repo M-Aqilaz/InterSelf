@@ -25,7 +25,7 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
   {
     id: CharacterClass.IRONCLAD,
     name: "Ironclad",
-    icon: "⚔️",
+    icon: "IR",
     tagline: "Disiplin absolut. Tidak kenal lelah.",
     description:
       "Karakter dengan fisik dan mental paling tangguh. Setiap tantangan berat adalah makanan sehari-hari. Pilih ini kalau kamu mau fokus ke produktivitas fisik dan kerja keras.",
@@ -43,7 +43,7 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
   {
     id: CharacterClass.SAGE,
     name: "Sage",
-    icon: "📚",
+    icon: "SG",
     tagline: "Penguasa ilmu. Setiap buku adalah senjata.",
     description:
       "Karakter dengan kecerdasan tertinggi. Fokus pada pembelajaran, riset, dan pengembangan pikiran. Cocok untuk pelajar, developer, atau siapa saja yang hidupnya diisi oleh ilmu.",
@@ -61,7 +61,7 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
   {
     id: CharacterClass.PHANTOM,
     name: "Phantom",
-    icon: "🌙",
+    icon: "PH",
     tagline: "Konsisten dalam bayangan. Selalu ada.",
     description:
       "Karakter yang kekuatannya ada di konsistensi jangka panjang. Tidak paling kuat dalam satu hari, tapi tidak pernah berhenti. Streak adalah nyawa kelas ini.",
@@ -79,7 +79,7 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
   {
     id: CharacterClass.MERCHANT,
     name: "Merchant",
-    icon: "💰",
+    icon: "MR",
     tagline: "Setiap misi adalah investasi.",
     description:
       "Karakter yang mengoptimalkan semua reward. Coin adalah prioritas, dan setiap task adalah peluang profit. Cocok untuk yang suka progression material dan ekonomi game.",
@@ -125,7 +125,7 @@ export function getClassPassiveMultipliers(
     case "coin_all":
       return {
         expMultiplier: 1,
-        coinMultiplier: 1.20,
+        coinMultiplier: 1.2,
       };
 
     case "streak_protection":

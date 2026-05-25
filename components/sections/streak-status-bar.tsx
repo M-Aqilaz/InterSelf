@@ -17,13 +17,13 @@ export function StreakStatusBar() {
 
   useEffect(() => {
     fetch("/api/streak/status")
-      .then((r) => r.json())
+      .then((response) => response.json())
       .then(setStatus)
       .catch(() => null);
   }, []);
 
   if (!status) return null;
-  if (status.streak === 0 && !status.debuffActive) return null;
+  if (status.streak === 0 && !status.debuffActive && !status.shieldActive) return null;
 
   return (
     <AnimatePresence>
@@ -32,24 +32,20 @@ export function StreakStatusBar() {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
-          style={{
-            borderRadius: "14px",
-            border: "1px solid rgba(224,90,106,0.3)",
-            background: "rgba(224,90,106,0.06)",
-            padding: "12px 14px",
-            display: "flex", alignItems: "center", gap: "12px",
-          }}
+          className="flex items-center gap-3 rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3"
         >
-          <span className="text-2xl">⚠️</span>
-          <div className="flex-1">
-            <p className="text-sm font-bold text-red-400">Streak putus! Debuff aktif 24 jam</p>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-400/30 bg-red-400/10 text-sm font-black text-red-300">
+            !
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-red-300">Streak putus, debuff aktif 24 jam</p>
             <p className="text-xs text-red-300/70">
-              EXP dari task berkurang 20% · Selesaikan task hari ini untuk pulihkan streak
+              EXP dari task berkurang 20%. Selesaikan task hari ini untuk pulihkan streak.
             </p>
           </div>
-          <div className="text-right">
+          <div className="shrink-0 text-right">
             <p className="text-xs text-red-400/60">Streak sebelumnya</p>
-            <p className="text-lg font-black text-red-400">{status.bestStreak} hari</p>
+            <p className="text-lg font-black text-red-300">{status.bestStreak} hari</p>
           </div>
         </motion.div>
       )}
@@ -58,25 +54,26 @@ export function StreakStatusBar() {
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{
-            borderRadius: "14px",
-            border: "1px solid rgba(167,139,250,0.3)",
-            background: "rgba(124,58,237,0.06)",
-            padding: "12px 14px",
-            display: "flex", alignItems: "center", gap: "12px",
-          }}
+          className="flex items-center gap-3 rounded-2xl border border-purple-500/40 bg-purple-500/10 px-4 py-3"
         >
-          <span className="text-2xl">🛡️</span>
-          <div className="flex-1">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-purple-400/30 bg-purple-400/10 text-xs font-black text-purple-200">
+            SH
+          </span>
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-purple-300">Streak Shield aktif</p>
             <p className="text-xs text-purple-300/70">
               Streak kamu terlindungi sampai{" "}
               {status.shieldExpiry
-                ? new Date(status.shieldExpiry).toLocaleString("id-ID", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })
+                ? new Date(status.shieldExpiry).toLocaleString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    day: "numeric",
+                    month: "short",
+                  })
                 : "besok"}
             </p>
           </div>
-          <span className="text-xs font-bold text-purple-400 bg-purple-500/20 px-2 py-1 rounded-lg">
+          <span className="shrink-0 rounded-lg bg-purple-500/20 px-2 py-1 text-xs font-bold text-purple-300">
             {status.streak} hari
           </span>
         </motion.div>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Space_Mono } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
 import { getCurrentUser } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -33,22 +34,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {!isDash && (
             <header style={{ width:"100%", position:"sticky", top:0, zIndex:50, background:"rgba(8,11,18,0.90)", backdropFilter:"blur(20px)", borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 32px", maxWidth:1200, margin:"0 auto" }}>
-                <a href="/" style={{ display:"flex", alignItems:"center", gap:10, textDecoration:"none" }}>
+                <Link href="/" style={{ display:"flex", alignItems:"center", gap:10, textDecoration:"none" }}>
                   <div style={{ width:28, height:28, borderRadius:7, background:"#d4a843", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:"#080b12", fontFamily:"monospace" }}>IS</div>
                   <span style={{ fontSize:13, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", color:"#eef0f5" }}>InterSelf</span>
-                </a>
+                </Link>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                   {user ? (
                     <>
-                      <a href="/dashboard" style={{ padding:"6px 16px", borderRadius:10, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"#8890a8", fontSize:12, textDecoration:"none" }}>Dashboard</a>
+                      <Link href="/dashboard" style={{ padding:"6px 16px", borderRadius:10, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"#8890a8", fontSize:12, textDecoration:"none" }}>Dashboard</Link>
                       <form action="/api/auth/logout" method="POST" style={{ display:"inline" }}>
                         <button type="submit" style={{ padding:"6px 16px", borderRadius:10, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"#8890a8", fontSize:12, cursor:"pointer" }}>Logout</button>
                       </form>
                     </>
                   ) : (
                     <>
-                      <a href="/login" style={{ padding:"6px 16px", borderRadius:10, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"#8890a8", fontSize:12, textDecoration:"none" }}>Masuk</a>
-                      <a href="/register" style={{ padding:"6px 16px", borderRadius:10, background:"#d4a843", color:"#080b12", fontSize:12, fontWeight:700, textDecoration:"none", borderRadius:10 }}>Mulai Gratis</a>
+                      <Link href="/login" style={{ padding:"6px 16px", borderRadius:10, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"#8890a8", fontSize:12, textDecoration:"none" }}>Masuk</Link>
+                      <Link href="/register" style={{ padding:"6px 16px", borderRadius:10, background:"#d4a843", color:"#080b12", fontSize:12, fontWeight:700, textDecoration:"none" }}>Mulai Gratis</Link>
                     </>
                   )}
                 </div>
