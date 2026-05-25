@@ -156,7 +156,7 @@ export default async function DashboardPage() {
           coins={profileRecord?.coins ?? 0}
           hasChest={true}
         />
-        <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1800px] px-4 py-5 sm:px-6 sm:py-6 lg:px-8 2xl:px-10">
           <DashboardTabs
             mission={
               <>

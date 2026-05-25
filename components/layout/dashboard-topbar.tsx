@@ -14,7 +14,7 @@ export function DashboardTopbar({ username, coins, hasChest = false }: Dashboard
 
   return (
     <div className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#080b12]/92 px-4 py-3 backdrop-blur-xl sm:px-6">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4">
+      <div className="mx-auto flex w-full max-w-[1800px] items-center justify-between gap-4 2xl:px-4">
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-cyan-300/60">
             Command Deck

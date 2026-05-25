@@ -126,12 +126,12 @@ export function DashboardTabs({ mission, battle, status, oracle, vault, arena, g
 
   return (
     <div className="flex w-full flex-col gap-5 lg:gap-6">
-      <div className="rounded-3xl border border-white/[0.08] bg-[#0b0f18]/80 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.25)] backdrop-blur-xl">
-        <div className="mb-3 flex flex-col gap-1 px-2 py-2 sm:px-3">
+      <div className="rounded-3xl border border-white/[0.08] bg-[#0b0f18]/80 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.25)] backdrop-blur-xl sm:p-4">
+        <div className="mb-4 flex flex-col gap-1 px-1 py-1 sm:px-2 lg:flex-row lg:items-end lg:justify-between">
           <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-cyan-300/60">
             Active Deck
           </p>
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-1 lg:items-end lg:text-right">
             <h2 className="text-2xl font-black text-white">{activeMeta.label}</h2>
             <p className="max-w-xl text-sm text-white/55">{activeMeta.description}</p>
           </div>
@@ -140,7 +140,7 @@ export function DashboardTabs({ mission, battle, status, oracle, vault, arena, g
         <nav
           role="tablist"
           aria-label="Dashboard sections"
-          className="grid grid-flow-col auto-cols-[minmax(8.5rem,1fr)] gap-2 overflow-x-auto pb-1 lg:grid-flow-row lg:grid-cols-7 lg:overflow-visible lg:pb-0"
+          className="grid grid-flow-col auto-cols-[minmax(10rem,1fr)] gap-2 overflow-x-auto pb-1 lg:grid-flow-row lg:grid-cols-7 lg:overflow-visible lg:pb-0 2xl:gap-3"
         >
           {tabs.map((tab, index) => {
             const Icon = tab.icon;
@@ -154,7 +154,7 @@ export function DashboardTabs({ mission, battle, status, oracle, vault, arena, g
                 aria-selected={isActive}
                 onClick={() => switchTab(tab.id)}
                 className={cn(
-                  "group relative flex min-h-20 min-w-0 flex-col justify-between rounded-2xl border px-3 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400/60",
+                  "group relative flex min-h-24 min-w-0 flex-col justify-between rounded-2xl border px-4 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400/60",
                   isActive
                     ? "border-cyan-300/35 bg-cyan-300/12 text-white shadow-[0_0_28px_rgba(34,211,238,0.10)]"
                     : "border-white/[0.06] bg-white/[0.025] text-white/50 hover:border-white/15 hover:bg-white/[0.055] hover:text-white/80"
@@ -180,7 +180,7 @@ export function DashboardTabs({ mission, battle, status, oracle, vault, arena, g
                   <span className="block text-xs font-black uppercase tracking-[0.18em]">
                     {tab.label}
                   </span>
-                  <span className="mt-1 hidden text-[11px] leading-snug text-white/40 xl:block">
+                  <span className="mt-1 block text-[11px] leading-snug text-white/40">
                     {tab.description}
                   </span>
                 </span>
