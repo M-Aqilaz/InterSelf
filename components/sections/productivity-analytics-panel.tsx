@@ -1,96 +1,88 @@
-"use client";
+﻿"use client";
 
 import { useMemo } from "react";
-import { motion } from "framer-motion";
 import { useProductivitySignals } from "@/hooks/use-productivity-signals";
 
 export function ProductivityAnalyticsPanel() {
-  const { taskSummary, focusTrend, habitScore } = useProductivitySignals();
+  const { taskSummary, focusTrend, habitScore: habitScoreRaw } = useProductivitySignals();
+  const habitScore = typeof habitScoreRaw === "object" ? habitScoreRaw.completion : habitScoreRaw;
 
   const completionRate = useMemo(() => {
     if (taskSummary.total === 0) return 0;
     return Math.round((taskSummary.completed / taskSummary.total) * 100);
   }, [taskSummary]);
 
-  const strongestCategory = useMemo(() => {
-    const entries = Object.entries(taskSummary.byCategory);
-    if (!entries.length) return null;
-    return entries
-      .map(([key, value]) => ({ key, ratio: value.total ? value.completed / value.total : 0 }))
-      .sort((a, b) => b.ratio - a.ratio)[0]?.key;
-  }, [taskSummary]);
-
-  const weakestCategory = useMemo(() => {
-    const entries = Object.entries(taskSummary.byCategory);
-    if (!entries.length) return null;
-    return entries
-      .map(([key, value]) => ({ key, ratio: value.total ? value.completed / value.total : 0 }))
-      .sort((a, b) => a.ratio - b.ratio)[0]?.key;
-  }, [taskSummary]);
-
-  const trendMax = Math.max(60, ...focusTrend.map((point) => point.minutes));
+  const trendMax = Math.max(60, ...focusTrend.map(p => p.minutes));
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-black/70 via-[#0a101c] to-[#050309] p-6 text-white">
-      <p className="text-xs uppercase tracking-[0.35em] text-white/50">Productivity analytics</p>
-      <h3 className="text-2xl font-black">Mission Control</h3>
-      <p className="text-sm text-white/70">Track completed quests, focus momentum, and habit balance.</p>
-
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Task completion rate</p>
-          <p className="text-4xl font-black text-cyan-300">{completionRate}%</p>
-          <p className="text-xs text-white/60">{taskSummary.completed} / {taskSummary.total} tasks today</p>
-          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/10">
-            <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400"
-              animate={{ width: `${completionRate}%` }}
-              transition={{ duration: 0.4 }}
-            />
-          </div>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Habit cadence</p>
-          <p className="text-4xl font-black text-emerald-300">{habitScore.completion}%</p>
-          <p className="text-xs text-white/60">Consistency over the last 7 days</p>
-          <div className="mt-3 flex justify-between text-xs text-white/60">
-            <span>Strongest: {habitScore.strongest ?? "—"}</span>
-            <span>Weakest: {habitScore.weakest ?? "—"}</span>
-          </div>
-        </div>
+    <div style={{ background: "#0c1018", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, overflow: "hidden" }}>
+      <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <div style={{ fontFamily: "monospace", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(255,255,255,0.35)", marginBottom: 3 }}>Productivity Analytics</div>
+        <h3 style={{ fontSize: 18, fontWeight: 900, color: "#fff", margin: 0 }}>Mission Control</h3>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
-        <p className="text-xs uppercase tracking-[0.3em] text-white/50">Focus trend</p>
-        <div className="mt-4 grid grid-cols-7 gap-2">
-          {focusTrend.map((point) => (
-            <div key={point.dayLabel} className="flex flex-col items-center gap-2 text-xs">
-              <div className="h-24 w-6 rounded-full bg-white/10">
-                <motion.div
-                  className="w-full rounded-full bg-gradient-to-b from-cyan-400 to-transparent"
-                  animate={{ height: `${(point.minutes / trendMax) * 100}%` }}
-                  transition={{ duration: 0.5 }}
-                />
-              </div>
-              <span className="text-white/60">{point.dayLabel}</span>
-              <span className="text-white/80">{point.minutes}m</span>
+      <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 20 }}>
+
+        {/* Task completion + Habit score side by side */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          {/* Completion rate */}
+          <div style={{ background: "#111520", borderRadius: 12, padding: 16 }}>
+            <div style={{ fontFamily: "monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(255,255,255,0.35)", marginBottom: 8 }}>Task Completion</div>
+            <div style={{ fontSize: 36, fontWeight: 900, color: "#22d3ee", lineHeight: 1 }}>{completionRate}%</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>{taskSummary.completed} / {taskSummary.total} tasks today</div>
+            <div style={{ height: 5, background: "rgba(255,255,255,0.07)", borderRadius: 3, overflow: "hidden", marginTop: 10 }}>
+              <div style={{ height: "100%", width: `${completionRate}%`, background: "linear-gradient(90deg, #22d3ee, #3aaa7a)", borderRadius: 3, transition: "width 0.5s" }} />
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 p-4">
-        <p className="text-xs uppercase tracking-[0.3em] text-white/50">Weekly summary</p>
-        <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-white/70">
-          <li>
-            Strongest category: <span className="text-white">{strongestCategory ?? "Collecting data"}</span>
-          </li>
-          <li>
-            Needs attention: <span className="text-white">{weakestCategory ?? "Collecting data"}</span>
-          </li>
-          <li>Average focus minutes: {Math.round(focusTrend.reduce((acc, point) => acc + point.minutes, 0) / (focusTrend.length || 1))}m</li>
-        </ul>
+          {/* Habit score */}
+          <div style={{ background: "#111520", borderRadius: 12, padding: 16 }}>
+            <div style={{ fontFamily: "monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(255,255,255,0.35)", marginBottom: 8 }}>Habit Score</div>
+            <div style={{ fontSize: 36, fontWeight: 900, color: "#a78bfa", lineHeight: 1 }}>{habitScore}<span style={{ fontSize: 16, color: "rgba(255,255,255,0.3)" }}>/100</span></div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>Consistency this week</div>
+            <div style={{ height: 5, background: "rgba(255,255,255,0.07)", borderRadius: 3, overflow: "hidden", marginTop: 10 }}>
+              <div style={{ height: "100%", width: `${habitScore}%`, background: "linear-gradient(90deg, #7c3aed, #a78bfa)", borderRadius: 3 }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Focus trend chart */}
+        <div style={{ background: "#111520", borderRadius: 12, padding: 16 }}>
+          <div style={{ fontFamily: "monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(255,255,255,0.35)", marginBottom: 16 }}>Focus Trend (last 7 days)</div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 80 }}>
+            {(focusTrend.length > 0 ? focusTrend : days.map(d => ({ day: d, minutes: 0 }))).map((point, i) => {
+              const pct = trendMax > 0 ? (point.minutes / trendMax) * 100 : 0;
+              const hasData = point.minutes > 0;
+              return (
+                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: "100%", height: 64, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                    <div style={{
+                      width: "70%", borderRadius: "4px 4px 0 0",
+                      height: `${Math.max(pct, hasData ? 8 : 4)}%`,
+                      minHeight: hasData ? 6 : 3,
+                      background: hasData
+                        ? `linear-gradient(180deg, #22d3ee, #0891b2)`
+                        : "rgba(255,255,255,0.07)",
+                      transition: "height 0.5s",
+                    }} />
+                  </div>
+                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontFamily: "monospace" }}>
+                    {point.dayLabel?.slice(0, 3) ?? point.day?.slice(0, 3) ?? days[i]}
+                  </div>
+                  <div style={{ fontSize: 9, color: hasData ? "#22d3ee" : "rgba(255,255,255,0.2)" }}>
+                    {point.minutes > 0 ? `${point.minutes}m` : "0m"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+
       </div>
     </div>
   );
 }
+
+

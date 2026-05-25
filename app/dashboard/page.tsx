@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateLevelFromTotalExp } from "@/lib/level";
@@ -132,6 +132,9 @@ export default async function DashboardPage() {
   const streakValue = profileRecord?.streak ?? 0;
   const bestStreakValue = profileRecord?.bestStreak ?? 0;
   const heroCoins = profileRecord?.coins ?? 0;
+  const heroGems = profileRecord?.gems ?? 500;
+  const heroEnergy = profileRecord?.energy ?? 5;
+  const heroEnergyMax = profileRecord?.energyMax ?? 5;
   const heroRank = user.profile?.rank ?? "BRONZE";
   const characterClass = profileRecord?.characterClass ?? null;
 
@@ -183,6 +186,9 @@ export default async function DashboardPage() {
         {/* TOPBAR */}
         <DashboardTopbar
           coins={heroCoins}
+          gems={heroGems}
+          energy={heroEnergy}
+          energyMax={heroEnergyMax}
           characterClass={characterClass}
         />
 
@@ -245,17 +251,7 @@ export default async function DashboardPage() {
               }
               recentAchievements={<RecentAchievementsPanel />}
               // Detail panels
-              battleDetail={
-                <>
-                  <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-                    <BossBattlePanel productivityCompletion={dailyCompletionPercent} />
-                    <div className="flex flex-col gap-4">
-                      <DungeonNavigationPanel />
-                      <FocusModePanel />
-                    </div>
-                  </div>
-                </>
-              }
+              battleDetail={<BossBattlePanel productivityCompletion={dailyCompletionPercent} />}
               statusDetail={
                 <div className="grid gap-4 xl:grid-cols-2">
                   <CharacterProfilePanel
@@ -286,17 +282,11 @@ export default async function DashboardPage() {
               oracleDetail={
                 <>
                   <LeaderboardPanel />
-                  <div className="grid gap-4 xl:grid-cols-2">
-                    <AiCoachPanel />
-                    <ProductivityAnalyticsPanel />
-                  </div>
+                  <ProductivityAnalyticsPanel />
                 </>
               }
               arenaDetail={<PvpPreviewPanel />}
               guildDetail={<FriendsPanel />}
-              inventoryDetail={<InventoryPanel />}
-              shopDetail={<ShopPanel />}
-              achievementsDetail={<AchievementsPanel />}
             />
           </main>
         </div>
@@ -308,9 +298,10 @@ export default async function DashboardPage() {
   );
 }
 
-// ─── CLIENT COMPONENTS ─────────────────────────────────────────────
+// â”€â”€â”€ CLIENT COMPONENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 import { DashboardContentRouter } from "@/components/layout/dashboard-content-router";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
+
 
 
