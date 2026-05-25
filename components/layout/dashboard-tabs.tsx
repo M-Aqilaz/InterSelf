@@ -10,6 +10,7 @@ import {
   Swords,
   Trophy,
   Users,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,7 +24,7 @@ import {
   type SpriteProps,
 } from "@/lib/character-sprites";
 
-type DashboardTabId = "mission" | "status" | "oracle" | "vault" | "arena" | "guild";
+type DashboardTabId = "mission" | "battle" | "status" | "oracle" | "vault" | "arena" | "guild";
 
 type DashboardPanelsProps = Record<DashboardTabId, ReactNode>;
 
@@ -48,11 +49,18 @@ type DashboardTab = {
   icon: LucideIcon;
 };
 
+const battleTab: DashboardTab = {
+  id: "battle",
+  label: "Battle",
+  description: "Boss raids, dungeon runs, and focus mode.",
+  icon: Zap,
+};
+
 const tabs: DashboardTab[] = [
   {
     id: "mission",
     label: "Mission",
-    description: "Quest board, combat, dungeon, and focus mode.",
+    description: "Quest board and daily mission flow.",
     icon: Compass,
   },
   {
@@ -87,7 +95,8 @@ const tabs: DashboardTab[] = [
   },
 ];
 
-const tabIds = new Set<DashboardTabId>(tabs.map((tab) => tab.id));
+const allTabs = [tabs[0], battleTab, ...tabs.slice(1)];
+const tabIds = new Set<DashboardTabId>(allTabs.map((tab) => tab.id));
 
 const classLabels: Record<string, string> = {
   IRONCLAD: "Ironclad",
@@ -109,11 +118,11 @@ function getTabFromHash(): DashboardTabId {
   return tabIds.has(hash) ? hash : "mission";
 }
 
-export function DashboardTabs({ profile, mission, status, oracle, vault, arena, guild }: DashboardTabsProps) {
+export function DashboardTabs({ profile, mission, battle, status, oracle, vault, arena, guild }: DashboardTabsProps) {
   const [activeTab, setActiveTab] = useState<DashboardTabId>("mission");
   const { play } = useGameAudio();
   const activeMeta = useMemo(
-    () => tabs.find((tab) => tab.id === activeTab) ?? tabs[0],
+    () => allTabs.find((tab) => tab.id === activeTab) ?? tabs[0],
     [activeTab]
   );
 
@@ -147,6 +156,7 @@ export function DashboardTabs({ profile, mission, status, oracle, vault, arena, 
 
   const panels: DashboardPanelsProps = {
     mission,
+    battle,
     status,
     oracle,
     vault,
@@ -175,47 +185,57 @@ export function DashboardTabs({ profile, mission, status, oracle, vault, arena, 
           >
             {tabs.map((tab, index) => {
               const Icon = tab.icon;
-              const isActive = tab.id === activeTab;
+              const isMissionGroup = tab.id === "mission";
+              const isActive = tab.id === activeTab || (isMissionGroup && activeTab === "battle");
 
               return (
-                <button
-                  key={tab.id}
-                  role="tab"
-                  type="button"
-                  aria-selected={isActive}
-                  onClick={() => switchTab(tab.id)}
-                  className={cn(
-                    "group relative flex min-h-24 min-w-0 flex-col justify-between rounded-2xl border px-4 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400/60 lg:min-h-[4.35rem] lg:flex-row lg:items-center lg:justify-start lg:gap-3",
-                    isActive
-                      ? "border-cyan-300/35 bg-cyan-300/12 text-white shadow-[0_0_28px_rgba(34,211,238,0.10)]"
-                      : "border-white/[0.06] bg-white/[0.025] text-white/50 hover:border-white/15 hover:bg-white/[0.055] hover:text-white/80"
-                  )}
-                >
-                  {isActive && (
-                    <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent lg:inset-x-auto lg:inset-y-3 lg:left-0 lg:h-auto lg:w-px lg:bg-gradient-to-b" />
-                  )}
+                <div key={tab.id} className="contents lg:block">
+                  <button
+                    role="tab"
+                    type="button"
+                    aria-selected={tab.id === activeTab}
+                    onClick={() => switchTab(tab.id)}
+                    className={cn(
+                      "group relative flex min-h-24 min-w-0 flex-col justify-between rounded-2xl border px-4 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400/60 lg:min-h-[4.35rem] lg:flex-row lg:items-center lg:justify-start lg:gap-3",
+                      isActive
+                        ? "border-cyan-300/35 bg-cyan-300/12 text-white shadow-[0_0_28px_rgba(34,211,238,0.10)]"
+                        : "border-white/[0.06] bg-white/[0.025] text-white/50 hover:border-white/15 hover:bg-white/[0.055] hover:text-white/80"
+                    )}
+                  >
+                    {isActive && (
+                      <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent lg:inset-x-auto lg:inset-y-3 lg:left-0 lg:h-auto lg:w-px lg:bg-gradient-to-b" />
+                    )}
 
-                  <span className="flex items-center justify-between gap-2 lg:contents">
-                    <Icon
-                      className={cn(
-                        "h-5 w-5 shrink-0 transition-all",
-                        isActive && "text-cyan-200 drop-shadow-[0_0_8px_rgba(34,211,238,0.65)]"
-                      )}
+                    <span className="flex items-center justify-between gap-2 lg:contents">
+                      <Icon
+                        className={cn(
+                          "h-5 w-5 shrink-0 transition-all",
+                          isActive && "text-cyan-200 drop-shadow-[0_0_8px_rgba(34,211,238,0.65)]"
+                        )}
+                      />
+                      <span className="font-mono text-[9px] tracking-[0.25em] text-white/25 lg:order-3 lg:ml-auto">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                    </span>
+
+                    <span className="min-w-0">
+                      <span className="block text-xs font-black uppercase tracking-[0.18em]">
+                        {tab.label}
+                      </span>
+                      <span className="mt-1 block text-[11px] leading-snug text-white/40 lg:max-w-[11rem]">
+                        {tab.description}
+                      </span>
+                    </span>
+                  </button>
+
+                  {tab.id === "mission" && (
+                    <SubNavButton
+                      tab={battleTab}
+                      active={activeTab === "battle"}
+                      onClick={() => switchTab("battle")}
                     />
-                    <span className="font-mono text-[9px] tracking-[0.25em] text-white/25 lg:order-3 lg:ml-auto">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                  </span>
-
-                  <span className="min-w-0">
-                    <span className="block text-xs font-black uppercase tracking-[0.18em]">
-                      {tab.label}
-                    </span>
-                    <span className="mt-1 block text-[11px] leading-snug text-white/40 lg:max-w-[11rem]">
-                      {tab.description}
-                    </span>
-                  </span>
-                </button>
+                  )}
+                </div>
               );
             })}
           </nav>
@@ -326,6 +346,45 @@ function PlayerCard({
       <div className="relative mt-3 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2 text-center text-[10px] font-black uppercase tracking-[0.22em] text-white/45 transition group-hover:border-amber-300/35 group-hover:text-amber-200">
         Open Profile
       </div>
+    </button>
+  );
+}
+
+function SubNavButton({
+  tab,
+  active,
+  onClick,
+}: {
+  tab: DashboardTab;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const Icon = tab.icon;
+
+  return (
+    <button
+      role="tab"
+      type="button"
+      aria-selected={active}
+      onClick={onClick}
+      className={cn(
+        "relative flex min-h-20 min-w-0 flex-col justify-between rounded-2xl border px-4 py-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-300/60 lg:ml-6 lg:mt-2 lg:min-h-[3.8rem] lg:flex-row lg:items-center lg:justify-start lg:gap-3 lg:px-3",
+        active
+          ? "border-amber-300/35 bg-amber-300/12 text-white shadow-[0_0_28px_rgba(251,191,36,0.10)]"
+          : "border-white/[0.06] bg-black/20 text-white/45 hover:border-amber-300/20 hover:bg-amber-300/[0.055] hover:text-white/80"
+      )}
+    >
+      {active && (
+        <span className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/80 to-transparent lg:inset-x-auto lg:inset-y-3 lg:left-0 lg:h-auto lg:w-px lg:bg-gradient-to-b" />
+      )}
+
+      <Icon className={cn("h-5 w-5 shrink-0", active && "text-amber-200 drop-shadow-[0_0_8px_rgba(251,191,36,0.55)]")} />
+      <span className="min-w-0">
+        <span className="block text-xs font-black uppercase tracking-[0.18em]">{tab.label}</span>
+        <span className="mt-1 block text-[11px] leading-snug text-white/40 lg:max-w-[10rem]">
+          {tab.description}
+        </span>
+      </span>
     </button>
   );
 }

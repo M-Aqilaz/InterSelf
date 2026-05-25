@@ -187,6 +187,10 @@ export default async function DashboardPage() {
                   <DailyTasksPanel />
                   <WeeklyChallengesPanel />
                 </div>
+              </>
+            }
+            battle={
+              <>
                 <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.15fr_0.85fr]">
                   <BossBattlePanel productivityCompletion={dailyCompletionPercent} />
                   <div className="grid grid-cols-1 gap-4">
