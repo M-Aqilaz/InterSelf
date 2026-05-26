@@ -290,9 +290,6 @@ export default async function DashboardPage() {
             />
           </main>
         </div>
-
-        {/* MOBILE BOTTOM NAV */}
-        <MobileBottomNav />
       </div>
     </ClassGate>
   );
@@ -301,7 +298,6 @@ export default async function DashboardPage() {
 // â”€â”€â”€ CLIENT COMPONENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 import { DashboardContentRouter } from "@/components/layout/dashboard-content-router";
-import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 
 
 

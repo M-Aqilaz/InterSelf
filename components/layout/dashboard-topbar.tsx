@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SageSprite, IroncladSprite, PhantomSprite, MerchantSprite, type SpriteProps } from "@/lib/character-sprites";
 import type { ComponentType } from "react";
@@ -7,8 +8,6 @@ import type { ComponentType } from "react";
 const SPRITES: Record<string, ComponentType<SpriteProps>> = {
   IRONCLAD: IroncladSprite, SAGE: SageSprite, PHANTOM: PhantomSprite, MERCHANT: MerchantSprite,
 };
-
-const ENERGY_REGEN_MS = 60 * 60 * 1000; // 1 hour
 
 type Props = {
   coins: number;
@@ -27,11 +26,14 @@ export function DashboardTopbar({
   notifCount = 3,
   characterClass,
 }: Props) {
+  const router = useRouter();
   const Sprite = SPRITES[characterClass ?? "SAGE"] ?? SageSprite;
   const [gems, setGems] = useState(initialGems);
   const [energy, setEnergy] = useState(initialEnergy);
   const [msUntilRegen, setMsUntilRegen] = useState<number | null>(null);
   const [regenLabel, setRegenLabel] = useState("");
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [accountActionLoading, setAccountActionLoading] = useState<"logout" | "delete" | null>(null);
 
   // Fetch real energy/gems from API
   useEffect(() => {
@@ -71,6 +73,31 @@ export function DashboardTopbar({
     display: "flex", alignItems: "center", gap: 6,
     background: "#111520", border: "1px solid rgba(255,255,255,0.08)",
     borderRadius: 10, padding: "5px 12px",
+  };
+
+  const handleLogout = async () => {
+    if (accountActionLoading) return;
+    setAccountActionLoading("logout");
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.replace("/login");
+    router.refresh();
+  };
+
+  const handleDeleteAccount = async () => {
+    if (accountActionLoading) return;
+    const confirmed = window.confirm("Hapus akun ini permanen? Semua progress, inventory, dan data login akan hilang.");
+    if (!confirmed) return;
+
+    setAccountActionLoading("delete");
+    const response = await fetch("/api/auth/account", { method: "DELETE" });
+    if (response.ok) {
+      router.replace("/register");
+      router.refresh();
+      return;
+    }
+
+    setAccountActionLoading(null);
+    window.alert("Gagal menghapus akun. Coba lagi sebentar.");
   };
 
   return (
@@ -145,7 +172,7 @@ export function DashboardTopbar({
       </div>
 
       {/* Right: notif + avatar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, position: "relative" }}>
         <button type="button" style={{ position: "relative", width: 32, height: 32, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0"/>
@@ -156,9 +183,71 @@ export function DashboardTopbar({
             </span>
           )}
         </button>
-        <div style={{ width: 34, height: 34, borderRadius: "50%", border: "2px solid rgba(139,92,246,0.5)", background: "#1e1040", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <button
+          type="button"
+          onClick={() => setAccountMenuOpen((open) => !open)}
+          aria-label="Account menu"
+          aria-expanded={accountMenuOpen}
+          style={{ width: 34, height: 34, borderRadius: "50%", border: "2px solid rgba(139,92,246,0.5)", background: "#1e1040", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+        >
           <Sprite style={{ width: 30, height: 38, transform: "translateY(4px)" }} />
-        </div>
+        </button>
+        {accountMenuOpen && (
+          <div
+            style={{
+              position: "absolute",
+              right: 0,
+              top: 44,
+              width: 190,
+              zIndex: 60,
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 14,
+              background: "rgba(8,11,18,0.98)",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+              padding: 8,
+            }}
+          >
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={accountActionLoading !== null}
+              style={{
+                width: "100%",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 10,
+                background: "rgba(255,255,255,0.04)",
+                color: "#fff",
+                cursor: accountActionLoading ? "wait" : "pointer",
+                fontSize: 12,
+                fontWeight: 800,
+                padding: "10px 12px",
+                textAlign: "left",
+              }}
+            >
+              {accountActionLoading === "logout" ? "Logging out..." : "Log out"}
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={accountActionLoading !== null}
+              style={{
+                width: "100%",
+                marginTop: 6,
+                border: "1px solid rgba(239,68,68,0.35)",
+                borderRadius: 10,
+                background: "rgba(239,68,68,0.1)",
+                color: "#fca5a5",
+                cursor: accountActionLoading ? "wait" : "pointer",
+                fontSize: 12,
+                fontWeight: 900,
+                padding: "10px 12px",
+                textAlign: "left",
+              }}
+            >
+              {accountActionLoading === "delete" ? "Deleting..." : "Hapus akun"}
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );
