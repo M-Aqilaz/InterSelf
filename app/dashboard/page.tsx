@@ -63,6 +63,10 @@ const ProductivityAnalyticsPanel = dynamic(
   () => import("@/components/sections/productivity-analytics-panel").then((m) => m.ProductivityAnalyticsPanel),
   { loading: () => <PanelSkeleton /> }
 );
+const QuestBoardPanel = dynamic(
+  () => import("@/components/sections/quest-board-panel").then((m) => m.QuestBoardPanel),
+  { loading: () => <PanelSkeleton /> }
+);
 const AiCoachPanel = dynamic(
   () => import("@/components/sections/ai-coach-panel").then((m) => m.AiCoachPanel),
   { loading: () => <PanelSkeleton /> }
@@ -251,6 +255,7 @@ export default async function DashboardPage() {
               }
               recentAchievements={<RecentAchievementsPanel />}
               // Detail panels
+              questsDetail={<QuestBoardPanel />}
               battleDetail={<BossBattlePanel productivityCompletion={dailyCompletionPercent} />}
               statusDetail={
                 <div className="grid gap-4 xl:grid-cols-2">

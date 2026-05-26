@@ -82,6 +82,7 @@ export async function POST(request: Request) {
       expReward,
       coinReward,
       streakImpact,
+      durationMinutes,
     } = body ?? {};
 
     if (!title || typeof title !== "string") {
@@ -107,6 +108,7 @@ export async function POST(request: Request) {
     const resolvedExp = toIntegerOrDefault(expReward, 0);
     const resolvedCoins = toIntegerOrDefault(coinReward, 0);
     const resolvedStreakImpact = toIntegerOrDefault(streakImpact, 1);
+    const resolvedDuration = toIntegerOrDefault(durationMinutes, 0);
 
     const task = await prisma.task.create({
       data: {
@@ -117,6 +119,7 @@ export async function POST(request: Request) {
         expReward: resolvedExp,
         coinReward: resolvedCoins,
         streakImpact: resolvedStreakImpact,
+        durationMinutes: resolvedDuration > 0 ? resolvedDuration : null,
         isSystem: false,
         createdBy: { connect: { id: user.id } },
       },

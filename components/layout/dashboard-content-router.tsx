@@ -10,6 +10,7 @@ type Props = {
   weeklyChallenges: ReactNode;
   statsOverview: ReactNode;
   recentAchievements: ReactNode;
+  questsDetail: ReactNode;
   battleDetail: ReactNode;
   statusDetail: ReactNode;
   vaultDetail: ReactNode;
@@ -21,11 +22,11 @@ type Props = {
   achievementsDetail?: ReactNode;
 };
 
-type View = "dashboard" | "battle" | "status" | "vault" | "oracle" | "arena" | "guild" | "inventory" | "shop" | "achievements";
+type View = "dashboard" | "quests" | "battle" | "status" | "vault" | "oracle" | "arena" | "guild" | "inventory" | "shop" | "achievements";
 
 const HASH_MAP: Record<string, View> = {
   "": "dashboard",
-  mission: "dashboard",
+  mission: "quests",
   battle: "battle",
   status: "status",
   vault: "vault",
@@ -38,6 +39,7 @@ const HASH_MAP: Record<string, View> = {
 };
 
 const DETAIL_META: Partial<Record<View, { label: string; desc: string }>> = {
+  quests:       { label: "Quests",         desc: "Habit board, daily rituals, and custom mission CRUD." },
   battle:       { label: "Battle Mode",    desc: "Boss raids, dungeon runs, and focus combat." },
   status:       { label: "Profile",        desc: "Character card, stats, habits, and goals." },
   vault:        { label: "Vault",          desc: "Inventory, achievements, and shop." },
@@ -52,7 +54,7 @@ const DETAIL_META: Partial<Record<View, { label: string; desc: string }>> = {
 export function DashboardContentRouter({
   characterCard, dailyQuests, bossBattlePreview,
   habitCalendar, weeklyChallenges, statsOverview, recentAchievements,
-  battleDetail, statusDetail, vaultDetail, oracleDetail, arenaDetail, guildDetail,
+  questsDetail, battleDetail, statusDetail, vaultDetail, oracleDetail, arenaDetail, guildDetail,
   inventoryDetail, shopDetail, achievementsDetail,
 }: Props) {
   const [view, setView] = useState<View>("dashboard");
@@ -97,6 +99,7 @@ export function DashboardContentRouter({
   }
 
   const panels: Partial<Record<View, ReactNode>> = {
+    quests:       questsDetail,
     battle:       battleDetail,
     status:       statusDetail,
     vault:        vaultDetail,
