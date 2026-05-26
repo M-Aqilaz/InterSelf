@@ -4,6 +4,11 @@ export const BOSS_DAMAGE_EVENT = "interself:boss:damage";
 export type BossDamagePayload = {
   damage: number;
   source: string;
+  bossName?: string;
+  category?: string;
+  difficulty?: string;
+  weaknessTriggered?: boolean;
+  damageMultiplier?: number;
   critical?: boolean;
   defeated?: boolean;
   rewards?: {

@@ -52,6 +52,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       expReward,
       coinReward,
       streakImpact,
+      durationMinutes,
     } = body ?? {};
     const data: Prisma.TaskUpdateInput = {};
 
@@ -84,6 +85,11 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     const resolvedStreakImpact = toInteger(streakImpact);
     if (resolvedStreakImpact !== null) {
       data.streakImpact = resolvedStreakImpact;
+    }
+
+    const resolvedDuration = toInteger(durationMinutes);
+    if (resolvedDuration !== null) {
+      data.durationMinutes = resolvedDuration > 0 ? resolvedDuration : null;
     }
 
     if (Object.keys(data).length === 0) {

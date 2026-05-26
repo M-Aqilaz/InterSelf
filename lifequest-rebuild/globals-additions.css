@@ -1,0 +1,73 @@
+/* ═══════════════════════════════════════════════════════════════════
+   TAMBAHKAN INI KE app/globals.css (append di bagian paling bawah)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Dashboard sidebar scrollbar hidden */
+.sidebar-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Calendar day hover */
+.cal-day-hover {
+  transition: opacity 0.15s, transform 0.1s;
+}
+.cal-day-hover:hover {
+  opacity: 1 !important;
+  transform: scale(1.1);
+}
+
+/* Card hover lift */
+.card-hover {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.card-hover:hover {
+  transform: translateY(-1px);
+}
+
+/* Quest item checked state */
+.quest-done {
+  opacity: 0.75;
+}
+
+/* Animate progress bars */
+@keyframes progress-fill {
+  from { width: 0%; }
+}
+.progress-fill-anim {
+  animation: progress-fill 0.6s ease-out forwards;
+}
+
+/* Boss HP bar pulse when low */
+@keyframes hp-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.hp-critical {
+  animation: hp-pulse 1.5s ease-in-out infinite;
+}
+
+/* Sidebar active glow */
+.nav-active-glow {
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+}
+
+/* Achievement unlock animation */
+@keyframes unlock-pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  70% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.ach-unlock {
+  animation: unlock-pop 0.3s ease-out forwards;
+}
+
+/* Responsive: hide sidebar on mobile */
+@media (max-width: 1023px) {
+  .dashboard-sidebar {
+    display: none;
+  }
+}

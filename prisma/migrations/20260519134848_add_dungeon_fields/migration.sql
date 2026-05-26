@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Boss" ADD COLUMN     "dungeonBiome" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "dungeonName" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "dungeonTier" TEXT NOT NULL DEFAULT 'F',
+ADD COLUMN     "loreText" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "minLevel" INTEGER NOT NULL DEFAULT 1;

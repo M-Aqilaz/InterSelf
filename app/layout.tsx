@@ -1,54 +1,35 @@
 import type { Metadata } from "next";
-import { Orbitron, Inter } from "next/font/google";
+import { Space_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
-import { SiteHeader } from "@/components/layout/site-header";
 import { ToastProvider } from "@/components/ui/toast";
-import { getCurrentUser } from "@/lib/auth";
 
-const orbitron = Orbitron({
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  variable: "--font-orbitron",
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-space-grotesk",
+  display: "swap",
 });
-
-const inter = Inter({
+const spaceMono = Space_Mono({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["400", "700"],
+  variable: "--font-space-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "INTERSELF — Level Up Your Real Life",
-  description:
-    "A Solo Leveling inspired productivity RPG with quests, bosses, achievements, and social play.",
-  metadataBase: new URL("https://interself.local"),
+  title: "InterSelf — Jadikan Dirimu Karakter Terkuat",
+  description: "Platform gamifikasi pengembangan diri.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
 };
 
-export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const currentUser = await getCurrentUser();
-  const headerUser = currentUser
-    ? {
-        id: currentUser.id,
-        name: currentUser.name ?? null,
-        profile: {
-          username: currentUser.profile?.username ?? null,
-        },
-      }
-    : null;
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${orbitron.variable} ${inter.variable}`}>
-      <body className="min-h-screen bg-[#030014] text-white">
-        <div className="gradient-grid pointer-events-none" aria-hidden />
-        <ToastProvider>
-          <main className="relative z-10 flex min-h-screen flex-col">
-            <div className="container mx-auto flex w-full max-w-full flex-1 flex-col gap-6 px-4 py-6 sm:gap-8 sm:px-6 sm:py-8 lg:gap-10 lg:py-10">
-              <SiteHeader user={headerUser} />
-              {children}
-            </div>
-          </main>
-        </ToastProvider>
+    <html lang="id" className={`${spaceGrotesk.variable} ${spaceMono.variable}`}>
+      <body
+        className={spaceGrotesk.className}
+        style={{ background: "var(--bg-base)", color: "var(--t1)" }}
+      >
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

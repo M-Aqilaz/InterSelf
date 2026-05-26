@@ -1,34 +1,118 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { emitBossDamageEvent, emitTasksUpdatedEvent } from "@/lib/events";
+import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const SYSTEM_TASKS = [
   {
     key: "solar-rise",
     title: "Solar Rise Protocol",
-    subtitle: "Bangun pagi",
+    subtitle: "Aktivasi pagi",
+    quickAction: "Bernapas dalam · Minum air · Tulis jurnal — selesai dalam 20 menit",
+    detail: "Aktifkan tubuh dan pikiran dalam 20 menit pertama setelah bangun. Pernapasan mengaktifkan sistem saraf, hidrasi membersihkan kabut otak, jurnal menetapkan niat — ketiganya membangun jangkar pagi yang kuat.",
+    actions: [
+      "Lakukan 10 napas dalam segera setelah bangun dari tempat tidur",
+      "Minum setidaknya 500ml air putih sebelum menyentuh HP",
+      "Buka jurnal dan tulis 3 hal yang ingin kamu capai hari ini",
+    ],
     matcher: ["solar rise protocol", "bangun pagi"],
-    fallbackDescription:
-      "Complete breathwork, hydration, and journaling within 20 minutes of waking.",
+    fallbackDescription: "Lakukan pernapasan, hidrasi, dan jurnal dalam 20 menit setelah bangun.",
   },
   {
     key: "deep-work",
     title: "Deep Work Sprint",
-    subtitle: "Sesi belajar",
+    subtitle: "Blok fokus 90 menit",
+    quickAction: "Matikan HP · Buka 1 tugas · Kerja tanpa henti selama 90 menit",
+    detail: "Masuk ke kondisi immersi total: telepon dimatikan, satu tab, satu tujuan. 90 menit output seperti ini menghasilkan leverage lebih besar dari 4 jam kerja multitasking yang terfragmentasi.",
+    actions: [
+      "Matikan semua notifikasi, HP dalam mode senyap atau dibalik",
+      "Pilih SATU tugas yang paling penting dan buka hanya itu",
+      "Kerjakan tanpa berhenti selama 90 menit penuh — tidak ada media sosial",
+    ],
     matcher: ["deep work sprint", "belajar"],
-    fallbackDescription: "Ship 90 minutes of focused work with everything silenced.",
+    fallbackDescription: "Kerjakan 90 menit kerja terfokus dengan semua notifikasi dimatikan.",
+  },
+  {
+    key: "micro-workout",
+    title: "Micro-Compound Workout",
+    subtitle: "Pemeliharaan kebugaran",
+    quickAction: "Sirkuit 25 menit ATAU sebarkan 10 gerakan compound sepanjang hari",
+    detail: "Sirkuit kekuatan 25 menit menargetkan semua kelompok otot utama. Alternatifnya, sebarkan 10 micro-set sepanjang hari — setiap gerakan menumpuk dan membentuk tubuh secara konsisten.",
+    actions: [
+      "Pilih mode: sirkuit 25 menit sekaligus ATAU 10 micro-set tersebar",
+      "Fokus gerakan compound: squat, push-up, plank, lunges, atau pull-up",
+      "Tandai selesai setelah semua set terpenuhi sebelum tidur malam",
+    ],
+    matcher: ["micro-compound workout", "workout"],
+    fallbackDescription: "Lakukan sirkuit kekuatan 25 menit atau selesaikan 10 micro-set sepanjang hari.",
   },
   {
     key: "wealth-sync",
     title: "Wealth Sync Review",
-    subtitle: "Menabung",
+    subtitle: "Kecerdasan finansial",
+    quickAction: "Buka rekening · Audit pengeluaran kemarin · Tetapkan 1 langkah finansial",
+    detail: "Buka rekening, audit setiap pengeluaran 24 jam terakhir, perbarui estimasi keuanganmu, dan identifikasi satu tindakan finansial berpengaruh untuk dieksekusi atau dijadwalkan. Kejelasan keuangan berbunga seperti investasi.",
+    actions: [
+      "Buka aplikasi bank dan cek saldo serta mutasi terbaru",
+      "Catat semua pengeluaran kemarin — pisahkan kebutuhan dan keinginan",
+      "Tentukan 1 tindakan: tabung, investasi, atau pangkas pengeluaran hari ini",
+    ],
     matcher: ["wealth sync review", "menabung"],
-    fallbackDescription: "Audit expenses, update your runway, and trigger a financial move.",
+    fallbackDescription: "Audit pengeluaran, perbarui runway, dan tetapkan langkah finansial berikutnya.",
+  },
+  {
+    key: "nightly-check",
+    title: "Nightly Systems Check",
+    subtitle: "Ritual penutupan hari",
+    quickAction: "Matikan semua layar · Catat hari ini · Rencanakan besok dalam 15 menit",
+    detail: "Matikan semua input — tidak ada scrolling, tidak ada notifikasi. Dalam 15 menit: catat apa yang selesai, apa yang menghambat, dan persis apa langkah pertama esok hari. Persiapan malam hari menghilangkan kelelahan keputusan di pagi hari.",
+    actions: [
+      "Matikan semua layar dan notifikasi — ini bukan waktu scrolling",
+      "Tulis apa yang berhasil hari ini dan apa yang menghambatmu",
+      "Tentukan dengan spesifik: apa 1 langkah pertama yang akan kamu lakukan besok?",
+    ],
+    matcher: ["nightly systems check", "nightly"],
+    fallbackDescription: "Matikan semua input, rencanakan hari esok, dan catat hari ini dalam 15 menit.",
+  },
+  {
+    key: "neural-expansion",
+    title: "Neural Expansion Block",
+    subtitle: "Pemajemukan pengetahuan",
+    quickAction: "Pilih 1 topik · Baca sumbernya · Catat 1 insight — 30 menit penuh",
+    detail: "Dedikasikan 30 menit tanpa gangguan untuk satu topik penting — tidak ada membaca cepat, tidak ada ringkasan. Baca sumbernya, catat satu insight, hubungkan dengan hal yang sudah kamu ketahui. Satu konsep per hari mengubah cara berpikir dalam 90 hari.",
+    actions: [
+      "Pilih SATU topik atau buku yang relevan dengan tujuan jangka panjangmu",
+      "Baca langsung dari sumber asli — bukan ringkasan atau thread media sosial",
+      "Catat 1 insight utama dan hubungkan dengan sesuatu yang sudah kamu ketahui",
+    ],
+    matcher: ["neural expansion block", "neural expansion"],
+    fallbackDescription: "Baca atau pelajari topik penting selama 30 menit terfokus — tanpa membaca cepat.",
+  },
+  {
+    key: "reading",
+    title: "Sesi Membaca Harian",
+    subtitle: "Perluas wawasan",
+    quickAction: "Pilih bacaan · Buka sumber · Aktifkan timer 15 menit · Baca dengan fokus",
+    detail: "Pilih buku, jurnal, atau artikel berkualitas. Timer akan berjalan selama 15 menit — fokuslah pada pemahaman, bukan kecepatan. Klik salah satu sumber bacaan, lalu tekan Mulai.",
+    actions: [
+      "Pilih buku, jurnal, atau artikel yang ingin kamu baca hari ini",
+      "Klik salah satu sumber bacaan di bawah untuk membukanya",
+      "Tekan Mulai pada timer dan baca selama 15 menit penuh tanpa distraksi",
+    ],
+    matcher: ["sesi membaca harian", "membaca harian"],
+    fallbackDescription: "Baca buku, jurnal, atau artikel berkualitas selama 15 menit tanpa gangguan.",
+    timerMinutes: 15,
+    readingUrls: [
+      { label: "Medium", url: "https://medium.com" },
+      { label: "Project Gutenberg", url: "https://www.gutenberg.org" },
+      { label: "Google Scholar", url: "https://scholar.google.com" },
+    ],
   },
 ];
 
@@ -89,22 +173,10 @@ const formatLabel = (label: string) =>
     .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
     .join(" ");
 
-const describeRewards = (task: TaskRecord) => {
-  const rewardParts = [`+${task.expReward} EXP`, `${task.coinReward} coins`, `Streak +${task.streakImpact}`];
-  if (task.statRewards?.length) {
-    rewardParts.push(
-      task.statRewards.map((reward) => `+${reward.amount} ${formatLabel(reward.stat)}`).join(", ")
-    );
-  }
-  return rewardParts.join(" · ");
-};
-
 export function DailyTasksPanel() {
   const [tasks, setTasks] = useState<TaskRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [formTitle, setFormTitle] = useState("");
-  const [formDescription, setFormDescription] = useState("");
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const { push } = useToast();
@@ -112,6 +184,9 @@ export function DailyTasksPanel() {
   const [rewardModal, setRewardModal] = useState<RewardModalState | null>(null);
   const [levelModal, setLevelModal] = useState<LevelModalState | null>(null);
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [combo, setCombo] = useState(0);
+  const comboTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -119,12 +194,12 @@ export function DailyTasksPanel() {
     try {
       const res = await fetch("/api/tasks", { cache: "no-store" });
       if (!res.ok) {
-        throw new Error("Unable to load tasks");
+        throw new Error("Gagal memuat tugas");
       }
       const data = (await res.json()) as TaskRecord[];
       setTasks(data);
     } catch (err) {
-      const message = (err as Error).message ?? "Failed to load tasks";
+      const message = (err as Error).message ?? "Gagal memuat tugas";
       setError(message);
       push({ title: message, variant: "error" });
     } finally {
@@ -167,35 +242,92 @@ export function DailyTasksPanel() {
     router.refresh();
   }, [fetchTasks, router]);
 
+  const spawnFloaters = useCallback((rect: DOMRect, xp: number, coins: number, currentCombo: number) => {
+    const cx = rect.left + rect.width * 0.65;
+    const cy = rect.top + rect.height * 0.3;
+
+    const makeFloat = (x: number, y: number, text: string, color: string, delay = 0) => {
+      setTimeout(() => {
+        const el = document.createElement('div');
+        el.style.cssText = `
+          position:fixed;left:${x}px;top:${y}px;
+          color:${color};font-size:14px;font-weight:700;
+          pointer-events:none;z-index:9999;
+          animation:floatUp 1s ease-out forwards;
+        `;
+        el.textContent = text;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1100);
+      }, delay);
+    };
+
+    makeFloat(cx, cy, `+${xp} EXP`, '#00e5ff');
+    makeFloat(cx + 20, cy - 15, `+${coins}`, '#f59e0b', 150);
+    if (currentCombo >= 2) {
+      makeFloat(cx - 10, cy - 30, `x${getComboMultiplier(currentCombo).toFixed(1)}`, '#a855f7', 250);
+    }
+  }, []);
+
   const completeTask = useCallback(
     (task: TaskRecord) => {
       startTransition(async () => {
         const res = await fetch(`/api/tasks/${task.id}/complete`, { method: "POST" });
         const payload = await res.json().catch(() => ({}));
         if (!res.ok) {
-          push({ title: payload.error ?? "Unable to complete task", variant: "error" });
+          push({ title: payload.error ?? "Gagal menyelesaikan tugas", variant: "error" });
           return;
         }
 
         const rewardExp = payload?.completion?.expEarned ?? task.expReward;
         const rewardCoins = payload?.completion?.coinsEarned ?? task.coinReward;
         const statIncreases = Object.entries((payload?.completion?.statIncreases as Record<string, number>) ?? {});
+        const bossDamage = payload?.bossBattle?.damageApplied ?? 0;
 
-        push({
-          title: "Task completed",
-          description: `+${rewardExp} EXP · ${rewardCoins} coins`,
-          variant: "success",
-        });
+        // Combo logic
+        const newCombo = combo + 1;
+        setCombo(newCombo);
+        if (comboTimerRef.current) clearTimeout(comboTimerRef.current);
+        comboTimerRef.current = setTimeout(() => {
+          setCombo(0);
+        }, 5000);
+
+        // Spawn floating numbers
+        const cardEl = document.getElementById(`task-card-${task.id}`);
+        if (cardEl) {
+          const rect = cardEl.getBoundingClientRect();
+          spawnFloaters(rect, rewardExp, rewardCoins, newCombo);
+        }
+
+        // Dynamic toast
+        const isCritical = task.difficulty === 'HARD' || task.difficulty === 'LEGENDARY';
+        if (isCritical) {
+          push({
+            title: `CRITICAL HIT! ${task.title}`,
+            description: `+${rewardExp} EXP · -${bossDamage} DMG Boss`,
+            variant: 'success',
+          });
+        } else if (newCombo >= 3) {
+          push({
+            title: `${newCombo}x COMBO! x${getComboMultiplier(newCombo).toFixed(1)} Multiplier`,
+            description: `+${rewardExp} EXP · +${rewardCoins} koin`,
+            variant: 'success',
+          });
+        } else {
+          push({
+            title: `${task.title} selesai!`,
+            description: `+${rewardExp} EXP · +${rewardCoins} koin`,
+            variant: 'success',
+          });
+        }
         const bursts: RewardBurst[] = [
-          makeBurst(`+${rewardExp} EXP`, "text-cyan-300"),
-          makeBurst(`+${rewardCoins} Coins`, "text-amber-200"),
+          makeBurst(`+${rewardExp} EXP`, "text-[#50c890]"),
+          makeBurst(`+${rewardCoins} Coins`, "text-[#f0c060]"),
         ];
         statIncreases.forEach(([stat, value]) => {
           if (!value) return;
-          bursts.push(makeBurst(`+${value} ${formatLabel(stat)}`, "text-emerald-300"));
+          bursts.push(makeBurst(`+${value} ${formatLabel(stat)}`, "text-[#50c890]"));
         });
 
-        const bossDamage = payload?.bossBattle?.damageApplied ?? 0;
         if (bossDamage > 0) {
           bursts.push(makeBurst(`-${bossDamage} HP`, "text-rose-300"));
         }
@@ -216,7 +348,12 @@ export function DailyTasksPanel() {
         if (payload?.bossBattle) {
           emitBossDamageEvent({
             damage: payload.bossBattle.damageApplied,
-            source: task.title,
+            source: payload.bossBattle.source ?? task.title,
+            bossName: payload.bossBattle.boss?.name,
+            category: payload.bossBattle.taskCategory,
+            difficulty: payload.bossBattle.taskDifficulty,
+            weaknessTriggered: payload.bossBattle.weaknessTriggered,
+            damageMultiplier: payload.bossBattle.damageMultiplier,
             defeated: payload.bossBattle.defeated,
             rewards: payload.bossBattle.rewards
               ? {
@@ -249,177 +386,299 @@ export function DailyTasksPanel() {
         emitTasksUpdatedEvent();
       });
     },
-    [playerState, push, refreshAll]
+    [playerState, push, refreshAll, combo, spawnFloaters]
   );
 
-  const addOptionalTask = useCallback(() => {
-    if (!formTitle.trim() || !formDescription.trim()) {
-      push({ title: "Fill in title and description", variant: "error" });
-      return;
-    }
-
-    startTransition(async () => {
-      const res = await fetch("/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: formTitle.trim(),
-          description: formDescription.trim(),
-          category: "CUSTOM",
-          difficulty: "MEDIUM",
-          expReward: 80,
-          coinReward: 25,
-          streakImpact: 1,
-        }),
-      });
-      const payload = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        push({ title: payload.error ?? "Unable to create task", variant: "error" });
-        return;
-      }
-      push({ title: "Optional task added", variant: "success" });
-      setFormTitle("");
-      setFormDescription("");
-      await refreshAll();
-      emitTasksUpdatedEvent();
-    });
-  }, [formDescription, formTitle, push, refreshAll]);
-
-  const renderTask = (task?: TaskRecord | null) => {
-    if (!task) {
-      return <p className="text-xs text-white/50">Not available yet.</p>;
-    }
-
-    return (
-      <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <p className="text-xs text-white/60">
-          {describeRewards(task)} · {formatLabel(task.category)} · {task.difficulty}
-        </p>
-        {task.completedToday ? (
-          <span className="text-xs text-emerald-300">Completed today</span>
-        ) : (
-          <Button size="sm" disabled={pending} onClick={() => completeTask(task)}>
-            Complete
-          </Button>
-        )}
-      </div>
-    );
-  };
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-black/70 to-[#0a0318] p-6">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-cyan-500/20 blur-3xl" />
-        <div className="absolute -bottom-20 right-0 h-40 w-40 rounded-full bg-purple-500/30 blur-3xl" />
-      </div>
+    <div
+      style={{
+        borderRadius: 20,
+        border: "1px solid rgba(255,255,255,0.07)",
+        background: "linear-gradient(160deg,#080b12,#0c1018)",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Ambient glows */}
+      <div aria-hidden style={{ position:"absolute", top:-60, left:"50%", transform:"translateX(-50%)", width:300, height:300, borderRadius:"50%", background:"rgba(212,168,67,0.05)", filter:"blur(80px)", pointerEvents:"none" }} />
+      <div aria-hidden style={{ position:"absolute", bottom:-40, right:0, width:200, height:200, borderRadius:"50%", background:"rgba(58,170,122,0.05)", filter:"blur(70px)", pointerEvents:"none" }} />
+
+      {/* Floating reward numbers */}
       <AnimatePresence>
         {floatingRewards.map((burst) => (
           <motion.span
             key={burst.id}
-            className={`pointer-events-none absolute text-sm font-semibold ${burst.color}`}
-            initial={{ opacity: 0, y: 0 }}
-            animate={{ opacity: 1, y: -60 }}
-            exit={{ opacity: 0, y: -90 }}
-            style={{ right: `${burst.offset}%`, top: "20%" }}
+            className={`pointer-events-none absolute text-sm font-bold ${burst.color}`}
+            initial={{ opacity:0, y:0 }}
+            animate={{ opacity:1, y:-60 }}
+            exit={{ opacity:0, y:-90 }}
+            style={{ right:`${burst.offset}%`, top:"10%", fontFamily:"monospace", zIndex:10 }}
           >
             {burst.label}
           </motion.span>
         ))}
       </AnimatePresence>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+
+      {/* Header */}
+      <div style={{ padding:"20px 20px 0", display:"flex", alignItems:"flex-start", justifyContent:"space-between" }}>
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-white/50">Daily Tasks</p>
-          <h3 className="text-2xl font-black text-white">Mission Queue</h3>
+          <p style={{ fontSize:9, fontWeight:600, letterSpacing:"0.28em", textTransform:"uppercase", color:"rgba(255,255,255,0.3)", fontFamily:"monospace" }}>
+            Tugas Harian
+          </p>
+          <h3 style={{ fontSize:22, fontWeight:900, color:"#eef0f5", lineHeight:1.1, marginTop:2 }}>
+            Antrian Misi
+          </h3>
+          <p style={{ fontSize:9, fontWeight:600, letterSpacing:"0.2em", textTransform:"uppercase", color:"rgba(255,255,255,0.25)", marginTop:2, fontFamily:"monospace" }}>
+            Ritual Sistem
+          </p>
         </div>
-        <Button variant="ghost" size="sm" disabled={loading} onClick={fetchTasks}>
-          Refresh
-        </Button>
+        <button
+          onClick={fetchTasks}
+          disabled={loading}
+          style={{ fontSize:11, color:"rgba(255,255,255,0.35)", background:"transparent", border:"1px solid rgba(255,255,255,0.08)", borderRadius:8, padding:"5px 12px", cursor:"pointer", fontFamily:"inherit" }}
+        >
+          Segarkan
+        </button>
       </div>
 
+      {/* Combo HUD */}
+      <div style={{ padding:"0 20px" }}>
+        <AnimatePresence>
+          {combo >= 2 && <ComboHUD combo={combo} />}
+        </AnimatePresence>
+      </div>
+
+      {/* Error */}
       {error && (
-        <div className="mt-4 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-4 text-sm text-rose-100">
+        <div style={{ margin:"12px 20px 0", borderRadius:12, border:"1px solid rgba(224,90,106,0.3)", background:"rgba(224,90,106,0.08)", padding:"10px 14px", fontSize:12, color:"#f07080" }}>
           {error}
         </div>
       )}
 
+      {/* Task list */}
       {loading ? (
-        <p className="mt-6 text-sm text-white/60">Loading tasks...</p>
+        <div style={{ padding:"24px 20px", fontSize:13, color:"rgba(255,255,255,0.4)" }}>Memuat tugas...</div>
       ) : (
-        <div className="relative mt-6 space-y-6">
-          <section>
-            <h4 className="text-xs uppercase tracking-[0.3em] text-white/50">System rituals</h4>
-            <ul className="mt-3 space-y-4">
-              {systemMatches.map(({ definition, task }) => (
-                <li key={definition.key} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-semibold text-white">{definition.title}</p>
-                      <p className="text-xs text-white/60">{definition.subtitle}</p>
-                      <p className="mt-1 text-xs text-white/60">
-                        {task?.description ?? definition.fallbackDescription}
-                      </p>
-                    </div>
-                    {task && (
-                      <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] uppercase text-white/70">
-                        {task.difficulty}
-                      </span>
-                    )}
-                  </div>
-                  {renderTask(task)}
-                </li>
-              ))}
-            </ul>
-          </section>
+        <div style={{ padding:"16px 20px 20px", display:"flex", flexDirection:"column", gap:8 }}>
+          {systemMatches.map(({ definition, task }) => {
+            const isExpanded = expandedKey === definition.key;
+            const hasTimer = "timerMinutes" in definition && !!definition.timerMinutes;
+            const isDone = task?.completedToday ?? false;
+            const isClickable = task && !isDone && !pending;
 
-          <section>
-            <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-white/50">Add optional task</p>
-              <div className="mt-3 flex flex-col gap-3">
-                <input
-                  value={formTitle}
-                  onChange={(event) => setFormTitle(event.target.value)}
-                  placeholder="Task title"
-                  className="rounded-2xl border border-white/10 bg-black/40 px-4 py-2 text-sm text-white placeholder:text-white/40"
-                />
-                <textarea
-                  value={formDescription}
-                  onChange={(event) => setFormDescription(event.target.value)}
-                  rows={3}
-                  placeholder="Describe the ritual or target"
-                  className="rounded-2xl border border-white/10 bg-black/40 px-4 py-2 text-sm text-white placeholder:text-white/40"
-                />
-                <Button disabled={pending} onClick={addOptionalTask}>
-                  Save optional task
-                </Button>
+            const diff = task?.difficulty ?? "MEDIUM";
+            const accentColor = isDone ? "rgba(255,255,255,0.15)"
+              : diff === "HARD" || diff === "LEGENDARY" ? "#e05a6a"
+              : diff === "EASY" ? "#3aaa7a"
+              : "#d4a843";
+
+            const borderColor = isDone ? "rgba(255,255,255,0.06)"
+              : diff === "HARD" || diff === "LEGENDARY" ? "rgba(224,90,106,0.25)"
+              : diff === "EASY" ? "rgba(58,170,122,0.2)"
+              : "rgba(212,168,67,0.2)";
+
+            const badgeBg = diff === "HARD" || diff === "LEGENDARY" ? "rgba(224,90,106,0.12)"
+              : diff === "EASY" ? "rgba(58,170,122,0.12)"
+              : "rgba(212,168,67,0.12)";
+
+            const badgeColor = diff === "HARD" || diff === "LEGENDARY" ? "#f07080"
+              : diff === "EASY" ? "#50c890"
+              : "#d4a843";
+
+            return (
+              <motion.div
+                key={definition.key}
+                id={`task-card-${task?.id}`}
+                layout
+                initial={{ opacity:0, y:6 }}
+                animate={{ opacity: isDone ? 0.55 : 1, y:0 }}
+                style={{
+                  display:"flex",
+                  borderRadius:14,
+                  border:`1px solid ${borderColor}`,
+                  background: isDone ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.03)",
+                  overflow:"hidden",
+                  cursor: isClickable ? "pointer" : "default",
+                  transition:"all 0.15s",
+                }}
+                onClick={() => { if(isClickable) completeTask(task); }}
+                whileHover={isClickable ? { scale:1.002, backgroundColor:"rgba(255,255,255,0.05)" } : {}}
+                whileTap={isClickable ? { scale:0.998 } : {}}
+              >
+                {/* Left accent bar */}
+                <div style={{ width:3, flexShrink:0, background:accentColor, borderRadius:"14px 0 0 14px" }} />
+
+                {/* Content */}
+                <div style={{ flex:1, padding:"14px 14px 14px 16px" }}>
+                  {/* Top row: title + badge + expand */}
+                  <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8 }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      {/* Title row */}
+                      <div style={{ display:"flex", alignItems:"center", flexWrap:"wrap", gap:6, marginBottom:3 }}>
+                        {isDone && (
+                          <span style={{ fontSize:11, color:"#50c890", fontWeight:700 }}>✓</span>
+                        )}
+                        <span style={{ fontSize:13, fontWeight:700, color: isDone ? "rgba(255,255,255,0.35)" : "#eef0f5", textDecoration: isDone ? "line-through" : "none" }}>
+                          {definition.title}
+                        </span>
+                        {task && (
+                          <span style={{ fontSize:9, fontWeight:700, letterSpacing:"0.1em", textTransform:"uppercase", padding:"2px 7px", borderRadius:5, background:badgeBg, color:badgeColor, border:`1px solid ${borderColor}`, fontFamily:"monospace" }}>
+                            {task.difficulty}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Subtitle */}
+                      <p style={{ fontSize:9, fontWeight:600, letterSpacing:"0.22em", textTransform:"uppercase", color:"rgba(212,168,67,0.55)", fontFamily:"monospace", marginBottom:6 }}>
+                        {definition.subtitle}
+                      </p>
+
+                      {/* Quick action */}
+                      <p style={{ fontSize:11, color:"rgba(255,255,255,0.55)", lineHeight:1.55 }}>
+                        {definition.quickAction}
+                      </p>
+
+                      {/* Reward chips */}
+                      {task && (
+                        <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:5, marginTop:10 }}>
+                          <span style={{ fontSize:10, fontWeight:600, padding:"2px 8px", borderRadius:6, background:"rgba(58,170,122,0.1)", color:"#50c890", fontFamily:"monospace" }}>
+                            +{Math.round(task.expReward * getComboMultiplier(combo))} EXP
+                          </span>
+                          <span style={{ fontSize:10, fontWeight:600, padding:"2px 8px", borderRadius:6, background:"rgba(212,168,67,0.1)", color:"#d4a843", fontFamily:"monospace" }}>
+                            +{Math.round(task.coinReward * getComboMultiplier(combo))} coins
+                          </span>
+                          {task.statRewards?.map((sr) => (
+                            <span key={sr.stat} style={{ fontSize:9, padding:"2px 6px", borderRadius:5, background:"rgba(255,255,255,0.06)", color:"rgba(255,255,255,0.5)", fontFamily:"monospace" }}>
+                              +{sr.amount} {formatLabel(sr.stat)}
+                            </span>
+                          ))}
+                          {combo >= 2 && !isDone && (
+                            <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:6, background:"rgba(212,168,67,0.15)", color:"#d4a843", border:"1px solid rgba(212,168,67,0.3)", fontFamily:"monospace" }}>
+                              x{getComboMultiplier(combo).toFixed(1)} COMBO
+                            </span>
+                          )}
+                          <span style={{ marginLeft:"auto", fontSize:10, color: isDone ? "#50c890" : "rgba(255,255,255,0.2)", fontStyle: isDone ? "normal" : "italic", fontWeight: isDone ? 600 : 400 }}>
+                            {isDone ? "Selesai hari ini ✓" : "klik untuk selesaikan"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Expand button */}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setExpandedKey(isExpanded ? null : definition.key); }}
+                      style={{ flexShrink:0, width:28, height:28, borderRadius:8, border:"1px solid rgba(255,255,255,0.08)", background:"transparent", color:"rgba(255,255,255,0.3)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", marginTop:2, transition:"all 0.12s" }}
+                      aria-label={isExpanded ? "Tutup detail" : "Lihat detail"}
+                    >
+                      {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    </button>
+                  </div>
+
+                  {/* Expanded detail */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity:0, height:0 }}
+                        animate={{ opacity:1, height:"auto" }}
+                        exit={{ opacity:0, height:0 }}
+                        style={{ overflow:"hidden" }}
+                      >
+                        <div style={{ borderTop:"1px solid rgba(255,255,255,0.06)", marginTop:12, paddingTop:12, display:"flex", flexDirection:"column", gap:10 }}>
+                          <p style={{ fontSize:11, color:"rgba(255,255,255,0.45)", lineHeight:1.65 }}>{definition.detail}</p>
+                          {"actions" in definition && definition.actions && (
+                            <ol style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                              {(definition.actions as string[]).map((step, idx) => (
+                                <li key={idx} style={{ display:"flex", gap:10, fontSize:11, color:"rgba(255,255,255,0.6)" }}>
+                                  <span style={{ flexShrink:0, fontFamily:"monospace", fontSize:9, color:"rgba(212,168,67,0.5)", marginTop:2 }}>
+                                    {String(idx+1).padStart(2,"0")}
+                                  </span>
+                                  {step}
+                                </li>
+                              ))}
+                            </ol>
+                          )}
+                          {"readingUrls" in definition && definition.readingUrls && (
+                            <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                              {(definition.readingUrls as {label:string;url:string}[]).map((src) => (
+                                <a key={src.url} href={src.url} target="_blank" rel="noopener noreferrer"
+                                  style={{ display:"flex", alignItems:"center", gap:5, fontSize:11, color:"rgba(255,255,255,0.5)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:8, padding:"4px 10px", textDecoration:"none", background:"rgba(255,255,255,0.03)" }}>
+                                  <ExternalLink className="h-3 w-3" />
+                                  {src.label}
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                          {hasTimer && (
+                            <ReadingTimer
+                              minutes={definition.timerMinutes as number}
+                              onComplete={() => {}}
+                            />
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                </div>
+              </motion.div>
+            );
+          })}
+
+          {/* Quest tambahan — hanya tampil list, tanpa form tambah */}
+          {optionalTasks.length > 0 && (
+            <div style={{ marginTop:8 }}>
+              <p style={{ fontSize:9, fontWeight:600, letterSpacing:"0.25em", textTransform:"uppercase", color:"rgba(255,255,255,0.25)", fontFamily:"monospace", marginBottom:8 }}>
+                Quest Tambahan
+              </p>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {optionalTasks.map((task) => {
+                  const isDone = task.completedToday ?? false;
+                  return (
+                    <motion.div
+                      key={task.id}
+                      style={{
+                        display:"flex",
+                        borderRadius:12,
+                        border:"1px solid rgba(212,168,67,0.2)",
+                        background:"rgba(255,255,255,0.02)",
+                        overflow:"hidden",
+                        cursor: isDone || pending ? "default" : "pointer",
+                        opacity: isDone ? 0.5 : 1,
+                      }}
+                      onClick={() => { if(!isDone && !pending) completeTask(task); }}
+                      whileHover={!isDone ? { scale:1.002 } : {}}
+                    >
+                      <div style={{ width:3, flexShrink:0, background: isDone ? "rgba(255,255,255,0.15)" : "#d4a843" }} />
+                      <div style={{ flex:1, padding:"10px 14px" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
+                          {isDone && <span style={{ fontSize:10, color:"#50c890", fontWeight:700 }}>✓</span>}
+                          <span style={{ fontSize:12, fontWeight:600, color: isDone ? "rgba(255,255,255,0.35)" : "#eef0f5", textDecoration: isDone ? "line-through" : "none" }}>
+                            {task.title}
+                          </span>
+                          <span style={{ fontSize:9, padding:"1px 6px", borderRadius:4, background:"rgba(212,168,67,0.1)", color:"#d4a843", fontFamily:"monospace", fontWeight:700, textTransform:"uppercase" }}>
+                            CUSTOM
+                          </span>
+                        </div>
+                        {task.description && (
+                          <p style={{ fontSize:11, color:"rgba(255,255,255,0.4)", lineHeight:1.4 }}>{task.description}</p>
+                        )}
+                        <div style={{ display:"flex", gap:5, marginTop:6 }}>
+                          <span style={{ fontSize:9, padding:"1px 6px", borderRadius:5, background:"rgba(58,170,122,0.1)", color:"#50c890", fontFamily:"monospace" }}>+{task.expReward} EXP</span>
+                          <span style={{ fontSize:9, padding:"1px 6px", borderRadius:5, background:"rgba(212,168,67,0.1)", color:"#d4a843", fontFamily:"monospace" }}>+{task.coinReward} coins</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
-
-            <div className="mt-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-white/50">Extra quests</p>
-              {optionalTasks.length === 0 ? (
-                <p className="mt-3 text-sm text-white/60">No custom tasks yet.</p>
-              ) : (
-                <ul className="mt-3 space-y-3">
-                  {optionalTasks.map((task) => (
-                    <li key={task.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-semibold text-white">{task.title}</p>
-                          <p className="text-xs text-white/60">{task.description}</p>
-                        </div>
-                        <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] uppercase text-white/70">
-                          {task.category}
-                        </span>
-                      </div>
-                      {renderTask(task)}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </section>
+          )}
         </div>
       )}
+
+      {/* Modals */}
       <RewardModal state={rewardModal} onClose={() => setRewardModal(null)} />
       <LevelUpModal state={levelModal} onClose={() => setLevelModal(null)} />
     </div>
@@ -433,6 +692,53 @@ function makeBurst(label: string, color: string): RewardBurst {
     color,
     offset: Math.random() * 30,
   };
+}
+
+function getComboMultiplier(combo: number): number {
+  if (combo <= 1) return 1.0;
+  if (combo === 2) return 1.3;
+  if (combo === 3) return 1.6;
+  if (combo === 4) return 2.0;
+  return 2.5;
+}
+
+function getComboLabel(combo: number): string {
+  const labels: Record<number, string> = {
+    2: 'Double!', 3: 'Triple!', 4: 'Quad!', 5: 'Godmode!'
+  };
+  return labels[Math.min(combo, 5)] ?? 'Godmode!';
+}
+
+function ComboHUD({ combo }: { combo: number }) {
+  if (combo < 2) return null;
+
+  const mult = getComboMultiplier(combo);
+  const label = getComboLabel(combo);
+
+  const COMBO_RING_STYLES = {
+    2: "border-[var(--jade)] shadow-[0_0_20px_rgba(58,170,122,0.3)]",
+    3: "border-[var(--gold)] shadow-[0_0_24px_rgba(212,168,67,0.4)]",
+    4: "border-[var(--rose)] shadow-[0_0_28px_rgba(224,90,106,0.5)]",
+    5: "border-[var(--rose-light)] shadow-[0_0_32px_rgba(224,90,106,0.6)] animate-pulse",
+  } as const;
+  const ringColor = COMBO_RING_STYLES[Math.min(combo, 5) as 2 | 3 | 4 | 5];
+
+  return (
+    <motion.div
+      className="flex flex-col items-center justify-center py-3"
+      initial={{ opacity: 0, scale: 0.7 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.7 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+    >
+      <div className={`flex h-16 w-16 flex-col items-center justify-center rounded-full border-2 shadow-lg ${ringColor}`}>
+        <span className="text-2xl font-black leading-none text-white">{combo}</span>
+        <span className="text-[9px] uppercase tracking-widest text-white/60">combo</span>
+      </div>
+      <p className="mt-1.5 text-xs font-bold text-orange-300">{label}</p>
+      <p className="text-xs text-white/55">x{mult.toFixed(1)} XP Multiplier aktif</p>
+    </motion.div>
+  );
 }
 
 function RewardModal({ state, onClose }: { state: RewardModalState | null; onClose: () => void }) {
@@ -451,23 +757,124 @@ function RewardModal({ state, onClose }: { state: RewardModalState | null; onClo
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
           >
-            <p className="text-xs uppercase tracking-[0.4em] text-white/50">Rewards</p>
+            <p className="text-xs uppercase tracking-[0.4em] text-white/50">Hadiah</p>
             <h4 className="text-2xl font-black">{state.taskName}</h4>
             <div className="mt-4 space-y-2 text-sm text-white/80">
               <p>+{state.exp.toLocaleString()} EXP</p>
-              <p>+{state.coins.toLocaleString()} coins</p>
+              <p>+{state.coins.toLocaleString()} koin</p>
               {state.stats.map((stat) => (
                 <p key={stat.label}>+{stat.value} {stat.label}</p>
               ))}
-              {state.bossDamage ? <p>Boss damage: {state.bossDamage}</p> : null}
+              {state.bossDamage ? <p>Damage bos: {state.bossDamage}</p> : null}
             </div>
             <Button className="mt-6 w-full" onClick={onClose}>
-              Continue
+              Lanjut
             </Button>
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+function ReadingTimer({ minutes, onComplete }: { minutes: number; onComplete: () => void }) {
+  const total = minutes * 60;
+  const [secondsLeft, setSecondsLeft] = useState(total);
+  const [running, setRunning] = useState(false);
+  const [finished, setFinished] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (running && !finished) {
+      intervalRef.current = setInterval(() => {
+        setSecondsLeft((prev) => {
+          if (prev <= 1) {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            setRunning(false);
+            setFinished(true);
+            onComplete();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [running, finished, onComplete]);
+
+  const mm = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
+  const ss = String(secondsLeft % 60).padStart(2, "0");
+  const progress = ((total - secondsLeft) / total) * 100;
+
+  const reset = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setRunning(false);
+    setFinished(false);
+    setSecondsLeft(total);
+  };
+
+  return (
+    <div className="mt-3 flex flex-col gap-3">
+      <div className="flex items-center gap-4">
+        <div
+          className={cn(
+            "flex h-14 w-24 items-center justify-center rounded-xl border font-mono text-2xl font-black tabular-nums",
+            finished
+              ? "border-[rgba(58,170,122,0.4)] bg-[rgba(58,170,122,0.1)] text-[#50c890]"
+              : running
+              ? "border-[rgba(212,168,67,0.4)] bg-[rgba(212,168,67,0.1)] text-[#d4a843]"
+              : "border-white/10 bg-black/30 text-white/70"
+          )}
+        >
+          {mm}:{ss}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div
+              className={cn(
+                "h-full rounded-full transition-all duration-1000",
+                finished ? "bg-[#3aaa7a]" : "bg-[#d4a843]"
+              )}
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="mt-1.5 text-[11px] text-white/45">
+            {finished
+              ? "✓ Sesi selesai — klik Selesaikan untuk klaim hadiah."
+              : running
+              ? "Timer berjalan... tetap fokus."
+              : "Tekan Mulai untuk memulai timer."}
+          </p>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        {!finished && (
+          <button
+            type="button"
+            onClick={() => setRunning((r) => !r)}
+            className={cn(
+              "rounded-xl px-4 py-1.5 text-xs font-semibold transition",
+              running
+                ? "border border-white/20 bg-white/10 text-white hover:bg-white/15"
+                : "bg-[#d4a843] text-[#080b12] hover:bg-[#f0c060]"
+            )}
+          >
+            {running ? "Jeda" : "Mulai"}
+          </button>
+        )}
+        {!running && (secondsLeft < total || finished) && (
+          <button
+            type="button"
+            onClick={reset}
+            className="rounded-xl border border-white/10 px-4 py-1.5 text-xs text-white/50 transition hover:text-white"
+          >
+            Ulang
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -482,17 +889,17 @@ function LevelUpModal({ state, onClose }: { state: LevelModalState | null; onClo
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="w-full max-w-lg rounded-3xl border border-white/20 bg-gradient-to-br from-purple-900/80 to-black/80 p-8 text-center text-white"
+            className="w-full max-w-lg rounded-3xl border p-8 text-center text-white" style={{ borderColor: "rgba(212,168,67,0.3)", background: "linear-gradient(135deg, rgba(61,46,14,0.9), rgba(8,11,18,0.95))" }}
             initial={{ scale: 0.85, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
           >
-            <p className="text-xs uppercase tracking-[0.4em] text-white/60">Level Up</p>
+            <p className="text-xs uppercase tracking-[0.4em] text-white/60">Naik Level</p>
             <h3 className="mt-2 text-4xl font-black">Level {state.fromLevel} → {state.toLevel}</h3>
-            {state.newTitle && <p className="mt-2 text-lg text-white/80">New title unlocked: {state.newTitle}</p>}
-            {state.newRank && <p className="text-white/60">Rank ascended to {state.newRank}</p>}
+            {state.newTitle && <p className="mt-2 text-lg text-white/80">Gelar baru terbuka: {state.newTitle}</p>}
+            {state.newRank && <p className="text-white/60">Peringkat naik ke {state.newRank}</p>}
             <Button className="mt-6" onClick={onClose}>
-              Ascend
+              Naik
             </Button>
           </motion.div>
         </motion.div>
@@ -500,3 +907,4 @@ function LevelUpModal({ state, onClose }: { state: LevelModalState | null; onClo
     </AnimatePresence>
   );
 }
+

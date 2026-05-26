@@ -13,6 +13,11 @@ export type BossBattleState = {
 export type BossBattleSummary = BossBattleState & {
   damageApplied: number;
   defeated: boolean;
+  source?: string;
+  taskCategory?: string;
+  taskDifficulty?: string;
+  weaknessTriggered?: boolean;
+  damageMultiplier?: number;
   rewards?: {
     exp: number;
     coins: number;
