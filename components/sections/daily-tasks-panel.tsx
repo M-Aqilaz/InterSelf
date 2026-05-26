@@ -348,7 +348,12 @@ export function DailyTasksPanel() {
         if (payload?.bossBattle) {
           emitBossDamageEvent({
             damage: payload.bossBattle.damageApplied,
-            source: task.title,
+            source: payload.bossBattle.source ?? task.title,
+            bossName: payload.bossBattle.boss?.name,
+            category: payload.bossBattle.taskCategory,
+            difficulty: payload.bossBattle.taskDifficulty,
+            weaknessTriggered: payload.bossBattle.weaknessTriggered,
+            damageMultiplier: payload.bossBattle.damageMultiplier,
             defeated: payload.bossBattle.defeated,
             rewards: payload.bossBattle.rewards
               ? {

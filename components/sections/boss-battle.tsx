@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/toast";
-import { subscribeToTasksUpdate } from "@/lib/events";
+import { subscribeToBossDamage, subscribeToTasksUpdate } from "@/lib/events";
 
 // API returns: { boss: { name, level, maxHp, rewardExp, rewardCoins, weakness? }, progress: { currentHp, id }, cooldownRemainingMs, percentageRemaining }
 type ApiResponse = {
@@ -27,7 +27,6 @@ const STRIKES: Strike[] = [
   { id: "nova",       name: "Awakening Nova",   desc: "Massive burst",     baseDamage: 420, critChance: 0.3,  cooldown: 60, cost: 60, color: "#f87171" },
 ];
 
-const MAX_ENERGY = 5;
 const LOG_MAX = 10;
 
 // Boss narration lines
@@ -37,6 +36,15 @@ const NARRATIONS: Record<string, string[]> = {
   crit:    ["DEVASTATING BLOW! The boss staggers!", "Critical strike! The demon howls!", "Your focus shatters its defenses!"],
   enraged: ["THE BOSS IS ENRAGED! Eyes burning gold!", "It will not fall without a fight!", "Darkness intensifies around the demon!"],
   low:     ["The boss is weakening... finish it!", "Victory is within reach â€” push harder!", "The demon trembles before your discipline!"],
+};
+
+const CATEGORY_LABEL: Record<string, string> = {
+  WAKE_UP: "Morning",
+  STUDY: "Study",
+  WORKOUT: "Workout",
+  SAVE_MONEY: "Finance",
+  FOCUS: "Focus",
+  CUSTOM: "Custom",
 };
 
 function getRandom<T>(arr: T[]): T {
@@ -122,8 +130,28 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
   useEffect(() => {
     const unsub = subscribeToTasksUpdate(() => {
       void loadBoss();
-      addLog("Task completed â€” passive damage dealt!", "info");
       setNarration(getRandom(NARRATIONS.hit));
+    });
+    return unsub;
+  }, [loadBoss]);
+
+  useEffect(() => {
+    const unsub = subscribeToBossDamage((payload) => {
+      void loadBoss();
+      if (payload.damage <= 0) {
+        addLog(`${payload.source} completed, but boss armor is cooling down.`, "warning");
+        return;
+      }
+
+      const category = payload.category ? (CATEGORY_LABEL[payload.category] ?? payload.category) : "Quest";
+      const bonus = payload.weaknessTriggered
+        ? ` WEAKNESS HIT x${(payload.damageMultiplier ?? 1).toFixed(2)}`
+        : "";
+      addLog(`${payload.source} [${category}] dealt ${payload.damage} damage.${bonus}`, payload.weaknessTriggered ? "crit" : "damage");
+
+      if (payload.defeated) {
+        addLog(`BOSS DEFEATED! Rewards: +${payload.rewards?.exp ?? 0} EXP, +${payload.rewards?.coins ?? 0} coins.`, "crit");
+      }
     });
     return unsub;
   }, [loadBoss, addLog]);
@@ -261,6 +289,7 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
   );
 
   const hpColor = hpPct > 50 ? "#ef4444" : hpPct > 20 ? "#f97316" : "#fbbf24";
+  const weaknessLabel = boss.weakness ? (CATEGORY_LABEL[boss.weakness] ?? boss.weakness) : "Any focused habit";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -296,7 +325,10 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
           <div>
             <div style={{ fontFamily: "monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(255,255,255,0.35)", marginBottom: 4 }}>Current Boss</div>
             <div style={{ fontSize: 22, fontWeight: 900, color: enraged ? "#fbbf24" : "#f87171", lineHeight: 1 }}>{boss.name}</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Level {boss.level ?? "?"} Boss{boss.weakness ? ` - Weak: ${boss.weakness}` : ""}</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Level {boss.level ?? "?"} Boss</div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8, border: "1px solid rgba(251,191,36,0.28)", borderRadius: 999, background: "rgba(251,191,36,0.08)", padding: "4px 9px", color: "#fcd34d", fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Weakness: {weaknessLabel}
+            </div>
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 2 }}>Weekly Damage</div>
@@ -386,6 +418,9 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
 
         {/* HP Bar */}
         <div style={{ position: "relative", zIndex: 2, padding: "12px 22px 18px" }}>
+          <div style={{ marginBottom: 12, border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, background: "rgba(255,255,255,0.03)", padding: "10px 12px", color: "rgba(255,255,255,0.55)", fontSize: 11, lineHeight: 1.45 }}>
+            Selesaikan quest kategori <strong style={{ color: "#fcd34d" }}>{weaknessLabel}</strong> untuk damage ekstra. Manual attack tetap bisa dipakai, tapi habit yang cocok adalah serangan utama.
+          </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
             <span style={{ fontFamily: "monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(255,255,255,0.4)" }}>Boss HP</span>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -421,9 +456,12 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", minWidth: 40 }}>âš¡ {Math.round(energy)}</span>
               <div style={{ flex: 1, height: 6, background: "rgba(255,255,255,0.07)", borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${(energy / MAX_ENERGY) * 100}%`, background: "linear-gradient(90deg, #d97706, #fbbf24)", borderRadius: 3, transition: "width 0.1s" }} />
+                <div style={{ height: "100%", width: `${(energy / energyMax) * 100}%`, background: "linear-gradient(90deg, #d97706, #fbbf24)", borderRadius: 3, transition: "width 0.1s" }} />
               </div>
-              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)" }}>/{MAX_ENERGY}</span>
+              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)" }}>/{energyMax}</span>
+            </div>
+            <div style={{ marginTop: 8, fontSize: 10, color: "rgba(255,255,255,0.34)" }}>
+              Daily productivity charge: {productivityCompletion}%
             </div>
           </div>
 

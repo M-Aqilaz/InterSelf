@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { Check, Edit3, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
-import { emitTasksUpdatedEvent } from "@/lib/events";
+import { emitBossDamageEvent, emitTasksUpdatedEvent } from "@/lib/events";
 
 type TaskRecord = {
   id: number;
@@ -164,7 +164,39 @@ export function QuestBoardPanel() {
         push({ title: "Gagal menyelesaikan quest", variant: "error" });
         return;
       }
+      const payload = await response.json().catch(() => null) as {
+        bossBattle?: {
+          damageApplied: number;
+          source?: string;
+          taskCategory?: string;
+          taskDifficulty?: string;
+          weaknessTriggered?: boolean;
+          damageMultiplier?: number;
+          defeated: boolean;
+          boss?: { name?: string };
+          rewards?: { exp?: number; coins?: number; item?: { name?: string | null } | null } | null;
+        } | null;
+      } | null;
       push({ title: "Quest selesai. Reward masuk!", variant: "success" });
+      if (payload?.bossBattle) {
+        emitBossDamageEvent({
+          damage: payload.bossBattle.damageApplied,
+          source: payload.bossBattle.source ?? task.title,
+          bossName: payload.bossBattle.boss?.name,
+          category: payload.bossBattle.taskCategory,
+          difficulty: payload.bossBattle.taskDifficulty,
+          weaknessTriggered: payload.bossBattle.weaknessTriggered,
+          damageMultiplier: payload.bossBattle.damageMultiplier,
+          defeated: payload.bossBattle.defeated,
+          rewards: payload.bossBattle.rewards
+            ? {
+                exp: payload.bossBattle.rewards.exp,
+                coins: payload.bossBattle.rewards.coins,
+                itemName: payload.bossBattle.rewards.item?.name ?? null,
+              }
+            : null,
+        });
+      }
       emitTasksUpdatedEvent();
       await loadTasks();
     });

@@ -50,6 +50,7 @@ type BossDamageContext = {
   level: number;
   taskCategory: TaskCategory;
   taskDifficulty: TaskDifficulty;
+  source?: string;
 };
 
 async function findFirstActiveBoss(client: PrismaClientOrTx) {
@@ -156,6 +157,18 @@ function calculateDamage({
   );
 }
 
+function buildDamageMeta(boss: BossWithReward, taskCategory: TaskCategory, taskDifficulty: TaskDifficulty) {
+  const weaknessTriggered = boss.weakness === taskCategory;
+  const categoryMultiplier = weaknessMultiplier(boss, taskCategory);
+
+  return {
+    taskCategory,
+    taskDifficulty,
+    weaknessTriggered,
+    categoryMultiplier,
+  };
+}
+
 async function handleBossVictory({
   tx,
   userId,
@@ -252,7 +265,7 @@ async function handleBossVictory({
 export async function applyBossDamage(
   context: BossDamageContext
 ): Promise<{ summary: BossBattleSummary; profile: ProfileWithBoss } | null> {
-  const { tx, userId, profile, expReward, statIncreases, streak, level, taskCategory, taskDifficulty } =
+  const { tx, userId, profile, expReward, statIncreases, streak, level, taskCategory, taskDifficulty, source } =
     context;
 
   const profileRecord = profile ?? (await assignInitialBoss(tx, userId));
@@ -263,6 +276,7 @@ export async function applyBossDamage(
 
   const boss = profileRecord.currentBoss as BossWithReward;
   const progress = await ensureUserBossProgress(tx, userId, boss);
+  const damageMeta = buildDamageMeta(boss, taskCategory, taskDifficulty);
 
   const lastHit = progress.lastDamagedAt?.getTime() ?? 0;
   const diff = Date.now() - lastHit;
@@ -277,6 +291,11 @@ export async function applyBossDamage(
         damageWindowMs: DAMAGE_WINDOW_MS,
         damageApplied: 0,
         defeated: false,
+        source,
+        taskCategory,
+        taskDifficulty,
+        weaknessTriggered: damageMeta.weaknessTriggered,
+        damageMultiplier: damageMeta.categoryMultiplier,
         percentageRemaining: Math.round((progress.currentHp / boss.maxHp) * 100),
       },
       profile: profileRecord,
@@ -289,7 +308,7 @@ export async function applyBossDamage(
     streak,
     level,
     taskDifficulty,
-    categoryMultiplier: weaknessMultiplier(boss, taskCategory),
+    categoryMultiplier: damageMeta.categoryMultiplier,
   });
 
   const nextHp = Math.max(0, progress.currentHp - damage);
@@ -311,6 +330,11 @@ export async function applyBossDamage(
       metadata: {
         bossId: boss.id,
         damage,
+        source,
+        taskCategory,
+        taskDifficulty,
+        weaknessTriggered: damageMeta.weaknessTriggered,
+        damageMultiplier: damageMeta.categoryMultiplier,
         remainingHp: nextHp,
       },
     },
@@ -333,6 +357,11 @@ export async function applyBossDamage(
         damageWindowMs: DAMAGE_WINDOW_MS,
         damageApplied: damage,
         defeated: true,
+        source,
+        taskCategory,
+        taskDifficulty,
+        weaknessTriggered: damageMeta.weaknessTriggered,
+        damageMultiplier: damageMeta.categoryMultiplier,
         rewards: {
           exp: boss.rewardExp,
           coins: boss.rewardCoins,
@@ -357,6 +386,11 @@ export async function applyBossDamage(
       damageWindowMs: DAMAGE_WINDOW_MS,
       damageApplied: damage,
       defeated: false,
+      source,
+      taskCategory,
+      taskDifficulty,
+      weaknessTriggered: damageMeta.weaknessTriggered,
+      damageMultiplier: damageMeta.categoryMultiplier,
       percentageRemaining: Math.round((nextHp / boss.maxHp) * 100),
     },
     profile: finalProfile ?? profileRecord,

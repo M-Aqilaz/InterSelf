@@ -184,6 +184,7 @@ export async function completeTaskForUser({
       level: levelProgress.level,
       taskCategory: task.category,
       taskDifficulty: task.difficulty,
+      source: task.title,
     });
 
     if (bossResult) {

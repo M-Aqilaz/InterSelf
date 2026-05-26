@@ -1,13 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 type BossState = {
+  boss?: {
+    name?: string;
+    level?: number;
+    maxHp?: number;
+    weakness?: string | null;
+  } | null;
+  progress?: {
+    currentHp?: number;
+  } | null;
   bossName?: string;
   bossLevel?: number;
   currentHp?: number;
   maxHp?: number;
   weeklyDamage?: number;
+};
+
+const CATEGORY_LABEL: Record<string, string> = {
+  WAKE_UP: "Morning",
+  STUDY: "Study",
+  WORKOUT: "Workout",
+  SAVE_MONEY: "Finance",
+  FOCUS: "Focus",
+  CUSTOM: "Custom",
 };
 
 export function BossBattlePreview({ productivityCompletion = 0 }: { productivityCompletion?: number }) {
@@ -20,12 +38,13 @@ export function BossBattlePreview({ productivityCompletion = 0 }: { productivity
       .catch(() => {});
   }, []);
 
-  const bossName = state?.bossName ?? "Procrastination Demon";
-  const bossLevel = state?.bossLevel ?? 25;
-  const maxHp = state?.maxHp ?? 10000;
-  const currentHp = state?.currentHp ?? 7450;
+  const bossName = state?.boss?.name ?? state?.bossName ?? "Procrastination Demon";
+  const bossLevel = state?.boss?.level ?? state?.bossLevel ?? 25;
+  const maxHp = state?.boss?.maxHp ?? state?.maxHp ?? 10000;
+  const currentHp = state?.progress?.currentHp ?? state?.currentHp ?? 7450;
+  const weakness = state?.boss?.weakness ? (CATEGORY_LABEL[state.boss.weakness] ?? state.boss.weakness) : "Any habit";
   const hpPercent = maxHp > 0 ? Math.round((currentHp / maxHp) * 100) : 74;
-  const damage = state?.weeklyDamage ?? 2550;
+  const damage = state?.weeklyDamage ?? Math.max(2550, productivityCompletion * 25);
 
   return (
     <div style={{
@@ -49,6 +68,9 @@ export function BossBattlePreview({ productivityCompletion = 0 }: { productivity
       <div style={{ position: "relative", textAlign: "center", padding: "4px 16px 0" }}>
         <div style={{ fontSize: 17, fontWeight: 900, color: "#f87171" }}>{bossName}</div>
         <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Level {bossLevel} Boss</div>
+        <div style={{ display: "inline-flex", marginTop: 7, border: "1px solid rgba(251,191,36,0.28)", borderRadius: 999, background: "rgba(251,191,36,0.08)", padding: "3px 8px", color: "#fcd34d", fontSize: 9, fontWeight: 800 }}>
+          Weak vs {weakness}
+        </div>
       </div>
 
       {/* Boss SVG — contained, no overflow */}
@@ -137,6 +159,10 @@ export function BossBattlePreview({ productivityCompletion = 0 }: { productivity
             <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b" }}>🪙+200</span>
           </div>
         </div>
+      </div>
+
+      <div style={{ position: "relative", padding: "0 16px 10px", fontSize: 10, color: "rgba(255,255,255,0.38)" }}>
+        Daily completion feeds boss damage: {productivityCompletion}%
       </div>
 
       {/* Button */}

@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
         level: profile.level,
         taskCategory: profile.currentBoss.weakness ?? fallbackTask.category,
         taskDifficulty: fallbackTask.difficulty,
+        source: "Manual energy strike",
       });
 
       if (!result) {
