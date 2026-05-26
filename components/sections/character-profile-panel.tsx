@@ -138,22 +138,32 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-[#05040a] via-[#0b0f1c] to-[#080512] p-5 text-white">
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: `radial-gradient(circle at 16% 18%, ${characterVisuals.colors.primary}24, transparent 34%), radial-gradient(circle at 84% 8%, ${characterVisuals.colors.accent}18, transparent 30%)`,
+        }}
+      />
       <div className="relative flex flex-col gap-5">
         <div className="flex flex-wrap items-center gap-4">
           {/* Character sprite — berdasarkan class yang dipilih */}
-          <div className="relative flex flex-col items-center">
+          <div className="relative flex min-w-[190px] flex-col items-center overflow-hidden rounded-3xl border border-white/10 bg-black/25 px-6 py-5">
+            <div
+              className="pointer-events-none absolute inset-4 rounded-full border border-white/10"
+              style={{ boxShadow: `inset 0 0 26px ${characterVisuals.colors.primary}24`, animation: "profile-rune-spin 16s linear infinite" }}
+            />
             {/* Aura glow */}
             <div
               className="absolute inset-0 rounded-full blur-3xl opacity-20 pointer-events-none"
               style={{ background: characterVisuals.colors.glow }}
             />
             {/* Float animation wrapper */}
-            <div style={{ animation: "char-float 3s ease-in-out infinite" }}>
-              <characterVisuals.CharSprite className="w-32 h-44 drop-shadow-xl" />
+            <div style={{ animation: "char-float 3s ease-in-out infinite", filter: `drop-shadow(0 0 18px ${characterVisuals.colors.glow}99)` }}>
+              <characterVisuals.CharSprite className="h-52 w-40 drop-shadow-xl" />
             </div>
             {/* Shadow */}
             <div
-              className="w-16 h-2 rounded-full mt-1 opacity-30"
+              className="mt-1 h-2 w-20 rounded-full opacity-30"
               style={{ background: `radial-gradient(ellipse, ${characterVisuals.colors.primary}, transparent)`, animation: "shadow-scale 3s ease-in-out infinite" }}
             />
             {/* Rank badge */}
@@ -167,7 +177,7 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
                 <div className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1 text-xs font-bold ${def.badgeStyle}`}>
                   <span>{def.icon}</span>
                   <span>{def.name}</span>
-                  <span className="opacity-60">· {def.passiveBonus}</span>
+                  <span className="opacity-60">- {def.passiveBonus}</span>
                 </div>
               );
             })()}
@@ -190,7 +200,7 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
           </div>
           <BarMeter className="mt-2" value={progressPercent} label="EXP" />
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <StatChip label="Coins" value={`${coins.toLocaleString()}◎`} />
+            <StatChip label="Coins" value={`${coins.toLocaleString()} C`} />
             <StatChip label="Streak" value={`${streak}d`} />
             <StatChip label="Best Streak" value={`${bestStreak}d`} />
           </div>
@@ -280,6 +290,15 @@ export function CharacterProfilePanel(props: CharacterProfilePanelProps) {
           </AnimatePresence>
         </div>
       </div>
+      <style>{`
+        @keyframes profile-rune-spin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes shadow-scale {
+          0%, 100% { transform: scaleX(1); opacity: 0.3; }
+          50% { transform: scaleX(0.75); opacity: 0.18; }
+        }
+      `}</style>
     </div>
   );
 }

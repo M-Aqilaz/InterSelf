@@ -51,7 +51,7 @@ export function ProductivityAnalyticsPanel() {
         <div style={{ background: "#111520", borderRadius: 12, padding: 16 }}>
           <div style={{ fontFamily: "monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(255,255,255,0.35)", marginBottom: 16 }}>Focus Trend (last 7 days)</div>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 80 }}>
-            {(focusTrend.length > 0 ? focusTrend : days.map(d => ({ day: d, minutes: 0 }))).map((point, i) => {
+            {(focusTrend.length > 0 ? focusTrend : days.map((dayLabel) => ({ dayLabel, minutes: 0 }))).map((point, i) => {
               const pct = trendMax > 0 ? (point.minutes / trendMax) * 100 : 0;
               const hasData = point.minutes > 0;
               return (
@@ -68,7 +68,7 @@ export function ProductivityAnalyticsPanel() {
                     }} />
                   </div>
                   <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontFamily: "monospace" }}>
-                    {point.dayLabel?.slice(0, 3) ?? point.day?.slice(0, 3) ?? days[i]}
+                    {point.dayLabel?.slice(0, 3) ?? days[i]}
                   </div>
                   <div style={{ fontSize: 9, color: hasData ? "#22d3ee" : "rgba(255,255,255,0.2)" }}>
                     {point.minutes > 0 ? `${point.minutes}m` : "0m"}

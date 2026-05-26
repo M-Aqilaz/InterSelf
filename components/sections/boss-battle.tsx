@@ -178,8 +178,8 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
   }, [log]);
 
   const strike = useCallback(async (s: Strike) => {
-    if (!boss || striking || defeated) return;
     if (energy < 1) { addLog("No energy! Wait for regen (1 per hour).", "warning"); return; }
+    if (!boss || !progress || striking || defeated) return;
     if ((cooldowns[s.id] ?? 0) > 0) return;
 
     setStriking(s.id);
@@ -225,7 +225,7 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
     }
 
     try {
-      const res = await fetch("/api/boss/strike", {
+      const res = await fetch("/api/boss/attack", {
         method: "POST",
       });
       if (res.ok) {

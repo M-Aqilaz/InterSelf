@@ -69,8 +69,8 @@ export async function POST(request: NextRequest) {
       return user;
     });
 
-    await fetchSafeUserById(newUser.id);
-    const response = NextResponse.redirect(new URL("/onboarding", request.url));
+    const safeUser = await fetchSafeUserById(newUser.id);
+    const response = NextResponse.json({ user: safeUser }, { status: 201 });
     await issueSessionCookie(response, newUser.id);
     return response;
   } catch (error) {

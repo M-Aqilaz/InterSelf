@@ -1,254 +1,574 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Flame, Shield, Star, Zap } from "lucide-react";
 import Link from "next/link";
 
 const STATS = [
-  { value: "12K+", label: "Adventurer" },
-  { value: "840K", label: "Task Selesai" },
-  { value: "96K",  label: "Boss Dikalahkan" },
+  { icon: Star, value: "12K+", label: "Adventurer" },
+  { icon: Zap, value: "848K", label: "Task Diselesaikan" },
+  { icon: Flame, value: "96K", label: "Boss Ditaklukkan" },
 ];
 
 export function LandingHero() {
   return (
-    <section
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        padding: "64px 0 48px",
-      }}
-    >
-      {/* Ambient blobs */}
-      <div
-        aria-hidden
-        style={{
-          position: "absolute", top: "-100px", left: "-80px",
-          width: "400px", height: "400px", borderRadius: "50%",
-          background: "var(--gold)", filter: "blur(120px)",
-          opacity: 0.05, pointerEvents: "none",
-        }}
-      />
-      <div
-        aria-hidden
-        style={{
-          position: "absolute", bottom: "-60px", right: "5%",
-          width: "300px", height: "300px", borderRadius: "50%",
-          background: "var(--jade)", filter: "blur(100px)",
-          opacity: 0.04, pointerEvents: "none",
-        }}
-      />
+    <section className="landing-hero">
+      <div className="hero-brand" aria-label="InterSelf">
+        <div className="brand-rune"><span>IS</span></div>
+        <div>
+          <p className="brand-title">InterSelf</p>
+          <p className="brand-subtitle">RPG Your Life</p>
+        </div>
+      </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "48px",
-          alignItems: "center",
-          position: "relative",
-        }}
-        className="hero-grid"
-      >
-        {/* LEFT */}
+      <div className="hero-layout">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          style={{ display: "flex", flexDirection: "column", gap: "0" }}
+          className="hero-copy"
         >
-          {/* Eyebrow */}
-          <div
-            style={{
-              display: "flex", alignItems: "center", gap: "10px",
-              marginBottom: "20px",
-            }}
-          >
-            <div style={{ width: "20px", height: "1px", background: "var(--gold)" }} />
-            <span
-              style={{
-                fontSize: "10px", fontWeight: 600,
-                letterSpacing: "0.35em", textTransform: "uppercase",
-                color: "var(--gold)", fontFamily: "var(--font-mono)",
-              }}
-            >
-              Pengembangan Diri · RPG
-            </span>
+          <div className="hero-eyebrow">
+            <span />
+            Produktivitas Level RPG
           </div>
 
-          {/* Headline */}
-          <h1
-            style={{
-              fontSize: "clamp(32px, 4vw, 48px)",
-              fontWeight: 700,
-              lineHeight: 1.05,
-              letterSpacing: "-0.025em",
-              color: "var(--t1)",
-              marginBottom: "16px",
-            }}
-          >
-            Hidupmu adalah<br />
-            <span className="text-gold-gradient">
-              dungeon terkuat<br />yang pernah ada.
-            </span>
+          <h1>
+            Hidupmu adalah
+            <strong>dungeon terkuat yang pernah ada.</strong>
           </h1>
 
-          {/* Sub */}
-          <p
-            style={{
-              fontSize: "15px", color: "var(--t2)",
-              lineHeight: 1.75, maxWidth: "440px",
-              marginBottom: "28px",
-            }}
-          >
-            Prokrastinasi adalah boss yang menunggu diserang. Setiap
-            kebiasaan yang kamu bangun adalah serangan ke arahnya.
-            InterSelf mengubah pengembangan diri menjadi sistem RPG
-            dengan konsekuensi nyata.
+          <p className="hero-description">
+            Produktivitasmu bukan daftar tugas kosong. Ia adalah pertarungan
+            melawan boss harian, kebiasaan yang naik level, dan identitas yang
+            tumbuh setiap kali kamu menyelesaikan satu quest lagi.
           </p>
 
-          {/* CTAs */}
-          <div style={{ display: "flex", gap: "10px", marginBottom: "36px" }}>
-            <Link href="/register" className="btn-gold">
-              Pilih Kelasmu →
+          <div className="hero-actions">
+            <Link href="/register" className="gold-cta">
+              Pilih Kelasmu <span aria-hidden>{"->"}</span>
             </Link>
-            <Link href="/login" className="btn-ghost">
+            <Link href="/login" className="violet-cta">
               Sudah punya akun
             </Link>
           </div>
 
-          {/* Stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "10px" }}>
-            {STATS.map((s) => (
-              <div
-                key={s.label}
-                style={{
-                  borderRadius: "12px",
-                  border: "1px solid var(--border)",
-                  background: "var(--bg-1)",
-                  padding: "12px",
-                  textAlign: "center",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "22px", fontWeight: 700,
-                    color: "var(--gold)", fontFamily: "var(--font-mono)",
-                  }}
-                >
-                  {s.value}
-                </div>
-                <div
-                  style={{
-                    fontSize: "9px", textTransform: "uppercase",
-                    letterSpacing: "0.18em", color: "var(--t3)",
-                    marginTop: "3px",
-                  }}
-                >
-                  {s.label}
+          <div className="hero-stats">
+            {STATS.map(({ icon: Icon, value, label }) => (
+              <div key={label} className="stat-card">
+                <Icon aria-hidden className="stat-icon" />
+                <div>
+                  <p>{value}</p>
+                  <span>{label}</span>
                 </div>
               </div>
             ))}
           </div>
         </motion.div>
 
-        {/* RIGHT — HUD card */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.15 }}
+          initial={{ opacity: 0, scale: 0.96, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.55, delay: 0.1 }}
+          className="hero-hud-wrap"
         >
-          <motion.div
-            animate={{ y: [0, -10, 0] }}
-            transition={{ repeat: Infinity, duration: 7, ease: "easeInOut" }}
-            style={{
-              borderRadius: "20px",
-              border: "1px solid var(--border-2)",
-              background: "rgba(12,16,24,0.90)",
-              backdropFilter: "blur(24px)",
-              padding: "22px",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            {/* Subtle gold shimmer */}
-            <div
-              aria-hidden
-              style={{
-                position: "absolute", inset: 0,
-                background: "linear-gradient(135deg,rgba(212,168,67,0.04),transparent 60%)",
-                pointerEvents: "none",
-              }}
-            />
+          <div className="hud-frame">
+            <div className="hud-corner hud-corner-left" />
+            <div className="hud-corner hud-corner-right" />
 
-            {/* Level + Streak row */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "18px", position: "relative" }}>
+            <div className="hud-top">
               <div>
-                <div style={{ fontSize: "8px", color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.2em", fontFamily: "var(--font-mono)" }}>
-                  Level
-                </div>
-                <div style={{ fontSize: "42px", fontWeight: 700, color: "var(--gold)", lineHeight: 1, fontFamily: "var(--font-mono)" }}>
-                  24
-                </div>
+                <span>Level</span>
+                <strong>24</strong>
               </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "8px", color: "var(--t3)", textTransform: "uppercase", letterSpacing: "0.2em", fontFamily: "var(--font-mono)" }}>
-                  Streak
-                </div>
-                <div style={{ fontSize: "28px", fontWeight: 700, color: "var(--t1)", fontFamily: "var(--font-mono)" }}>
-                  🔥 26
-                </div>
+              <div className="hud-streak">
+                <span>Streak</span>
+                <strong><Flame aria-hidden />26</strong>
               </div>
             </div>
 
-            {/* Bars */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "16px" }}>
-              {[
-                { label: "EXP", value: 68, colorClass: "bar-gold" },
-                { label: "Daily Progress", value: 86, colorClass: "bar-jade" },
-              ].map((bar) => (
-                <div key={bar.label}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "9px", color: "var(--t3)", marginBottom: "4px", fontFamily: "var(--font-mono)" }}>
-                    <span>{bar.label}</span><span>{bar.value}%</span>
-                  </div>
-                  <div className="bar-track" style={{ height: "5px" }}>
-                    <div className={`bar-fill ${bar.colorClass}`} style={{ width: `${bar.value}%` }} />
-                  </div>
-                </div>
-              ))}
+            <div className="hud-bars">
+              <HudBar label="EXP" value={62} tone="gold" />
+              <HudBar label="HP Fokus" value={80} tone="teal" />
             </div>
 
-            {/* Active boss */}
-            <div
-              style={{
-                display: "flex", alignItems: "center", gap: "12px",
-                borderRadius: "12px", border: "1px solid rgba(224,90,106,0.22)",
-                background: "rgba(224,90,106,0.06)", padding: "12px 14px",
-              }}
-            >
-              <span style={{ fontSize: "20px" }}>💀</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--t1)" }}>
-                  Prokrastinasi Abyssal
-                </div>
-                <div style={{ fontSize: "9px", color: "var(--rose)", fontFamily: "var(--font-mono)", marginTop: "1px" }}>
-                  HP: 4,820 / 8,000
-                </div>
+            <div className="boss-card">
+              <div className="boss-mark">
+                <Shield aria-hidden />
               </div>
-              <div style={{ fontSize: "9px", color: "var(--gold)", fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                Pulih: 1j 20m
+              <div className="boss-info">
+                <p>Prokrastinator Agung</p>
+                <span>4.800 / 10.000 HP</span>
               </div>
+              <strong>Hadiah: 1x Epic</strong>
             </div>
-          </motion.div>
+          </div>
         </motion.div>
       </div>
 
-      {/* Mobile hero grid fix */}
       <style>{`
-        @media (max-width: 768px) {
-          .hero-grid {
-            grid-template-columns: 1fr !important;
+        .landing-hero {
+          position: relative;
+          padding: 8px 0 46px;
+        }
+
+        .hero-brand {
+          position: relative;
+          z-index: 1;
+          display: inline-flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 44px;
+        }
+
+        .brand-rune {
+          display: grid;
+          width: 54px;
+          height: 54px;
+          place-items: center;
+          border: 1px solid #9f54ff;
+          border-radius: 18px;
+          background: radial-gradient(circle, rgba(159, 84, 255, 0.26), rgba(3, 7, 18, 0.96));
+          box-shadow: 0 0 28px rgba(139, 92, 246, 0.72);
+          color: white;
+          font-family: var(--font-mono);
+          font-weight: 900;
+          transform: rotate(45deg);
+        }
+
+        .brand-rune::first-letter {
+          letter-spacing: 0;
+        }
+
+        .brand-rune {
+          line-height: 1;
+        }
+
+        .brand-rune > * {
+          transform: rotate(-45deg);
+        }
+
+        .brand-title {
+          margin: 0;
+          color: #fff;
+          font-size: 30px;
+          font-weight: 900;
+          line-height: 1;
+        }
+
+        .brand-subtitle {
+          margin: 8px 0 0;
+          color: #c084fc;
+          font-family: var(--font-mono);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.34em;
+          text-transform: uppercase;
+        }
+
+        .hero-layout {
+          position: relative;
+          z-index: 1;
+          display: grid;
+          grid-template-columns: minmax(0, 0.88fr) minmax(440px, 1.12fr);
+          gap: 64px;
+          align-items: center;
+        }
+
+        .hero-copy {
+          min-width: 0;
+        }
+
+        .hero-eyebrow {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 18px;
+          color: #facc15;
+          font-family: var(--font-mono);
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0.26em;
+          text-transform: uppercase;
+        }
+
+        .hero-eyebrow span {
+          width: 18px;
+          height: 2px;
+          background: #facc15;
+          box-shadow: 0 0 16px rgba(250, 204, 21, 0.7);
+        }
+
+        .hero-copy h1 {
+          margin: 0;
+          max-width: 560px;
+          color: #fff;
+          font-size: 54px;
+          font-weight: 900;
+          line-height: 1.08;
+          letter-spacing: 0;
+        }
+
+        .hero-copy h1 strong {
+          display: block;
+          margin-top: 6px;
+          color: #f6c448;
+          font: inherit;
+          text-shadow: 0 0 26px rgba(250, 204, 21, 0.22);
+        }
+
+        .hero-description {
+          margin: 20px 0 0;
+          max-width: 520px;
+          color: rgba(226, 232, 240, 0.72);
+          font-size: 16px;
+          line-height: 1.8;
+        }
+
+        .hero-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 14px;
+          margin-top: 28px;
+        }
+
+        .gold-cta,
+        .violet-cta {
+          display: inline-flex;
+          min-height: 50px;
+          align-items: center;
+          justify-content: center;
+          border-radius: 10px;
+          padding: 0 28px;
+          text-decoration: none;
+          font-size: 15px;
+          font-weight: 800;
+        }
+
+        .gold-cta {
+          border: 1px solid rgba(255, 226, 122, 0.88);
+          background: linear-gradient(180deg, #ffe178, #d99b1d);
+          color: #1d1302;
+          box-shadow: 0 0 24px rgba(250, 204, 21, 0.34);
+        }
+
+        .gold-cta span {
+          margin-left: 8px;
+        }
+
+        .violet-cta {
+          border: 1px solid rgba(139, 92, 246, 0.72);
+          background: rgba(12, 10, 28, 0.68);
+          color: #d8b4fe;
+          box-shadow: inset 0 0 20px rgba(124, 58, 237, 0.08);
+        }
+
+        .hero-stats {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 14px;
+          margin-top: 34px;
+        }
+
+        .stat-card {
+          display: flex;
+          min-height: 76px;
+          align-items: center;
+          gap: 12px;
+          border: 1px solid rgba(139, 92, 246, 0.42);
+          border-radius: 11px;
+          background: linear-gradient(145deg, rgba(15, 23, 42, 0.82), rgba(8, 10, 26, 0.74));
+          padding: 14px 16px;
+          box-shadow: inset 0 0 24px rgba(124, 58, 237, 0.08);
+        }
+
+        .stat-icon {
+          width: 25px;
+          height: 25px;
+          color: #a855f7;
+          filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.75));
+        }
+
+        .stat-card p {
+          margin: 0;
+          color: #facc15;
+          font-family: var(--font-mono);
+          font-size: 22px;
+          font-weight: 900;
+          line-height: 1;
+        }
+
+        .stat-card span {
+          display: block;
+          margin-top: 6px;
+          color: rgba(203, 213, 225, 0.5);
+          font-family: var(--font-mono);
+          font-size: 9px;
+          letter-spacing: 0.13em;
+          text-transform: uppercase;
+        }
+
+        .hero-hud-wrap {
+          position: relative;
+          min-width: 0;
+        }
+
+        .hero-hud-wrap::before {
+          content: "";
+          position: absolute;
+          inset: -52px -34px;
+          border-radius: 42px;
+          background:
+            radial-gradient(circle at 50% 8%, rgba(124, 58, 237, 0.38), transparent 42%),
+            radial-gradient(circle at 20% 86%, rgba(20, 184, 166, 0.13), transparent 30%);
+          filter: blur(8px);
+        }
+
+        .hud-frame {
+          position: relative;
+          overflow: hidden;
+          border: 1px solid rgba(139, 92, 246, 0.86);
+          border-radius: 28px;
+          background:
+            linear-gradient(135deg, rgba(30, 27, 75, 0.88), rgba(2, 6, 23, 0.94) 52%, rgba(6, 8, 22, 0.96)),
+            rgba(2, 6, 23, 0.98);
+          padding: 42px;
+          box-shadow:
+            0 0 0 1px rgba(168, 85, 247, 0.17),
+            0 0 50px rgba(124, 58, 237, 0.34),
+            inset 0 0 44px rgba(124, 58, 237, 0.13);
+        }
+
+        .hud-frame::before {
+          content: "";
+          position: absolute;
+          inset: 14px;
+          border: 1px solid rgba(139, 92, 246, 0.28);
+          border-radius: 20px;
+          pointer-events: none;
+        }
+
+        .hud-corner {
+          position: absolute;
+          top: 0;
+          width: 140px;
+          height: 34px;
+          border-top: 3px solid #8b5cf6;
+          filter: drop-shadow(0 0 14px rgba(139, 92, 246, 0.95));
+        }
+
+        .hud-corner-left {
+          left: 74px;
+          transform: skewX(-36deg);
+        }
+
+        .hud-corner-right {
+          right: 74px;
+          transform: skewX(36deg);
+        }
+
+        .hud-top {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          justify-content: space-between;
+          gap: 24px;
+          margin-bottom: 28px;
+        }
+
+        .hud-top span,
+        .hud-bars span {
+          color: rgba(226, 232, 240, 0.68);
+          font-family: var(--font-mono);
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+        }
+
+        .hud-top strong {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: 8px;
+          color: #facc15;
+          font-family: var(--font-mono);
+          font-size: 54px;
+          font-weight: 900;
+          line-height: 1;
+          text-shadow: 0 0 24px rgba(250, 204, 21, 0.24);
+        }
+
+        .hud-streak {
+          text-align: right;
+        }
+
+        .hud-streak strong {
+          color: #f5d0fe;
+          font-size: 34px;
+          justify-content: flex-end;
+        }
+
+        .hud-streak svg {
+          width: 28px;
+          height: 28px;
+          color: #fb7185;
+        }
+
+        .hud-bars {
+          position: relative;
+          z-index: 1;
+          display: grid;
+          gap: 18px;
+        }
+
+        .hud-bar-head {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 8px;
+        }
+
+        .hud-track {
+          height: 8px;
+          overflow: hidden;
+          border-radius: 999px;
+          background: rgba(148, 163, 184, 0.16);
+        }
+
+        .hud-fill {
+          height: 100%;
+          border-radius: inherit;
+        }
+
+        .hud-fill.gold {
+          background: linear-gradient(90deg, #f59e0b, #fde047);
+          box-shadow: 0 0 16px rgba(250, 204, 21, 0.58);
+        }
+
+        .hud-fill.teal {
+          background: linear-gradient(90deg, #14b8a6, #5eead4);
+          box-shadow: 0 0 16px rgba(45, 212, 191, 0.5);
+        }
+
+        .boss-card {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin-top: 28px;
+          border: 1px solid rgba(244, 114, 182, 0.48);
+          border-radius: 16px;
+          background: linear-gradient(135deg, rgba(244, 114, 182, 0.09), rgba(15, 23, 42, 0.74));
+          padding: 18px;
+        }
+
+        .boss-mark {
+          display: grid;
+          width: 56px;
+          height: 56px;
+          flex: 0 0 auto;
+          place-items: center;
+          border: 1px solid rgba(250, 204, 21, 0.68);
+          border-radius: 16px;
+          color: #fff;
+          background: rgba(15, 23, 42, 0.86);
+          transform: rotate(45deg);
+        }
+
+        .boss-mark svg {
+          width: 25px;
+          height: 25px;
+          transform: rotate(-45deg);
+        }
+
+        .boss-info {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .boss-info p {
+          margin: 0;
+          color: #fff;
+          font-size: 17px;
+          font-weight: 900;
+        }
+
+        .boss-info span {
+          display: block;
+          margin-top: 6px;
+          color: rgba(248, 113, 113, 0.9);
+          font-family: var(--font-mono);
+          font-size: 12px;
+        }
+
+        .boss-card strong {
+          color: #facc15;
+          font-size: 12px;
+          white-space: nowrap;
+        }
+
+        @media (max-width: 980px) {
+          .hero-layout {
+            grid-template-columns: 1fr;
+            gap: 38px;
+          }
+
+          .hero-copy h1 {
+            font-size: 44px;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .hero-brand {
+            margin-bottom: 28px;
+          }
+
+          .hero-copy h1 {
+            font-size: 36px;
+          }
+
+          .hero-description {
+            font-size: 15px;
+          }
+
+          .hero-stats {
+            grid-template-columns: 1fr;
+          }
+
+          .hud-frame {
+            padding: 28px 20px;
+          }
+
+          .hud-top strong {
+            font-size: 42px;
+          }
+
+          .boss-card {
+            align-items: flex-start;
+            flex-wrap: wrap;
+          }
+
+          .boss-card strong {
+            width: 100%;
+            padding-left: 72px;
           }
         }
       `}</style>
     </section>
+  );
+}
+
+function HudBar({ label, value, tone }: { label: string; value: number; tone: "gold" | "teal" }) {
+  return (
+    <div>
+      <div className="hud-bar-head">
+        <span>{label}</span>
+        <span>{value}%</span>
+      </div>
+      <div className="hud-track">
+        <div className={`hud-fill ${tone}`} style={{ width: `${value}%` }} />
+      </div>
+    </div>
   );
 }

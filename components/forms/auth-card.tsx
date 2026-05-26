@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Eye, EyeOff, LockKeyhole, Swords, User, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 const copy = {
   login: {
-    title: "Welcome back, Hunter",
+    eyebrow: "Returning Hunter",
+    title: "Welcome back, Adventurer!",
     subtitle: "Sign in to resume your arc and keep the streak alive.",
     submitLabel: "Enter Command Deck",
     switchLabel: "Need an account?",
@@ -18,7 +19,8 @@ const copy = {
     switchAction: "Join the guild",
   },
   register: {
-    title: "Ascend to INTERSELF",
+    eyebrow: "New Awakened",
+    title: "Begin your ascension!",
     subtitle: "Forge your avatar, sync your stats, and start collecting loot.",
     submitLabel: "Awaken Now",
     switchLabel: "Already synced?",
@@ -32,6 +34,7 @@ interface AuthCardProps {
 }
 
 type AuthFieldProps = {
+  icon: "user" | "lock";
   label: string;
   type: string;
   name: string;
@@ -40,6 +43,7 @@ type AuthFieldProps = {
   placeholder: string;
   autoComplete: string;
   minLength?: number;
+  rightControl?: ReactNode;
 };
 
 export function AuthCard({ mode }: AuthCardProps) {
@@ -58,6 +62,7 @@ export function AuthCard({ mode }: AuthCardProps) {
     password: "",
     username: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(oauthError);
   const [success, setSuccess] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -80,7 +85,7 @@ export function AuthCard({ mode }: AuthCardProps) {
       password: formData.password,
     };
 
-    if (mode === "register") {
+    if (!isLogin) {
       payload.username = formData.username.trim();
     }
 
@@ -110,32 +115,61 @@ export function AuthCard({ mode }: AuthCardProps) {
   }
 
   return (
-    <Card className="mx-auto w-full max-w-[34rem] overflow-hidden border-white/10 bg-[#10131c]/90 p-0 shadow-[0_24px_90px_rgba(0,0,0,0.45)]">
-      <div className="border-b border-white/10 px-5 py-6 sm:px-8 sm:py-8">
-        <div className="space-y-3 text-center">
-          <Badge variant="void" className="mx-auto w-fit">
-            {isLogin ? "Returning Hunter" : "New Awakened"}
-          </Badge>
-          <h1 className="text-balance text-3xl font-black leading-tight text-white sm:text-4xl">
+    <section className="relative mx-auto w-full max-w-[560px] overflow-hidden rounded-[28px] border border-[#8d35ff]/75 bg-[#060a1b]/95 !px-5 !py-5 shadow-[0_0_0_1px_rgba(168,85,247,0.16),0_34px_110px_rgba(0,0,0,0.66)] sm:!px-8 sm:!py-6">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(147,51,234,0.22),transparent_34%),radial-gradient(circle_at_0%_58%,rgba(91,33,182,0.18),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.045),transparent_42%)]" />
+
+      <div className="relative mx-auto w-full max-w-[480px]">
+        <BrandMark />
+
+        <header className="!mt-4 text-center">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-[#d17cff]">
+            {labels.eyebrow}
+          </p>
+          <h1 className="mx-auto !mt-2 max-w-[430px] text-balance text-[27px] font-black leading-[1.1] text-white sm:text-[30px]">
             {labels.title}
           </h1>
-          <p className="text-sm leading-relaxed text-white/70 sm:text-base">{labels.subtitle}</p>
-        </div>
-      </div>
+          <p className="mx-auto !mt-2 max-w-[480px] text-[15px] leading-relaxed text-white/64">
+            {labels.subtitle}
+          </p>
+        </header>
 
-      <div className="px-5 py-5 sm:px-8 sm:py-6">
-        <form className="space-y-5" onSubmit={handleSubmit}>
+        <div className="!mt-4 grid h-10 grid-cols-2 rounded-2xl border border-white/10 bg-[#0a1024]/82 !p-1 shadow-inner shadow-black/45">
+          <AuthTab active={isLogin} href="/login" icon="user" label="Login" />
+          <AuthTab active={!isLogin} href="/register" icon="plus" label="Register" />
+        </div>
+
+        <Button
+          asChild
+          variant="secondary"
+          className="relative !mt-3 h-10 w-full rounded-2xl border border-[#6829de] bg-[#070d22]/82 !px-12 text-[15px] font-bold text-white shadow-none hover:border-[#9b4cff] hover:bg-[#0a1028] hover:text-white"
+        >
+          <Link href={googleHref} className="justify-center">
+            <GoogleMark />
+            <span className="truncate">Continue with Google</span>
+          </Link>
+        </Button>
+
+        <div className="!my-3 flex items-center gap-4 text-xs font-bold uppercase tracking-[0.22em] text-white/43">
+          <span className="h-px flex-1 bg-white/10" />
+          <span>Or</span>
+          <span className="h-px flex-1 bg-white/10" />
+        </div>
+
+        <form className="!space-y-2.5" onSubmit={handleSubmit}>
           <AuthField
+            icon="user"
             label="Email"
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
-            placeholder="hunter@interself.gg"
+            placeholder="nama@gmail.com"
             autoComplete="email"
           />
-          {mode === "register" && (
+
+          {!isLogin && (
             <AuthField
+              icon="user"
               label="Username"
               type="text"
               name="username"
@@ -146,52 +180,111 @@ export function AuthCard({ mode }: AuthCardProps) {
               minLength={3}
             />
           )}
+
           <AuthField
+            icon="lock"
             label="Password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             name="password"
             value={formData.password}
             onChange={handleChange}
-            placeholder="••••••••"
+            placeholder="password"
             autoComplete={isLogin ? "current-password" : "new-password"}
             minLength={isLogin ? 1 : 8}
+            rightControl={
+              <button
+                type="button"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[#a83cff] transition hover:bg-white/5 hover:text-white"
+                onClick={() => setShowPassword((value) => !value)}
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            }
           />
+
           {error ? (
-            <p className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm leading-relaxed text-red-300">
+            <p className="rounded-2xl border border-red-400/25 bg-red-500/10 !px-4 !py-3 text-sm leading-relaxed text-red-200">
               {error}
             </p>
           ) : success ? (
-            <p className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+            <p className="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 !px-4 !py-3 text-sm text-emerald-200">
               {success}
             </p>
           ) : null}
-          <Button type="submit" className="h-14 w-full rounded-full text-base" disabled={pending}>
+
+          <Button
+            type="submit"
+            className="h-12 w-full gap-2 rounded-2xl bg-gradient-to-r from-[#5a22ff] via-[#7c35ff] to-[#bd35ff] text-base font-bold shadow-[0_0_28px_rgba(124,58,237,0.45)] transition hover:scale-[1.01]"
+            disabled={pending}
+          >
+            <Swords className="h-5 w-5" />
             {pending ? "Synchronizing..." : labels.submitLabel}
           </Button>
         </form>
 
-        <div className="my-5 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.3em] text-white/35">
-          <span className="h-px flex-1 bg-white/10" />
-          Or
-          <span className="h-px flex-1 bg-white/10" />
-        </div>
-
-        <Button asChild variant="secondary" className="h-14 w-full rounded-full text-base">
-          <Link href={googleHref}>Continue with Google</Link>
-        </Button>
-
-        <p className="mt-5 text-center text-sm text-white/70 sm:text-base">
+        <p className="!mt-3 text-center text-[15px] leading-relaxed text-white/55">
           {labels.switchLabel}{" "}
-          <Link className="font-semibold text-cyan-300 hover:text-white" href={labels.switchHref}>
+          <Link className="font-bold text-[#10e4df] hover:text-white" href={labels.switchHref}>
             {labels.switchAction}
           </Link>
         </p>
       </div>
-    </Card>
+    </section>
+  );
+}
+
+function BrandMark() {
+  return (
+    <div className="flex items-center justify-center gap-3 sm:gap-4">
+      <div className="relative grid h-[54px] w-[54px] shrink-0 place-items-center sm:h-[58px] sm:w-[58px]">
+        <div className="absolute inset-[10px] rotate-45 rounded-[16px] border border-[#9f35ff] bg-[#0a0f2a] shadow-[0_0_24px_rgba(159,53,255,0.82)]" />
+        <span className="absolute left-[5px] top-[22px] h-1 w-1 rounded-full bg-[#9f35ff] shadow-[0_0_12px_#9f35ff]" />
+        <span className="absolute right-[4px] top-[28px] h-1 w-1 rounded-full bg-[#9f35ff] shadow-[0_0_12px_#9f35ff]" />
+        <span className="relative text-[22px] font-black leading-none text-white sm:text-[23px]">IS</span>
+      </div>
+      <div className="min-w-0 !pt-1">
+        <p className="truncate text-[29px] font-black leading-none text-white sm:text-[32px]">InterSelf</p>
+        <p className="!mt-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.38em] text-[#b65cff] sm:text-[11px] sm:tracking-[0.42em]">
+          RPG Your Life
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function AuthTab({
+  active,
+  href,
+  icon,
+  label,
+}: {
+  active: boolean;
+  href: string;
+  icon: "user" | "plus";
+  label: string;
+}) {
+  const Icon = icon === "plus" ? UserPlus : User;
+
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "inline-flex min-w-0 items-center justify-center gap-2.5 rounded-xl !px-3 text-[15px] font-bold transition",
+        active
+          ? "bg-gradient-to-r from-[#5521e9] to-[#7130ef] text-white shadow-[0_0_22px_rgba(124,58,237,0.43)]"
+          : "text-white/58 hover:bg-white/5 hover:text-white"
+      )}
+    >
+      <Icon className="h-[18px] w-[18px] shrink-0" />
+      <span className="truncate">{label}</span>
+    </Link>
   );
 }
 
 function AuthField({
+  icon,
   label,
   type,
   name,
@@ -200,24 +293,39 @@ function AuthField({
   placeholder,
   autoComplete,
   minLength,
+  rightControl,
 }: AuthFieldProps) {
+  const Icon = icon === "lock" ? LockKeyhole : User;
+
   return (
-    <label className="block min-w-0 space-y-2">
-      <span className="block text-xs font-bold uppercase tracking-[0.28em] text-white/60">
-        {label}
+    <label className="block min-w-0 !space-y-1.5">
+      <span className="block text-sm font-bold leading-none text-white/95">{label}</span>
+      <span className="flex h-[42px] items-center gap-3 rounded-2xl border border-white/10 bg-[#0a1024]/76 !px-4 shadow-inner shadow-black/25 transition focus-within:border-[#9333ea]/80 focus-within:ring-2 focus-within:ring-[#9333ea]/20">
+        <Icon className="h-5 w-5 shrink-0 text-[#a83cff]" />
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          required
+          minLength={minLength}
+          autoComplete={autoComplete}
+          className="h-full min-w-0 flex-1 bg-transparent text-[15px] font-medium text-white outline-none placeholder:text-white/45"
+          placeholder={placeholder}
+        />
+        {rightControl}
       </span>
-      <input
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        required
-        minLength={minLength}
-        autoComplete={autoComplete}
-        className="block h-14 w-full min-w-0 rounded-2xl border border-white/15 bg-black/35 px-4 text-base font-medium normal-case tracking-normal text-white placeholder:text-white/35 focus:border-cyan-300/70 focus:outline-none focus:ring-2 focus:ring-cyan-300/15"
-        placeholder={placeholder}
-      />
     </label>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <span className="absolute left-5 grid h-6 w-6 place-items-center text-xl font-black leading-none">
+      <span className="bg-gradient-to-br from-[#4285f4] via-[#34a853] to-[#fbbc05] bg-clip-text text-transparent">
+        G
+      </span>
+    </span>
   );
 }
 

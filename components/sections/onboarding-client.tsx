@@ -4,6 +4,7 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { ClassSelectionArena } from "@/components/sections/class-selection-arena";
 
 // ─── Class definitions ───────────────────
 type ClassDef = {
@@ -295,21 +296,28 @@ export function OnboardingClient() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              style={{ width: "100%", maxWidth: "520px" }}
+              style={{ width: "100%", maxWidth: "1120px" }}
             >
-              <div style={{ textAlign: "center", marginBottom: "20px" }}>
-                <h2 style={{ fontSize: "24px", fontWeight: 700, color: "var(--t1)", marginBottom: "6px" }}>
-                  Pilih kelasmu.
-                </h2>
-                <p style={{ fontSize: "12px", color: "var(--t3)" }}>
-                  Tidak bisa diubah kecuali dengan item langka Class Crystal.
+              <div style={{ textAlign: "center", marginBottom: "22px" }}>
+                <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 800, letterSpacing: "0.42em", textTransform: "uppercase", color: "#c4b5fd", marginBottom: 8 }}>
+                  Satu kali. Pilih dengan bijak.
                 </p>
+                <h2 style={{ fontFamily: "serif", fontSize: "clamp(42px,6vw,72px)", fontWeight: 900, color: "#fff", lineHeight: 0.95, textShadow: "0 0 22px rgba(147,197,253,0.48)", marginBottom: 12 }}>
+                  Pilih Kelasmu
+                </h2>
+                <p style={{ fontSize: 16, color: "rgba(226,232,240,0.7)" }}>
+                  Class menentukan stat awal dan bonus pasif yang kamu bawa seumur hidup karakter ini.
+                </p>
+              </div>
+
+              <div style={{ marginBottom: 22 }}>
+                <ClassSelectionArena selected={selected} onSelect={setSelected} compact />
               </div>
 
               {/* Class grid */}
               <div
                 style={{
-                  display: "grid", gridTemplateColumns: "1fr 1fr",
+                  display: "none", gridTemplateColumns: "1fr 1fr",
                   gap: "10px", marginBottom: "20px",
                 }}
               >

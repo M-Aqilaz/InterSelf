@@ -106,7 +106,7 @@ export function DailyQuestsPanel({ tasks = [], completedTaskIds = new Set() }: P
         setDone(p => new Set([...p, taskId]));
         setTimers(prev => { const n = { ...prev }; delete n[taskId]; return n; });
         emitTasksUpdatedEvent();
-        emitBossDamageEvent({ damage: 500 });
+        emitBossDamageEvent({ damage: 500, source: "Daily quest" });
         push({ title: "Quest selesai! ✓", variant: "success" });
       } catch {
         push({ title: "Gagal menyelesaikan quest", variant: "error" });
