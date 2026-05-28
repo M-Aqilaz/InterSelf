@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { subscribeToTasksUpdate } from "@/lib/events";
+import { fetchCachedJson } from "@/lib/panel-data-cache";
 
 // STATS OVERVIEW
 
@@ -87,9 +88,7 @@ export function RecentAchievementsPanel() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/achievements", { cache: "no-store" });
-      if (!res.ok) return;
-      const data = await res.json() as { achievements: Achievement[] };
+      const data = await fetchCachedJson<{ achievements: Achievement[] }>("/api/achievements");
       const recent = data.achievements
         .filter(a => a.status !== "locked" && a.unlockedAt)
         .sort((a, b) => new Date(b.unlockedAt!).getTime() - new Date(a.unlockedAt!).getTime())

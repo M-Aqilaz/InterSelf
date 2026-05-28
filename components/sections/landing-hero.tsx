@@ -13,14 +13,6 @@ const STATS = [
 export function LandingHero() {
   return (
     <section className="landing-hero">
-      <div className="hero-brand" aria-label="InterSelf">
-        <div className="brand-rune"><span>IS</span></div>
-        <div>
-          <p className="brand-title">InterSelf</p>
-          <p className="brand-subtitle">RPG Your Life</p>
-        </div>
-      </div>
-
       <div className="hero-layout">
         <motion.div
           initial={{ opacity: 0, y: 18 }}
@@ -109,61 +101,7 @@ export function LandingHero() {
       <style>{`
         .landing-hero {
           position: relative;
-          padding: 8px 0 46px;
-        }
-
-        .hero-brand {
-          position: relative;
-          z-index: 1;
-          display: inline-flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 44px;
-        }
-
-        .brand-rune {
-          display: grid;
-          width: 54px;
-          height: 54px;
-          place-items: center;
-          border: 1px solid #9f54ff;
-          border-radius: 18px;
-          background: radial-gradient(circle, rgba(159, 84, 255, 0.26), rgba(3, 7, 18, 0.96));
-          box-shadow: 0 0 28px rgba(139, 92, 246, 0.72);
-          color: white;
-          font-family: var(--font-mono);
-          font-weight: 900;
-          transform: rotate(45deg);
-        }
-
-        .brand-rune::first-letter {
-          letter-spacing: 0;
-        }
-
-        .brand-rune {
-          line-height: 1;
-        }
-
-        .brand-rune > * {
-          transform: rotate(-45deg);
-        }
-
-        .brand-title {
-          margin: 0;
-          color: #fff;
-          font-size: 30px;
-          font-weight: 900;
-          line-height: 1;
-        }
-
-        .brand-subtitle {
-          margin: 8px 0 0;
-          color: #c084fc;
-          font-family: var(--font-mono);
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.34em;
-          text-transform: uppercase;
+          padding: 46px 0 46px;
         }
 
         .hero-layout {
@@ -520,10 +458,6 @@ export function LandingHero() {
         }
 
         @media (max-width: 640px) {
-          .hero-brand {
-            margin-bottom: 28px;
-          }
-
           .hero-copy h1 {
             font-size: 36px;
           }

@@ -107,7 +107,7 @@ export function DailyQuestsPanel({ tasks = [], completedTaskIds = new Set() }: P
         setTimers(prev => { const n = { ...prev }; delete n[taskId]; return n; });
         emitTasksUpdatedEvent();
         emitBossDamageEvent({ damage: 500, source: "Daily quest" });
-        push({ title: "Quest selesai! ✓", variant: "success" });
+        push({ title: "Quest selesai!", variant: "success" });
       } catch {
         push({ title: "Gagal menyelesaikan quest", variant: "error" });
       }
@@ -162,8 +162,6 @@ export function DailyQuestsPanel({ tasks = [], completedTaskIds = new Set() }: P
           const timerRunning = timer?.running;
           const timerCompleted = timer?.completed;
           const timerPct = timer ? ((timer.totalSeconds - timer.remainingSeconds) / timer.totalSeconds) * 100 : 0;
-          const canComplete = !hasDuration || timerCompleted || isDone;
-
           return (
             <div key={task.id} style={{ display: "flex", flexDirection: "column", background: "#111520", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, overflow: "hidden", opacity: isDone ? 0.75 : 1 }}>
               {/* Main row */}

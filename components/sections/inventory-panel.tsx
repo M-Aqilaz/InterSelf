@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useToast } from "@/components/ui/toast";
 import { useGameAudio } from "@/hooks/use-game-audio";
+import { fetchCachedJson, getCachedJson, invalidateCachedJson } from "@/lib/panel-data-cache";
 
 type InventoryEntry = {
   id: number;
@@ -25,41 +26,40 @@ type InventoryResponse = {
 };
 
 const RARITY: Record<string, { border: string; bg: string; badge: string; badgeText: string; icon: string; label: string }> = {
-  COMMON:    { border: "rgba(255,255,255,0.12)", bg: "rgba(255,255,255,0.03)", badge: "rgba(255,255,255,0.08)", badgeText: "rgba(255,255,255,0.5)",  icon: "🪨", label: "Common"    },
-  RARE:      { border: "rgba(34,211,238,0.3)",   bg: "rgba(34,211,238,0.04)", badge: "rgba(34,211,238,0.12)",  badgeText: "#22d3ee",                 icon: "💎", label: "Rare"      },
-  EPIC:      { border: "rgba(139,92,246,0.4)",   bg: "rgba(139,92,246,0.05)", badge: "rgba(139,92,246,0.15)",  badgeText: "#c4b5fd",                 icon: "✨", label: "Epic"      },
-  LEGENDARY: { border: "rgba(245,158,11,0.45)",  bg: "rgba(245,158,11,0.05)", badge: "rgba(245,158,11,0.15)",  badgeText: "#fcd34d",                 icon: "👑", label: "Legendary" },
-  RELIC:     { border: "rgba(244,63,94,0.45)",   bg: "rgba(244,63,94,0.05)",  badge: "rgba(244,63,94,0.15)",   badgeText: "#fda4af",                 icon: "🌟", label: "Relic"     },
+  COMMON:    { border: "rgba(255,255,255,0.12)", bg: "rgba(255,255,255,0.03)", badge: "rgba(255,255,255,0.08)", badgeText: "rgba(255,255,255,0.5)",  icon: "C", label: "Common"    },
+  RARE:      { border: "rgba(34,211,238,0.3)",   bg: "rgba(34,211,238,0.04)", badge: "rgba(34,211,238,0.12)",  badgeText: "#22d3ee",                 icon: "R", label: "Rare"      },
+  EPIC:      { border: "rgba(139,92,246,0.4)",   bg: "rgba(139,92,246,0.05)", badge: "rgba(139,92,246,0.15)",  badgeText: "#c4b5fd",                 icon: "E", label: "Epic"      },
+  LEGENDARY: { border: "rgba(245,158,11,0.45)",  bg: "rgba(245,158,11,0.05)", badge: "rgba(245,158,11,0.15)",  badgeText: "#fcd34d",                 icon: "L", label: "Legendary" },
+  RELIC:     { border: "rgba(244,63,94,0.45)",   bg: "rgba(244,63,94,0.05)",  badge: "rgba(244,63,94,0.15)",   badgeText: "#fda4af",                 icon: "S", label: "Relic"     },
 };
-
 const SLOT_LABELS = ["Core Relic", "Augment", "Support"];
 
-export function InventoryPanel() {
-  const [data, setData] = useState<InventoryResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+export function InventoryPanel({ initialData }: { initialData?: InventoryResponse }) {
+  const cachedInventory = getCachedJson<InventoryResponse>("/api/inventory") ?? initialData ?? null;
+  const hasInitialInventory = Boolean(cachedInventory);
+  const [data, setData] = useState<InventoryResponse | null>(cachedInventory);
+  const [loading, setLoading] = useState(!cachedInventory);
   const [pending, start] = useTransition();
   const { push } = useToast();
   const { play } = useGameAudio();
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (force = false) => {
+    if (!hasInitialInventory && !getCachedJson<InventoryResponse>("/api/inventory")) setLoading(true);
     try {
-      const res = await fetch("/api/inventory", { cache: "no-store" });
-      if (!res.ok) throw new Error();
-      setData(await res.json());
+      setData(await fetchCachedJson<InventoryResponse>("/api/inventory", { force }));
     } catch {
       push({ title: "Failed to load inventory", variant: "error" });
     } finally {
       setLoading(false);
     }
-  }, [push]);
+  }, [hasInitialInventory, push]);
 
   useEffect(() => { void load(); }, [load]);
 
   function equip(entryId: number) {
     start(async () => {
       const res = await fetch(`/api/inventory/${entryId}/equip`, { method: "POST" });
-      if (res.ok) { void play("unlock", 100); void load(); }
+      if (res.ok) { invalidateCachedJson("/api/inventory"); void play("unlock", 100); void load(true); }
       else push({ title: "Failed to equip", variant: "error" });
     });
   }
@@ -67,14 +67,13 @@ export function InventoryPanel() {
   function consume(entryId: number, name: string) {
     start(async () => {
       const res = await fetch(`/api/inventory/${entryId}/consume`, { method: "POST" });
-      if (res.ok) { push({ title: `${name} used!`, variant: "success" }); void load(); }
+      if (res.ok) { invalidateCachedJson("/api/inventory"); push({ title: `${name} used!`, variant: "success" }); void load(true); }
       else push({ title: "Failed to use item", variant: "error" });
     });
   }
 
   const inventory = data?.inventory ?? [];
   const equipped = inventory.filter(e => e.equipped);
-  const unequipped = inventory.filter(e => !e.equipped);
   const total = inventory.length;
 
   return (
@@ -198,5 +197,6 @@ export function InventoryPanel() {
     </div>
   );
 }
+
 
 

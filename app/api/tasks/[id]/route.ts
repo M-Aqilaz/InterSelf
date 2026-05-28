@@ -2,6 +2,7 @@ import { Prisma, TaskCategory, TaskDifficulty } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { resolveTaskRewards } from "@/lib/task-rewards";
 
 type RouteContext = {
   params: Promise<{
@@ -49,9 +50,6 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       description,
       category,
       difficulty,
-      expReward,
-      coinReward,
-      streakImpact,
       durationMinutes,
     } = body ?? {};
     const data: Prisma.TaskUpdateInput = {};
@@ -70,21 +68,6 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
 
     if (isTaskDifficulty(difficulty)) {
       data.difficulty = difficulty;
-    }
-
-    const resolvedExp = toInteger(expReward);
-    if (resolvedExp !== null) {
-      data.expReward = resolvedExp;
-    }
-
-    const resolvedCoins = toInteger(coinReward);
-    if (resolvedCoins !== null) {
-      data.coinReward = resolvedCoins;
-    }
-
-    const resolvedStreakImpact = toInteger(streakImpact);
-    if (resolvedStreakImpact !== null) {
-      data.streakImpact = resolvedStreakImpact;
     }
 
     const resolvedDuration = toInteger(durationMinutes);
@@ -106,6 +89,14 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     if (!existingTask) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
+
+    const nextCategory = isTaskCategory(data.category) ? data.category : existingTask.category;
+    const nextDifficulty = isTaskDifficulty(data.difficulty) ? data.difficulty : existingTask.difficulty;
+    const rewards = resolveTaskRewards(nextCategory, nextDifficulty);
+
+    data.expReward = rewards.expReward;
+    data.coinReward = rewards.coinReward;
+    data.streakImpact = rewards.streakImpact;
 
     const task = await prisma.task.update({
       where: { id },

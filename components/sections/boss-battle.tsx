@@ -3,14 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/toast";
 import { subscribeToBossDamage, subscribeToTasksUpdate } from "@/lib/events";
+import { fetchCachedJson, getCachedJson } from "@/lib/panel-data-cache";
 
 // API returns: { boss: { name, level, maxHp, rewardExp, rewardCoins, weakness? }, progress: { currentHp, id }, cooldownRemainingMs, percentageRemaining }
 type ApiResponse = {
-  boss: { id: number; name: string; level?: number; maxHp: number; rewardExp: number; rewardCoins: number; weakness?: string; flavorText?: string } | null;
+  boss: { id: number; name: string; level?: number; maxHp: number; rewardExp: number; rewardCoins: number; weakness?: string | null; flavorText?: string | null } | null;
   progress: { id: number; currentHp: number; status?: string } | null;
   cooldownRemainingMs: number;
   percentageRemaining: number | null;
 };
+
+type EnergyResponse = { energy: number; energyMax: number };
 
 type LogEntry = { msg: string; type: "damage" | "info" | "crit" | "warning"; ts: number };
 
@@ -85,11 +88,24 @@ function playSound(type: "hit" | "crit" | "swoosh") {
   } catch { /* audio not supported */ }
 }
 
-export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCompletion?: number }) {
-  const [apiData, setApiData] = useState<ApiResponse | null>(null);
+type BossBattlePanelProps = {
+  productivityCompletion?: number;
+  initialState?: ApiResponse | null;
+  initialEnergy?: EnergyResponse;
+};
+
+export function BossBattlePanel({
+  productivityCompletion = 0,
+  initialState,
+  initialEnergy,
+}: BossBattlePanelProps) {
+  const cachedBoss = getCachedJson<ApiResponse>("/api/boss/state") ?? initialState ?? null;
+  const cachedEnergy = getCachedJson<EnergyResponse>("/api/energy") ?? initialEnergy;
+  const hasInitialBoss = Boolean(cachedBoss);
+  const [apiData, setApiData] = useState<ApiResponse | null>(cachedBoss);
   const [localHp, setLocalHp] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [energy, setEnergy] = useState(5);
+  const [loading, setLoading] = useState(!cachedBoss);
+  const [energy, setEnergy] = useState(cachedEnergy?.energy ?? 5);
   const [energyMax] = useState(5);
   const [cooldowns, setCooldowns] = useState<Record<string, number>>({});
   const [log, setLog] = useState<LogEntry[]>([]);
@@ -113,23 +129,21 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
     setLog(prev => [...prev.slice(-(LOG_MAX - 1)), { msg, type, ts: Date.now() }]);
   }, []);
 
-  const loadBoss = useCallback(async () => {
+  const loadBoss = useCallback(async (force = false) => {
+    if (!hasInitialBoss && !getCachedJson<ApiResponse>("/api/boss/state")) setLoading(true);
     try {
-      const res = await fetch("/api/boss/state", { cache: "no-store" });
-      if (res.ok) {
-        const data: ApiResponse = await res.json();
-        setApiData(data);
-        if (data.progress?.currentHp !== undefined) setLocalHp(data.progress.currentHp);
-      }
+      const data = await fetchCachedJson<ApiResponse>("/api/boss/state", { force });
+      setApiData(data);
+      if (data.progress?.currentHp !== undefined) setLocalHp(data.progress.currentHp);
     } catch { }
     finally { setLoading(false); }
-  }, []);
+  }, [hasInitialBoss]);
 
   useEffect(() => { void loadBoss(); }, [loadBoss]);
 
   useEffect(() => {
     const unsub = subscribeToTasksUpdate(() => {
-      void loadBoss();
+      void loadBoss(true);
       setNarration(getRandom(NARRATIONS.hit));
     });
     return unsub;
@@ -137,7 +151,7 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
 
   useEffect(() => {
     const unsub = subscribeToBossDamage((payload) => {
-      void loadBoss();
+      void loadBoss(true);
       if (payload.damage <= 0) {
         addLog(`${payload.source} completed, but boss armor is cooling down.`, "warning");
         return;
@@ -158,13 +172,10 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
 
   // Fetch energy from DB
   useEffect(() => {
-    const fetchEnergy = async () => {
+    const fetchEnergy = async (force = false) => {
       try {
-        const res = await fetch("/api/energy", { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json() as { energy: number; energyMax: number };
-          setEnergy(data.energy);
-        }
+        const data = await fetchCachedJson<EnergyResponse>("/api/energy", { force });
+        setEnergy(data.energy);
       } catch { }
     };
     void fetchEnergy();
@@ -263,7 +274,7 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
           addLog("BOSS DEFEATED! Rewards claimed!", "crit");
           setNarration("The demon shatters into shadow... You are victorious!");
           push({ title: "Boss defeated! Rewards claimed!", variant: "success" });
-          setTimeout(() => void loadBoss(), 3000);
+          setTimeout(() => void loadBoss(true), 3000);
         }
       }
     } catch { /* keep local state */ }

@@ -24,9 +24,6 @@ type QuestForm = {
   description: string;
   category: string;
   difficulty: string;
-  expReward: number;
-  coinReward: number;
-  streakImpact: number;
   durationMinutes: number;
 };
 
@@ -35,9 +32,6 @@ const EMPTY_FORM: QuestForm = {
   description: "",
   category: "CUSTOM",
   difficulty: "EASY",
-  expReward: 25,
-  coinReward: 10,
-  streakImpact: 1,
   durationMinutes: 0,
 };
 
@@ -129,9 +123,6 @@ export function QuestBoardPanel() {
       description: task.description,
       category: task.category,
       difficulty: task.difficulty,
-      expReward: task.expReward,
-      coinReward: task.coinReward,
-      streakImpact: task.streakImpact,
       durationMinutes: task.durationMinutes ?? 0,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -274,10 +265,7 @@ export function QuestBoardPanel() {
             </label>
           </div>
 
-          <div className="field-grid four">
-            <NumberField label="EXP" value={form.expReward} onChange={(value) => setForm((prev) => ({ ...prev, expReward: value }))} />
-            <NumberField label="Coins" value={form.coinReward} onChange={(value) => setForm((prev) => ({ ...prev, coinReward: value }))} />
-            <NumberField label="Streak" value={form.streakImpact} onChange={(value) => setForm((prev) => ({ ...prev, streakImpact: value }))} />
+          <div className="field-grid">
             <NumberField label="Menit" value={form.durationMinutes} onChange={(value) => setForm((prev) => ({ ...prev, durationMinutes: value }))} />
           </div>
 

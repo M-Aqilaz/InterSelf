@@ -32,16 +32,6 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
         }}
       >
         <Link href="/" className="flex items-center gap-2.5 no-underline">
-          <div
-            className="flex h-7 w-7 items-center justify-center rounded-lg font-bold text-xs"
-            style={{
-              background: "var(--gold)",
-              color: "var(--bg-base)",
-              fontFamily: "var(--font-mono)",
-            }}
-          >
-            IS
-          </div>
           <span
             className="text-sm font-bold tracking-widest uppercase"
             style={{ color: "var(--t1)", letterSpacing: "0.12em" }}
@@ -68,6 +58,7 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
                 style={{ padding: "6px 16px", fontSize: "12px" }}
                 onClick={async () => {
                   await fetch("/api/auth/logout", { method: "POST" });
+                  router.replace("/");
                   router.refresh();
                 }}
               >
@@ -106,7 +97,7 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
           onClick={() => setOpen((p) => !p)}
           aria-label="Toggle menu"
         >
-          {open ? "✕" : "☰"}
+          {open ? "Close" : "Menu"}
         </button>
       </div>
 
@@ -136,6 +127,7 @@ export function SiteHeader({ user }: { user: HeaderUser }) {
                 className="btn-ghost"
                 onClick={async () => {
                   await fetch("/api/auth/logout", { method: "POST" });
+                  router.replace("/");
                   router.refresh();
                 }}
               >

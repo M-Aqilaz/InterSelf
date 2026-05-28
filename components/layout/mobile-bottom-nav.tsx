@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { preloadDashboardPanel } from "@/components/layout/dashboard-panel-preloader";
 
 const ITEMS = [
   { label: "Home",      hash: "",            path: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10" },
@@ -34,7 +35,9 @@ export function MobileBottomNav() {
         return (
           <button key={item.label} type="button"
             style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "4px 10px", background: "none", border: "none", cursor: "pointer" }}
-            onClick={() => { window.location.hash = item.hash; window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+            onFocus={() => item.hash && preloadDashboardPanel(item.hash)}
+            onTouchStart={() => item.hash && preloadDashboardPanel(item.hash)}
+            onClick={() => { if (item.hash) preloadDashboardPanel(item.hash); window.location.hash = item.hash; window.scrollTo({ top: 0, behavior: "smooth" }); }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               {item.path.split(" M").map((d, i) => (
                 <path key={i} d={i === 0 ? d : "M" + d} />

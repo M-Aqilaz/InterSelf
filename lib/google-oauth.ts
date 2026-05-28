@@ -107,7 +107,6 @@ export function createGoogleAuthorizationResponse(request: NextRequest) {
   url.searchParams.set("scope", "openid profile email");
   url.searchParams.set("state", state);
   url.searchParams.set("nonce", nonce);
-  url.searchParams.set("prompt", "select_account");
   url.searchParams.set("code_challenge", codeChallenge);
   url.searchParams.set("code_challenge_method", "S256");
 

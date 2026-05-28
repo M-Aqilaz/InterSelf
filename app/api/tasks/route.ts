@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { startOfToday } from "@/lib/time";
+import { resolveTaskRewards } from "@/lib/task-rewards";
 
 const isTaskCategory = (value: unknown): value is TaskCategory =>
   typeof value === "string" && Object.values(TaskCategory).includes(value as TaskCategory);
@@ -79,9 +80,6 @@ export async function POST(request: Request) {
       description,
       category,
       difficulty,
-      expReward,
-      coinReward,
-      streakImpact,
       durationMinutes,
     } = body ?? {};
 
@@ -105,10 +103,8 @@ export async function POST(request: Request) {
     const resolvedDifficulty = isTaskDifficulty(difficulty)
       ? difficulty
       : TaskDifficulty.EASY;
-    const resolvedExp = toIntegerOrDefault(expReward, 0);
-    const resolvedCoins = toIntegerOrDefault(coinReward, 0);
-    const resolvedStreakImpact = toIntegerOrDefault(streakImpact, 1);
     const resolvedDuration = toIntegerOrDefault(durationMinutes, 0);
+    const rewards = resolveTaskRewards(resolvedCategory, resolvedDifficulty);
 
     const task = await prisma.task.create({
       data: {
@@ -116,9 +112,9 @@ export async function POST(request: Request) {
         description: description.trim(),
         category: resolvedCategory,
         difficulty: resolvedDifficulty,
-        expReward: resolvedExp,
-        coinReward: resolvedCoins,
-        streakImpact: resolvedStreakImpact,
+        expReward: rewards.expReward,
+        coinReward: rewards.coinReward,
+        streakImpact: rewards.streakImpact,
         durationMinutes: resolvedDuration > 0 ? resolvedDuration : null,
         isSystem: false,
         createdBy: { connect: { id: user.id } },

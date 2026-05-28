@@ -79,7 +79,7 @@ export function DashboardTopbar({
     if (accountActionLoading) return;
     setAccountActionLoading("logout");
     await fetch("/api/auth/logout", { method: "POST" });
-    router.replace("/login");
+    router.replace("/");
     router.refresh();
   };
 
@@ -109,11 +109,6 @@ export function DashboardTopbar({
     }}>
       {/* Brand */}
       <div className="dashboard-topbar-brand" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#1d4ed8,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: 16, height: 16 }}>
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
-        </div>
         <div>
           <div style={{ fontSize: 14, fontWeight: 900, color: "#fff", letterSpacing: "0.05em" }}>InterSelf</div>
           <div style={{ fontFamily: "monospace", fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.2em" }}>RPG Your Life</div>

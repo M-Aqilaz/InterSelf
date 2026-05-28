@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { fetchCachedJson, getCachedJson, setCachedJson } from "@/lib/panel-data-cache";
 
 type ShopItem = {
   id: number;
@@ -25,15 +26,18 @@ const RARITY: Record<string, { border: string; badgeBg: string; badgeColor: stri
 
 const FILTERS = ["All", "COMMON", "RARE", "EPIC", "LEGENDARY"] as const;
 
-export function ShopPanel() {
-  const [data, setData] = useState<ShopData | null>(null);
-  const [loading, setLoading] = useState(true);
+export function ShopPanel({ initialData }: { initialData?: ShopData }) {
+  const cachedShop = getCachedJson<ShopData>("/api/shop") ?? initialData ?? null;
+  const [data, setData] = useState<ShopData | null>(cachedShop);
+  const [loading, setLoading] = useState(!cachedShop);
   const [buying, setBuying] = useState<number | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [filter, setFilter] = useState<typeof FILTERS[number]>("All");
 
   useEffect(() => {
-    fetch("/api/shop").then(r => r.json()).then(d => { setData(d); setLoading(false); }).catch(() => setLoading(false));
+    fetchCachedJson<ShopData>("/api/shop")
+      .then(d => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
   const buy = useCallback(async (item: ShopItem) => {
@@ -46,12 +50,16 @@ export function ShopPanel() {
     const result = await res.json();
     if (res.ok) {
       setToast({ msg: `${item.name} purchased!`, ok: true });
-      setData(prev => prev ? {
+      setData(prev => {
+        const next = prev ? {
         userCoins: result.remainingCoins,
         items: prev.items.map(i => i.id === item.id
           ? { ...i, owned: i.owned + 1, canAfford: result.remainingCoins >= i.price }
           : { ...i, canAfford: result.remainingCoins >= i.price }),
-      } : null);
+        } : null;
+        if (next) setCachedJson("/api/shop", next);
+        return next;
+      });
     } else {
       setToast({ msg: result.error ?? "Purchase failed", ok: false });
     }

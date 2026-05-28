@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { CLASS_COLORS, IroncladSprite, MerchantSprite, PhantomSprite, SageSprite, type SpriteProps } from "@/lib/character-sprites";
 import type { ComponentType } from "react";
+import { preloadDashboardPanel } from "@/components/layout/dashboard-panel-preloader";
+import { fetchCachedJson } from "@/lib/panel-data-cache";
 
 const NAV = [
   { id: "dashboard",    label: "Dashboard",    icon: "home",         hash: "" },
@@ -38,8 +40,7 @@ export function DashboardSidebar({ username, level, expIntoLevel, expForNextLeve
   const [weeklyRank, setWeeklyRank] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch("/api/leaderboard", { cache: "no-store" })
-      .then(r => r.ok ? r.json() : null)
+    fetchCachedJson<{ userRank?: number }>("/api/leaderboard")
       .then(d => { if (d?.userRank) setWeeklyRank(d.userRank); })
       .catch(() => {});
   }, []);
@@ -56,6 +57,7 @@ export function DashboardSidebar({ username, level, expIntoLevel, expForNextLeve
   }, []);
 
   const navigate = useCallback((item: typeof NAV[0]) => {
+    if (item.hash) preloadDashboardPanel(item.hash);
     setActiveId(item.id);
     if (item.hash) {
       window.location.hash = item.hash;
@@ -85,6 +87,8 @@ export function DashboardSidebar({ username, level, expIntoLevel, expForNextLeve
           const svgPath = ICON_SVG[item.icon] ?? "";
           return (
             <button key={item.id} type="button" onClick={() => navigate(item)}
+              onFocus={() => item.hash && preloadDashboardPanel(item.hash)}
+              onMouseEnter={() => item.hash && preloadDashboardPanel(item.hash)}
               style={{
                 display: "flex", alignItems: "center", gap: 10,
                 padding: "9px 12px", borderRadius: 10, border: "1px solid",

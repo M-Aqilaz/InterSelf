@@ -3,10 +3,15 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateLevelFromTotalExp } from "@/lib/level";
 import { startOfToday } from "@/lib/time";
+import { getBossBattleState } from "@/lib/boss";
+import { listAchievementsForUser } from "@/lib/achievements";
+import { getInventoryForUser, summarizeInventory } from "@/lib/inventory";
+import { getLeaderboardState } from "@/lib/social";
 import { ClassGate } from "@/components/layout/class-gate";
 import { DashboardTopbar } from "@/components/layout/dashboard-topbar";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
+import { DashboardPanelPreloader } from "@/components/layout/dashboard-panel-preloader";
 import { CharacterCard } from "@/components/sections/character-card";
 import { DailyQuestsPanel } from "@/components/sections/daily-quests-panel";
 import { BossBattlePreview } from "@/components/sections/boss-battle-preview";
@@ -15,7 +20,10 @@ import { WeeklyChallengesPanel } from "@/components/sections/weekly-challenges-p
 import { StatsOverviewPanel, RecentAchievementsPanel } from "@/components/sections/stats-and-achievements";
 import dynamic from "next/dynamic";
 
-// Detail panels (lazy loaded, shown via hash navigation)
+function toClientData<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data)) as T;
+}
+
 const BossBattlePanel = dynamic(
   () => import("@/components/sections/boss-battle").then((m) => m.BossBattlePanel),
   { loading: () => <PanelSkeleton /> }
@@ -44,10 +52,6 @@ const FriendsPanel = dynamic(
   () => import("@/components/sections/friends-panel").then((m) => m.FriendsPanel),
   { loading: () => <PanelSkeleton /> }
 );
-const DungeonNavigationPanel = dynamic(
-  () => import("@/components/sections/dungeon-navigation-panel").then((m) => m.DungeonNavigationPanel),
-  { loading: () => <PanelSkeleton /> }
-);
 const PvpPreviewPanel = dynamic(
   () => import("@/components/sections/pvp-preview-panel").then((m) => m.PvpPreviewPanel),
   { loading: () => <PanelSkeleton /> }
@@ -66,14 +70,6 @@ const ProductivityAnalyticsPanel = dynamic(
 );
 const QuestBoardPanel = dynamic(
   () => import("@/components/sections/quest-board-panel").then((m) => m.QuestBoardPanel),
-  { loading: () => <PanelSkeleton /> }
-);
-const AiCoachPanel = dynamic(
-  () => import("@/components/sections/ai-coach-panel").then((m) => m.AiCoachPanel),
-  { loading: () => <PanelSkeleton /> }
-);
-const FocusModePanel = dynamic(
-  () => import("@/components/sections/focus-mode-panel").then((m) => m.FocusModePanel),
   { loading: () => <PanelSkeleton /> }
 );
 
@@ -161,6 +157,46 @@ export default async function DashboardPage() {
       stats.reduce((acc, stat) => acc + stat.value, 0)
   );
 
+  const [initialBossState, initialInventory, initialShop, initialAchievements, initialLeaderboard] =
+    await Promise.all([
+      getBossBattleState(user.id).catch(() => null),
+      getInventoryForUser(user.id)
+        .then((inventory) => ({ inventory, summary: summarizeInventory(inventory) }))
+        .catch(() => null),
+      Promise.all([
+        prisma.inventoryItem.findMany({
+          where: { price: { gt: 0 } },
+          orderBy: { price: "asc" },
+        }),
+        prisma.userInventory.findMany({
+          where: { userId: user.id },
+          select: { itemId: true, quantity: true },
+        }),
+        prisma.profile.findUnique({
+          where: { userId: user.id },
+          select: { coins: true },
+        }),
+      ])
+        .then(([items, userInventory, profile]) => {
+          const inventoryMap = new Map(userInventory.map((inv) => [inv.itemId, inv.quantity]));
+          const coins = profile?.coins ?? 0;
+
+          return {
+            items: items.map((item) => ({
+              ...item,
+              owned: inventoryMap.get(item.id) ?? 0,
+              canAfford: coins >= item.price,
+            })),
+            userCoins: coins,
+          };
+        })
+        .catch(() => null),
+      listAchievementsForUser(user.id)
+        .then((achievements) => ({ achievements }))
+        .catch(() => null),
+      getLeaderboardState(user.id).catch(() => null),
+    ]);
+
   // Build completion heatmap for calendar (last 3 months)
   const calendarCompletions = await prisma.taskCompletion
     .findMany({
@@ -188,6 +224,8 @@ export default async function DashboardPage() {
   return (
     <ClassGate hasChosenClass={hasChosenClass}>
       <div className="flex min-h-screen flex-col" style={{ background: "#080b12" }}>
+        <DashboardPanelPreloader />
+
         {/* TOPBAR */}
         <DashboardTopbar
           coins={heroCoins}
@@ -257,7 +295,13 @@ export default async function DashboardPage() {
               recentAchievements={<RecentAchievementsPanel />}
               // Detail panels
               questsDetail={<QuestBoardPanel />}
-              battleDetail={<BossBattlePanel productivityCompletion={dailyCompletionPercent} />}
+              battleDetail={
+                <BossBattlePanel
+                  productivityCompletion={dailyCompletionPercent}
+                  initialState={initialBossState ? toClientData(initialBossState) : undefined}
+                  initialEnergy={toClientData({ energy: heroEnergy, energyMax: heroEnergyMax })}
+                />
+              }
               statusDetail={
                 <div className="grid gap-4 xl:grid-cols-2">
                   <CharacterProfilePanel
@@ -281,13 +325,16 @@ export default async function DashboardPage() {
                   </div>
                 </div>
               }
-              vaultDetail={<InventoryPanel />}
-              inventoryDetail={<InventoryPanel />}
-              shopDetail={<ShopPanel />}
-              achievementsDetail={<AchievementsPanel />}
+              inventoryDetail={
+                <InventoryPanel initialData={initialInventory ? toClientData(initialInventory) : undefined} />
+              }
+              shopDetail={<ShopPanel initialData={initialShop ? toClientData(initialShop) : undefined} />}
+              achievementsDetail={
+                <AchievementsPanel initialData={initialAchievements ? toClientData(initialAchievements) : undefined} />
+              }
               oracleDetail={
                 <>
-                  <LeaderboardPanel />
+                  <LeaderboardPanel initialData={initialLeaderboard ? toClientData(initialLeaderboard) : undefined} />
                   <ProductivityAnalyticsPanel />
                 </>
               }

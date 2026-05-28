@@ -119,9 +119,7 @@ export function AuthCard({ mode }: AuthCardProps) {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(147,51,234,0.22),transparent_34%),radial-gradient(circle_at_0%_58%,rgba(91,33,182,0.18),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.045),transparent_42%)]" />
 
       <div className="relative mx-auto w-full max-w-[480px]">
-        <BrandMark />
-
-        <header className="!mt-4 text-center">
+        <header className="text-center">
           <p className="font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-[#d17cff]">
             {labels.eyebrow}
           </p>
@@ -231,25 +229,6 @@ export function AuthCard({ mode }: AuthCardProps) {
         </p>
       </div>
     </section>
-  );
-}
-
-function BrandMark() {
-  return (
-    <div className="flex items-center justify-center gap-3 sm:gap-4">
-      <div className="relative grid h-[54px] w-[54px] shrink-0 place-items-center sm:h-[58px] sm:w-[58px]">
-        <div className="absolute inset-[10px] rotate-45 rounded-[16px] border border-[#9f35ff] bg-[#0a0f2a] shadow-[0_0_24px_rgba(159,53,255,0.82)]" />
-        <span className="absolute left-[5px] top-[22px] h-1 w-1 rounded-full bg-[#9f35ff] shadow-[0_0_12px_#9f35ff]" />
-        <span className="absolute right-[4px] top-[28px] h-1 w-1 rounded-full bg-[#9f35ff] shadow-[0_0_12px_#9f35ff]" />
-        <span className="relative text-[22px] font-black leading-none text-white sm:text-[23px]">IS</span>
-      </div>
-      <div className="min-w-0 !pt-1">
-        <p className="truncate text-[29px] font-black leading-none text-white sm:text-[32px]">InterSelf</p>
-        <p className="!mt-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.38em] text-[#b65cff] sm:text-[11px] sm:tracking-[0.42em]">
-          RPG Your Life
-        </p>
-      </div>
-    </div>
   );
 }
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import { useToast } from "@/components/ui/toast";
 import { subscribeToTasksUpdate } from "@/lib/events";
 import { useGameAudio } from "@/hooks/use-game-audio";
+import { fetchCachedJson, getCachedJson, invalidateCachedJson } from "@/lib/panel-data-cache";
 
 type Achievement = {
   id: number;
@@ -15,8 +16,8 @@ type Achievement = {
   rewardCoins: number;
   status: "locked" | "unlocked" | "claimed";
   claimable: boolean;
-  unlockedAt: string | null;
-  claimedAt: string | null;
+  unlockedAt: string | Date | null;
+  claimedAt: string | Date | null;
 };
 
 const RARITY_CONFIG: Record<string, {
@@ -29,38 +30,38 @@ const RARITY_CONFIG: Record<string, {
   COMMON:    { border: "rgba(255,255,255,0.1)", bg: "rgba(255,255,255,0.02)", badgeBg: "rgba(255,255,255,0.08)", badgeColor: "rgba(255,255,255,0.5)", iconBg: "rgba(255,255,255,0.07)", label: "Common", xpColor: "rgba(255,255,255,0.6)", glow: "transparent" },
 };
 
-function timeAgo(d: string) {
+function timeAgo(d: string | Date) {
   const h = Math.floor((Date.now() - new Date(d).getTime()) / 3600000);
   if (h < 1) return "Just now";
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
 }
 
-export function AchievementsPanel() {
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [loading, setLoading] = useState(true);
+export function AchievementsPanel({ initialData }: { initialData?: { achievements: Achievement[] } }) {
+  const cachedAchievements = getCachedJson<{ achievements: Achievement[] }>("/api/achievements") ?? initialData ?? null;
+  const hasInitialAchievements = Boolean(cachedAchievements);
+  const [achievements, setAchievements] = useState<Achievement[]>(cachedAchievements?.achievements ?? []);
+  const [loading, setLoading] = useState(!cachedAchievements);
   const [pending, start] = useTransition();
   const { push } = useToast();
   const { play } = useGameAudio();
   const [filter, setFilter] = useState<"all" | "claimed" | "unlocked" | "locked">("all");
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (force = false) => {
+    if (!hasInitialAchievements && !getCachedJson<{ achievements: Achievement[] }>("/api/achievements")) setLoading(true);
     try {
-      const res = await fetch("/api/achievements", { cache: "no-store" });
-      if (!res.ok) throw new Error();
-      const data = await res.json() as { achievements: Achievement[] };
+      const data = await fetchCachedJson<{ achievements: Achievement[] }>("/api/achievements", { force });
       setAchievements(data.achievements);
     } catch {
       push({ title: "Failed to load achievements", variant: "error" });
     } finally {
       setLoading(false);
     }
-  }, [push]);
+  }, [hasInitialAchievements, push]);
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
-    const unsub = subscribeToTasksUpdate(() => void load());
+    const unsub = subscribeToTasksUpdate(() => void load(true));
     return unsub;
   }, [load]);
 
@@ -68,9 +69,10 @@ export function AchievementsPanel() {
     start(async () => {
       const res = await fetch(`/api/achievements/${id}/claim`, { method: "POST" });
       if (res.ok) {
+        invalidateCachedJson("/api/achievements");
         void play("unlock", 200);
         push({ title: "Achievement claimed! 🏆", variant: "success" });
-        void load();
+        void load(true);
       } else {
         push({ title: "Failed to claim", variant: "error" });
       }

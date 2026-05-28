@@ -13,7 +13,7 @@ type Props = {
   questsDetail: ReactNode;
   battleDetail: ReactNode;
   statusDetail: ReactNode;
-  vaultDetail: ReactNode;
+  vaultDetail?: ReactNode;
   oracleDetail: ReactNode;
   arenaDetail: ReactNode;
   guildDetail: ReactNode;
@@ -75,7 +75,7 @@ export function DashboardContentRouter({
         <div>
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginBottom: 2 }}>Welcome back,</p>
           <h1 style={{ fontSize: 28, fontWeight: 900, color: "#fff", lineHeight: 1.1, display: "flex", alignItems: "center", gap: 8 }}>
-            Adventurer! <span>⚔️</span>
+            Adventurer!
           </h1>
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
             Level up your habits. Level up your life.
@@ -124,7 +124,7 @@ export function DashboardContentRouter({
         <button type="button"
           style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: "10px 16px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.55)", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.1em" }}
           onClick={() => { window.location.hash = ""; window.scrollTo({ top: 0, behavior: "smooth" }); }}>
-          ← Dashboard
+          Back to Dashboard
         </button>
       </div>
       {panels[view]}

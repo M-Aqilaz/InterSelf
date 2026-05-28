@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
+import { fetchCachedJson, getCachedJson } from "@/lib/panel-data-cache";
 
 type Entry = {
   rank: number;
@@ -12,19 +13,36 @@ type Entry = {
   isCurrentUser?: boolean;
 };
 
-export function LeaderboardPanel() {
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [myRank, setMyRank] = useState<number | null>(null);
+type LeaderboardResponse = {
+  top?: Entry[];
+  leaderboard?: Entry[];
+  entries?: Entry[];
+  userRank?: number | null;
+  myRank?: number | null;
+};
+
+export function LeaderboardPanel({ initialData }: { initialData?: LeaderboardResponse }) {
+  const cachedLeaderboard = getCachedJson<LeaderboardResponse | Entry[]>("/api/leaderboard") ?? initialData;
+  const cachedList = cachedLeaderboard
+    ? Array.isArray(cachedLeaderboard)
+      ? cachedLeaderboard
+      : cachedLeaderboard.top ?? cachedLeaderboard.leaderboard ?? cachedLeaderboard.entries ?? []
+    : [];
+  const [entries, setEntries] = useState<Entry[]>(Array.isArray(cachedList) ? cachedList as Entry[] : []);
+  const [loading, setLoading] = useState(!cachedLeaderboard);
+  const [myRank, setMyRank] = useState<number | null>(
+    cachedLeaderboard && !Array.isArray(cachedLeaderboard)
+      ? cachedLeaderboard.userRank ?? cachedLeaderboard.myRank ?? null
+      : null
+  );
 
   useEffect(() => {
-    fetch("/api/leaderboard", { cache: "no-store" })
-      .then(r => r.ok ? r.json() : null)
+    fetchCachedJson<LeaderboardResponse | Entry[]>("/api/leaderboard")
       .then(d => {
         if (!d) return;
-        const list = d.top ?? d.leaderboard ?? d.entries ?? (Array.isArray(d) ? d : []);
+        const list = Array.isArray(d) ? d : d.top ?? d.leaderboard ?? d.entries ?? [];
         setEntries(Array.isArray(list) ? list : []);
-        setMyRank(d.userRank ?? d.myRank ?? null);
+        setMyRank(Array.isArray(d) ? null : d.userRank ?? d.myRank ?? null);
       })
       .catch(() => {})
       .finally(() => setLoading(false));

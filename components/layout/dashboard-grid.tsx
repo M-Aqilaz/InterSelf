@@ -14,13 +14,6 @@ type DashboardGridProps = {
   habitCalendar: ReactNode;
   weeklyChallenges: ReactNode;
   statsAndAchievements: ReactNode;
-  // Detail panels (shown via hash navigation, NOT on main dashboard grid)
-  battleDetail?: ReactNode;
-  statusDetail?: ReactNode;
-  vaultDetail?: ReactNode;
-  oracleDetail?: ReactNode;
-  arenaDetail?: ReactNode;
-  guildDetail?: ReactNode;
 };
 
 export function DashboardGrid({
@@ -30,12 +23,6 @@ export function DashboardGrid({
   habitCalendar,
   weeklyChallenges,
   statsAndAchievements,
-  battleDetail,
-  statusDetail,
-  vaultDetail,
-  oracleDetail,
-  arenaDetail,
-  guildDetail,
 }: DashboardGridProps) {
   return (
     <div className="flex flex-col gap-4 pb-8">
@@ -46,7 +33,7 @@ export function DashboardGrid({
             Welcome back,
           </p>
           <h1 className="flex items-center gap-2 text-2xl font-black text-white">
-            Adventurer! <span>⚔️</span>
+            Adventurer!
           </h1>
           <p className="mt-[2px] text-[11px]" style={{ color: "rgba(255,255,255,0.4)" }}>
             Level up your habits. Level up your life.
@@ -72,3 +59,4 @@ export function DashboardGrid({
     </div>
   );
 }
+

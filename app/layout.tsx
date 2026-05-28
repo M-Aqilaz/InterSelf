@@ -20,6 +20,10 @@ export const metadata: Metadata = {
   title: "InterSelf — Jadikan Dirimu Karakter Terkuat",
   description: "Platform gamifikasi pengembangan diri.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  icons: {
+    icon: "/brand/interself-app-icon.png",
+    apple: "/brand/interself-app-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
