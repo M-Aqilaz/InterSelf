@@ -6,6 +6,7 @@ import { startOfToday } from "@/lib/time";
 import { ClassGate } from "@/components/layout/class-gate";
 import { DashboardTopbar } from "@/components/layout/dashboard-topbar";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
+import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { CharacterCard } from "@/components/sections/character-card";
 import { DailyQuestsPanel } from "@/components/sections/daily-quests-panel";
 import { BossBattlePreview } from "@/components/sections/boss-battle-preview";
@@ -210,7 +211,7 @@ export default async function DashboardPage() {
           />
 
           {/* MAIN CONTENT */}
-          <main className="min-w-0 flex-1 overflow-y-auto px-5 py-5">
+          <main className="dashboard-main min-w-0 flex-1 overflow-y-auto px-5 py-5">
             {/*
               The DashboardContentRouter is a client component that reads window.location.hash
               and shows either the main dashboard grid or a detail panel.
@@ -295,12 +296,13 @@ export default async function DashboardPage() {
             />
           </main>
         </div>
+        <MobileBottomNav />
       </div>
     </ClassGate>
   );
 }
 
-// â”€â”€â”€ CLIENT COMPONENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Client components
 
 import { DashboardContentRouter } from "@/components/layout/dashboard-content-router";
 

@@ -72,7 +72,7 @@ export function DashboardSidebar({ username, level, expIntoLevel, expForNextLeve
   const expPercent = expForNextLevel > 0 ? Math.min(100, Math.round((expIntoLevel / expForNextLevel) * 100)) : 70;
 
   return (
-    <aside style={{
+    <aside className="dashboard-sidebar" style={{
       width: 220, flexShrink: 0, background: "#090d14",
       borderRight: "1px solid rgba(255,255,255,0.07)",
       display: "flex", flexDirection: "column",

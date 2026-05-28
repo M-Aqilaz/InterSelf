@@ -184,7 +184,7 @@ model UserAchievement {
   achievementId  Int
   unlockedAt     DateTime     @default(now())
   claimedAt      DateTime?
-  shareToken     String?      @unique  // Ã¢â€ Â TAMBAHKAN: token unik untuk link share publik
+  shareToken     String?      @unique  // Unique token for public share links
 
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   achievement    Achievement  @relation(fields: [achievementId], references: [id], onDelete: Cascade)
@@ -235,11 +235,11 @@ model Boss {
   status        BossStatus    @default(ACTIVE)
   createdAt     DateTime      @default(now())
   rewardItemId  Int?
-  minLevel      Int           @default(1)    // Ã¢â€ Â TAMBAHKAN: level minimum untuk unlock dungeon
-  dungeonName   String        @default("")   // Ã¢â€ Â TAMBAHKAN: nama dungeon zone
-  dungeonTier   String        @default("F")  // Ã¢â€ Â TAMBAHKAN: F/E/D/C/B/A/S
-  dungeonBiome  String        @default("")   // Ã¢â€ Â TAMBAHKAN: deskripsi biome (Volcanic, Frost, dll)
-  loreText      String        @default("")   // Ã¢â€ Â TAMBAHKAN: flavor text dungeon
+  minLevel      Int           @default(1)    // Minimum level to unlock dungeon
+  dungeonName   String        @default("")   // Dungeon zone name
+  dungeonTier   String        @default("F")  // F/E/D/C/B/A/S
+  dungeonBiome  String        @default("")   // Dungeon biome description
+  loreText      String        @default("")   // Dungeon flavor text
 
   rewardItem    InventoryItem? @relation("BossRewardItem", fields: [rewardItemId], references: [id])
   userProgress  UserBossProgress[]

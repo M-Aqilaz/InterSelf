@@ -101,30 +101,30 @@ export function DashboardTopbar({
   };
 
   return (
-    <header style={{
+    <header className="dashboard-topbar" style={{
       position: "sticky", top: 0, zIndex: 40, height: 52,
       display: "flex", alignItems: "center", justifyContent: "space-between",
       background: "#0a0e17", borderBottom: "1px solid rgba(255,255,255,0.07)",
       padding: "0 20px", width: "100%",
     }}>
       {/* Brand */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div className="dashboard-topbar-brand" style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#1d4ed8,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: 16, height: 16 }}>
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
         </div>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 900, color: "#fff", letterSpacing: "0.05em" }}>LifeQuest</div>
+          <div style={{ fontSize: 14, fontWeight: 900, color: "#fff", letterSpacing: "0.05em" }}>InterSelf</div>
           <div style={{ fontFamily: "monospace", fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.2em" }}>RPG Your Life</div>
         </div>
       </div>
 
       {/* Stat pills */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <div className="dashboard-topbar-stats" style={{ display: "flex", alignItems: "center", gap: 6 }}>
         {/* Coins */}
         <div style={pillStyle}>
-          <span style={{ fontSize: 14 }}>🪙</span>
+          <span style={{ fontSize: 11, fontWeight: 900, color: "#f59e0b" }}>C</span>
           <div>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{coins.toLocaleString()}</div>
             <div style={{ fontFamily: "monospace", fontSize: 9, color: "rgba(255,255,255,0.38)" }}>Coins</div>
@@ -168,11 +168,11 @@ export function DashboardTopbar({
           </div>
         </div>
 
-        <button type="button" style={{ width: 30, height: 30, background: "#111520", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "rgba(255,255,255,0.5)", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+        <button className="dashboard-topbar-add" type="button" style={{ width: 30, height: 30, background: "#111520", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "rgba(255,255,255,0.5)", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
       </div>
 
       {/* Right: notif + avatar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, position: "relative" }}>
+      <div className="dashboard-topbar-actions" style={{ display: "flex", alignItems: "center", gap: 10, position: "relative" }}>
         <button type="button" style={{ position: "relative", width: 32, height: 32, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="2">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0"/>

@@ -81,12 +81,12 @@ export function DashboardContentRouter({
             Level up your habits. Level up your life.
           </p>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+        <div className="dashboard-panel-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
           {characterCard}
           {dailyQuests}
           {bossBattlePreview}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+        <div className="dashboard-panel-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
           {habitCalendar}
           {weeklyChallenges}
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -115,7 +115,7 @@ export function DashboardContentRouter({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20, paddingBottom: 32 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#0b0f18", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: "16px 20px" }}>
+      <div className="dashboard-detail-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#0b0f18", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: "16px 20px" }}>
         <div>
           <p style={{ fontFamily: "monospace", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.3em", color: "rgba(245,158,11,0.7)" }}>{meta.label}</p>
           <h1 style={{ fontSize: 24, fontWeight: 900, color: "#fff", marginTop: 4 }}>{meta.label}</h1>

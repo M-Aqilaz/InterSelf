@@ -35,7 +35,7 @@ const NARRATIONS: Record<string, string[]> = {
   hit:     ["The boss recoils!", "It screeches in pain!", "Your discipline breaks through its armor!"],
   crit:    ["DEVASTATING BLOW! The boss staggers!", "Critical strike! The demon howls!", "Your focus shatters its defenses!"],
   enraged: ["THE BOSS IS ENRAGED! Eyes burning gold!", "It will not fall without a fight!", "Darkness intensifies around the demon!"],
-  low:     ["The boss is weakening... finish it!", "Victory is within reach â€” push harder!", "The demon trembles before your discipline!"],
+  low:     ["The boss is weakening... finish it!", "Victory is within reach -- push harder!", "The demon trembles before your discipline!"],
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -240,10 +240,10 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
     playSound(isCrit ? "crit" : "hit");
 
     if (isCrit) {
-      addLog(`CRITICAL! ${s.name} â€” ${dmg} damage!`, "crit");
+      addLog(`CRITICAL! ${s.name} -- ${dmg} damage!`, "crit");
       setNarration(getRandom(NARRATIONS.crit));
     } else {
-      addLog(`${s.name} â€” ${dmg} damage`, "damage");
+      addLog(`${s.name} -- ${dmg} damage`, "damage");
       setNarration(getRandom(NARRATIONS.hit));
     }
 
@@ -282,7 +282,7 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
 
   if (!boss) return (
     <div style={{ background: "#0c1018", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 16, padding: 48, textAlign: "center" }}>
-      <div style={{ fontSize: 40, marginBottom: 12 }}>ðŸ†</div>
+      <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: "0.18em", marginBottom: 12, color: "#fcd34d" }}>VICTORY</div>
       <div style={{ fontSize: 18, fontWeight: 900, color: "#fff", marginBottom: 6 }}>No Active Boss</div>
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Complete daily habits to unlock boss encounters</div>
     </div>
@@ -316,7 +316,7 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
         {/* Enraged badge */}
         {enraged && !defeated && (
           <div style={{ position: "absolute", top: 14, right: 14, zIndex: 10, background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.5)", borderRadius: 8, padding: "4px 10px", fontSize: 10, fontWeight: 900, color: "#fbbf24" }}>
-            âš  ENRAGED
+            [!] ENRAGED
           </div>
         )}
 
@@ -332,7 +332,7 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 2 }}>Weekly Damage</div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: "#a78bfa" }}>{(apiData?.progress as unknown as { weeklyDamage?: number })?.weeklyDamage?.toLocaleString() ?? "â€”"}</div>
+            <div style={{ fontSize: 20, fontWeight: 900, color: "#a78bfa" }}>{(apiData?.progress as unknown as { weeklyDamage?: number })?.weeklyDamage?.toLocaleString() ?? "--"}</div>
           </div>
         </div>
 
@@ -440,7 +440,7 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
           </div>
           {defeated && (
             <div style={{ textAlign: "center", marginTop: 10, fontSize: 16, fontWeight: 900, color: "#fcd34d" }}>
-              BOSS DEFEATED! Claim your rewards! ðŸ†
+              BOSS DEFEATED! Claim your rewards!
             </div>
           )}
         </div>
@@ -454,7 +454,7 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
           <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
             <div style={{ fontFamily: "monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(255,255,255,0.35)", marginBottom: 8 }}>Combat Actions</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", minWidth: 40 }}>âš¡ {Math.round(energy)}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", minWidth: 56 }}>Energy {Math.round(energy)}</span>
               <div style={{ flex: 1, height: 6, background: "rgba(255,255,255,0.07)", borderRadius: 3, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${(energy / energyMax) * 100}%`, background: "linear-gradient(90deg, #d97706, #fbbf24)", borderRadius: 3, transition: "width 0.1s" }} />
               </div>
@@ -495,7 +495,7 @@ export function BossBattlePanel({ productivityCompletion = 0 }: { productivityCo
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0, zIndex: 1 }}>
                     <span style={{ fontSize: 10, fontWeight: 700, color: s.color }}>{s.baseDamage}+ dmg</span>
-                    <span style={{ fontSize: 9, color: "#f59e0b" }}>âš¡{s.cost}</span>
+                    <span style={{ fontSize: 9, color: "#f59e0b" }}>Energy {s.cost}</span>
                   </div>
                 </button>
               );
