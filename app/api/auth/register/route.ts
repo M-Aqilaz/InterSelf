@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
@@ -74,9 +74,7 @@ export async function POST(request: NextRequest) {
     await issueSessionCookie(response, newUser.id);
     return response;
   } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("POST /api/auth/register failed", error);
-    }
+    console.error("POST /api/auth/register failed", error);
 
     if (error instanceof Prisma.PrismaClientInitializationError) {
       return NextResponse.json(
@@ -108,3 +106,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unable to register. Please try again." }, { status: 500 });
   }
 }
+
