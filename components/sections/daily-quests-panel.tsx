@@ -97,21 +97,29 @@ export function DailyQuestsPanel({ tasks = [], completedTaskIds = new Set() }: P
     }));
   }, []);
 
-  const completeTask = useCallback((taskId: number) => {
+  const completeTask = useCallback(async (taskId: number) => {
     if (done.has(taskId) || taskId < 0) return;
-    start(async () => {
-      try {
-        const res = await fetch(`/api/tasks/${taskId}/complete`, { method: "POST" });
-        if (!res.ok) throw new Error();
-        setDone(p => new Set([...p, taskId]));
-        setTimers(prev => { const n = { ...prev }; delete n[taskId]; return n; });
-        emitTasksUpdatedEvent();
-        emitBossDamageEvent({ damage: 500, source: "Daily quest" });
-        push({ title: "Quest selesai!", variant: "success" });
-      } catch {
+    // Optimistic update — langsung mark done tanpa tunggu server
+    setDone(p => new Set([...p, taskId]));
+    setTimers(prev => { const n = { ...prev }; delete n[taskId]; return n; });
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/complete`, { method: "POST" });
+      if (!res.ok) {
+        // 409 = sudah selesai sebelumnya, bukan error
+        if (res.status === 409) return;
+        // Error lain — rollback
+        setDone(p => { const n = new Set(p); n.delete(taskId); return n; });
         push({ title: "Gagal menyelesaikan quest", variant: "error" });
+        return;
       }
-    });
+      emitTasksUpdatedEvent();
+      emitBossDamageEvent({ damage: 500, source: "Daily quest" });
+      push({ title: "Quest selesai!", variant: "success" });
+    } catch {
+      // Network error — rollback
+      setDone(p => { const n = new Set(p); n.delete(taskId); return n; });
+      push({ title: "Gagal menyelesaikan quest", variant: "error" });
+    }
   }, [done, push]);
 
   const displayTasks = tasks.length > 0 ? tasks.slice(0, 5) : [
