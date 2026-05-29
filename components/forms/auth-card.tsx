@@ -100,7 +100,15 @@ export function AuthCard({ mode }: AuthCardProps) {
         const data = await response.json();
 
         if (!response.ok) {
-          setError(data.error ?? "Something went wrong");
+          if (data.issues?.fieldErrors?.username) {
+            setError("Username: " + data.issues.fieldErrors.username[0]);
+          } else if (data.issues?.fieldErrors?.email) {
+            setError("Email: " + data.issues.fieldErrors.email[0]);
+          } else if (data.issues?.fieldErrors?.password) {
+            setError("Password minimal 8 karakter");
+          } else {
+            setError(data.error ?? "Terjadi kesalahan");
+          }
           return;
         }
 
@@ -166,17 +174,22 @@ export function AuthCard({ mode }: AuthCardProps) {
           />
 
           {!isLogin && (
-            <AuthField
-              icon="user"
-              label="Username"
-              type="text"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              placeholder="shadow_breaker"
-              autoComplete="username"
-              minLength={3}
-            />
+            <>
+              <AuthField
+                icon="user"
+                label="Username"
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                placeholder="shadow_breaker"
+                autoComplete="username"
+                minLength={3}
+              />
+              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 4 }}>
+                Hanya huruf, angka, dan underscore. Contoh: refelz_my
+              </p>
+            </>
           )}
 
           <AuthField
