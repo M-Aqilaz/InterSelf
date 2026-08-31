@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# InterSelf
+
+Gamified self-improvement web app — turn daily habits, tasks, and goals into a game with streaks, achievements, boss battles, and a social leaderboard. Built as the company profile / product web app for **Intercomp**.
+
+## Features
+
+- **Daily tasks & streaks** — track habits, keep learning streaks alive
+- **Achievements & inventory** — unlock badges and collect items
+- **Boss battles & PvP** — weekly challenges with progress tracking
+- **Energy & gems** — in-app economy for shop and rewards
+- **Friends & leaderboard** — friend requests, rankings, social motivation
+- **Auth** — email/password login + registration (NextAuth-style flow)
+- **Onboarding** — guided first-run experience
+- **Share** — share achievement cards (html2canvas export)
+
+## Tech Stack
+
+- **Next.js 16** (App Router, Turbopack)
+- **React 19** + TypeScript
+- **Prisma 5** + PostgreSQL/SQLite
+- **Tailwind CSS 4** + Radix UI + Framer Motion
+- **Auth**: `jose` (JWT) + `bcryptjs`
+- **Validation**: Zod
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
+cp .env.example .env        # set DATABASE_URL + auth secrets
+npx prisma generate
+npx prisma db push         # or: npm run db:seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `app/` — routes, API endpoints (`app/api/*`), dashboard, auth, onboarding
+- `components/` — `ui`, `forms`, `layout`, `motion`, `sections`
+- `prisma/` — schema (`User`, `Task`, `Achievement`, `Boss`, `Friendship`, ...) + seed
+- `lib/` — utilities and server logic
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server (Turbopack) |
+| `npm run build` | Generate Prisma client + production build |
+| `npm run lint` | ESLint |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Internal product development for Intercomp.
