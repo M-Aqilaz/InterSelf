@@ -1,6 +1,6 @@
 # InterSelf
 
-Gamified self-improvement web app — turn daily habits, tasks, and goals into a game with streaks, achievements, boss battles, and a social leaderboard. Built as the company profile / product web app for **Intercomp**.
+Gamified self-improvement web app — turn daily habits, tasks, and goals into a game with streaks, achievements, boss battles, and a social leaderboard.
 
 ## Features
 
