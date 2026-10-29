@@ -3,7 +3,9 @@ import { TaskCategory, TaskDifficulty } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { applyBossDamage } from "@/lib/boss";
-import { TaskProgressionError } from "@/lib/progression";
+import { consumeEnergy } from "@/lib/energy";
+import { GameError } from "@/lib/errors";
+import { errorResponse } from "@/lib/api";
 
 const fallbackTask = {
   category: TaskCategory.FOCUS,
@@ -18,21 +20,25 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const summary = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const profile = await tx.profile.findUnique({
         where: { userId: user.id },
         include: { currentBoss: { include: { rewardItem: true } } },
       });
 
       if (!profile) {
-        throw new TaskProgressionError("Profile not found", 404);
+        throw new GameError("Profile not found", 404);
       }
 
       if (!profile.currentBoss) {
-        throw new TaskProgressionError("No active boss", 404);
+        throw new GameError("No active boss", 404);
       }
 
-      const result = await applyBossDamage({
+      // Energy is spent here, on the server, in the same transaction as the hit.
+      // If the strike is rejected (cooldown) the whole transaction rolls back and no energy is lost.
+      const energy = await consumeEnergy(user.id, 1, tx);
+
+      const hit = await applyBossDamage({
         tx,
         userId: user.id,
         profile,
@@ -45,20 +51,26 @@ export async function POST(request: NextRequest) {
         source: "Manual energy strike",
       });
 
-      if (!result) {
-        throw new TaskProgressionError("Unable to apply boss damage", 400);
+      if (!hit) {
+        throw new GameError("Unable to apply boss damage", 400);
       }
 
-      return result.summary;
+      if (hit.summary.cooldownRemainingMs > 0) {
+        throw new GameError(
+          `Boss is recovering. Try again in ${Math.ceil(hit.summary.cooldownRemainingMs / 1000)}s.`,
+          429
+        );
+      }
+
+      return { summary: hit.summary, energy };
     });
 
-    return NextResponse.json(summary);
+    return NextResponse.json({
+      ...result.summary,
+      energy: result.energy.energy,
+      energyMax: result.energy.energyMax,
+    });
   } catch (error) {
-    if (error instanceof TaskProgressionError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
-
-    console.error("POST /api/boss/attack failed", error);
-    return NextResponse.json({ error: "Unable to attack boss" }, { status: 500 });
+    return errorResponse(error, "POST /api/boss/attack failed", "Unable to attack boss");
   }
 }

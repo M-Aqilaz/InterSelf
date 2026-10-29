@@ -1,3 +1,4 @@
+import { parseId } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { cancelFriendRequest, respondToFriendRequest } from "@/lib/social";
@@ -12,11 +13,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Params }
   }
 
   const { id } = await params;
-  const requestId = Number(id);
+  const requestId = parseId(id);
   const body = await request.json().catch(() => ({}));
   const action = body?.action === "reject" ? "reject" : "accept";
 
-  if (Number.isNaN(requestId)) {
+  if (requestId === null) {
     return NextResponse.json({ error: "Invalid request id" }, { status: 400 });
   }
 
@@ -36,9 +37,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Params 
   }
 
   const { id } = await params;
-  const requestId = Number(id);
+  const requestId = parseId(id);
 
-  if (Number.isNaN(requestId)) {
+  if (requestId === null) {
     return NextResponse.json({ error: "Invalid request id" }, { status: 400 });
   }
 

@@ -7,7 +7,9 @@ import {
   TaskDifficulty,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { calculateLevelFromTotalExp } from "@/lib/level";
+import { GameError } from "@/lib/errors";
+import { GEMS_REWARDS } from "@/lib/gems";
+import { grantRewards } from "@/lib/rewards";
 import type { BossBattleState, BossBattleSummary, BossWithReward } from "@/types/boss";
 
 const DAMAGE_COOLDOWN_MS = 60 * 1000; // 60 seconds between hits
@@ -108,7 +110,7 @@ export async function ensureUserBossProgress(
   userId: string,
   boss: BossWithReward
 ) {
-  return client.userBossProgress.upsert({
+  const progress = await client.userBossProgress.upsert({
     where: {
       userId_bossId: {
         userId,
@@ -123,6 +125,22 @@ export async function ensureUserBossProgress(
     },
     update: {},
   });
+
+  // A boss that comes back around after being defeated is a fresh fight. Without this
+  // it would stay at 0 HP and pay out its victory rewards again on every single hit.
+  if (progress.status === BossProgressStatus.VICTORIOUS) {
+    return client.userBossProgress.update({
+      where: { id: progress.id },
+      data: {
+        currentHp: boss.maxHp,
+        status: BossProgressStatus.ACTIVE,
+        defeatedAt: null,
+        lastDamagedAt: null,
+      },
+    });
+  }
+
+  return progress;
 }
 
 function calculateDamage({
@@ -169,7 +187,7 @@ function buildDamageMeta(boss: BossWithReward, taskCategory: TaskCategory, taskD
   };
 }
 
-async function handleBossVictory({
+export async function handleBossVictory({
   tx,
   userId,
   boss,
@@ -195,19 +213,13 @@ async function handleBossVictory({
     return null;
   }
 
-  const totalExp = profile.exp + boss.rewardExp;
-  const levelProgress = calculateLevelFromTotalExp(totalExp);
-
   const nextBoss = await findNextBoss(tx, boss.id);
 
-  const updatedProfile = await tx.profile.update({
-    where: { userId },
-    data: {
-      exp: totalExp,
-      level: levelProgress.level,
-      coins: { increment: boss.rewardCoins },
-      currentBossId: nextBoss?.id ?? null,
-    },
+  const { profile: updatedProfile, levelProgress } = await grantRewards(tx, userId, {
+    exp: boss.rewardExp,
+    coins: boss.rewardCoins,
+    gems: GEMS_REWARDS.BOSS_DEFEAT,
+    data: { currentBoss: nextBoss ? { connect: { id: nextBoss.id } } : { disconnect: true } },
   });
 
   if (boss.rewardItemId) {
@@ -282,12 +294,29 @@ export async function applyBossDamage(
   const diff = Date.now() - lastHit;
   const cooldownRemainingMs = Math.max(0, DAMAGE_COOLDOWN_MS - diff);
 
-  if (cooldownRemainingMs > 0) {
+  let blocked = cooldownRemainingMs > 0;
+  if (!blocked) {
+    // Claim the hit atomically so two simultaneous requests cannot both land inside one cooldown.
+    const claim = await tx.userBossProgress.updateMany({
+      where: {
+        id: progress.id,
+        status: BossProgressStatus.ACTIVE,
+        OR: [
+          { lastDamagedAt: null },
+          { lastDamagedAt: { lte: new Date(Date.now() - DAMAGE_COOLDOWN_MS) } },
+        ],
+      },
+      data: { lastDamagedAt: now() },
+    });
+    blocked = claim.count === 0;
+  }
+
+  if (blocked) {
     return {
       summary: {
         boss,
         progress,
-        cooldownRemainingMs,
+        cooldownRemainingMs: cooldownRemainingMs || DAMAGE_COOLDOWN_MS,
         damageWindowMs: DAMAGE_WINDOW_MS,
         damageApplied: 0,
         defeated: false,
@@ -397,6 +426,40 @@ export async function applyBossDamage(
   };
 }
 
+/**
+ * Flat damage to the user's current boss that ignores the hit cooldown (Boss Orb).
+ * A killing blow pays out the same victory rewards as a normal hit.
+ */
+export async function applyFlatBossDamage(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  amount: number
+): Promise<{ applied: boolean; message: string }> {
+  const profile = await tx.profile.findUnique({
+    where: { userId },
+    include: { currentBoss: { include: { rewardItem: true } } },
+  });
+  const boss = profile?.currentBoss as BossWithReward | null | undefined;
+  if (!boss) {
+    return { applied: false, message: "Tidak ada boss aktif" };
+  }
+
+  const progress = await ensureUserBossProgress(tx, userId, boss);
+  const nextHp = Math.max(0, progress.currentHp - amount);
+
+  await tx.userBossProgress.update({
+    where: { id: progress.id },
+    data: { currentHp: nextHp, lastDamagedAt: now() },
+  });
+
+  if (nextHp === 0) {
+    await handleBossVictory({ tx, userId, boss, progressId: progress.id });
+    return { applied: true, message: "Boss terkena -" + amount + " DMG dan dikalahkan!" };
+  }
+
+  return { applied: true, message: "Boss terkena -" + amount + " DMG! HP tersisa: " + nextHp };
+}
+
 export async function getBossBattleState(userId: string): Promise<BossBattleState> {
   const profile = await prisma.profile.findUnique({
     where: { userId },
@@ -444,7 +507,15 @@ export async function selectBossForUser(userId: string, bossId: number) {
   });
 
   if (!boss) {
-    throw new Error("Boss not found");
+    throw new GameError("Boss not found", 404);
+  }
+
+  const profile = await prisma.profile.findUnique({ where: { userId }, select: { level: true } });
+  if (!profile) {
+    throw new GameError("Profile not found", 404);
+  }
+  if (profile.level < boss.minLevel) {
+    throw new GameError("This dungeon unlocks at level " + boss.minLevel, 403);
   }
 
   await prisma.profile.update({

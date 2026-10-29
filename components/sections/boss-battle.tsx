@@ -14,6 +14,12 @@ type ApiResponse = {
 };
 
 type EnergyResponse = { energy: number; energyMax: number };
+type BossAttackResponse = {
+  damageApplied?: number;
+  defeated?: boolean;
+  energy?: number;
+  progress?: { currentHp?: number };
+};
 
 type LogEntry = { msg: string; type: "damage" | "info" | "crit" | "warning"; ts: number };
 
@@ -222,28 +228,30 @@ export function BossBattlePanel({
     if ((cooldowns[s.id] ?? 0) > 0) return;
 
     setStriking(s.id);
-    const isCrit = Math.random() < s.critChance;
-    const dmg = Math.round(s.baseDamage * (0.85 + Math.random() * 0.3) * (isCrit ? 1.8 : 1) * (enraged ? 0.85 : 1));
-
-    // Use energy from DB
+    // The server spends the energy and resolves the hit; the UI animates from its answer.
+    let data: BossAttackResponse;
     try {
-      const energyRes = await fetch("/api/energy/use", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: 1 }),
-      });
-      if (!energyRes.ok) {
-        const err = await energyRes.json() as { error: string; energy?: number };
-        if (err.energy !== undefined) setEnergy(err.energy);
-        addLog("Not enough energy! Wait for regen.", "warning");
+      const res = await fetch("/api/boss/attack", { method: "POST" });
+      const result = (await res.json().catch(() => ({}))) as BossAttackResponse & { error?: string };
+      if (!res.ok) {
+        addLog(result.error ?? "The strike failed.", "warning");
         setStriking(null);
         return;
       }
-      const eData = await energyRes.json() as { energy: number };
-      setEnergy(eData.energy);
-    } catch { setEnergy(e => Math.max(0, e - 1)); }
+      data = result;
+    } catch {
+      addLog("Connection lost. Try again.", "warning");
+      setStriking(null);
+      return;
+    }
+
+    if (typeof data.energy === "number") setEnergy(data.energy);
+
+    const dmg = data.damageApplied ?? 0;
+    const isCrit = Math.random() < s.critChance; // cosmetic flavour only; damage comes from the server
+
     setCooldowns(prev => ({ ...prev, [s.id]: s.cooldown }));
-    setLocalHp(prev => Math.max(0, (prev ?? currentHp) - dmg));
+    setLocalHp(data.progress?.currentHp ?? Math.max(0, currentHp - dmg));
     setDamageNum({ val: dmg, id: Date.now() });
     setBossShake(true); setHitFlash(true);
     setTimeout(() => { setBossShake(false); setHitFlash(false); }, 350);
@@ -263,24 +271,15 @@ export function BossBattlePanel({
       setTimeout(() => setNarration(getRandom(NARRATIONS.enraged)), 800);
     }
 
-    try {
-      const res = await fetch("/api/boss/attack", {
-        method: "POST",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.progress?.currentHp !== undefined) setLocalHp(data.progress.currentHp);
-        if (data?.defeated) {
-          addLog("BOSS DEFEATED! Rewards claimed!", "crit");
-          setNarration("The demon shatters into shadow... You are victorious!");
-          push({ title: "Boss defeated! Rewards claimed!", variant: "success" });
-          setTimeout(() => void loadBoss(true), 3000);
-        }
-      }
-    } catch { /* keep local state */ }
+    if (data.defeated) {
+      addLog("BOSS DEFEATED! Rewards claimed!", "crit");
+      setNarration("The demon shatters into shadow... You are victorious!");
+      push({ title: "Boss defeated! Rewards claimed!", variant: "success" });
+      setTimeout(() => void loadBoss(true), 3000);
+    }
 
     setStriking(null);
-  }, [boss, progress, striking, defeated, energy, cooldowns, currentHp, maxHp, enraged, addLog, loadBoss, push]);
+  }, [boss, progress, striking, defeated, energy, cooldowns, currentHp, maxHp, addLog, loadBoss, push]);
 
   // Remove damage number after animation
   useEffect(() => {

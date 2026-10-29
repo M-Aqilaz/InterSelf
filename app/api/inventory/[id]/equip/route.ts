@@ -1,3 +1,4 @@
+import { parseId } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { setItemEquipped } from "@/lib/inventory";
@@ -10,9 +11,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const { id } = await params;
-  const inventoryId = Number(id);
+  const inventoryId = parseId(id);
 
-  if (Number.isNaN(inventoryId)) {
+  if (inventoryId === null) {
     return NextResponse.json({ error: "Invalid inventory id" }, { status: 400 });
   }
 

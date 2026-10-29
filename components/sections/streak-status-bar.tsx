@@ -38,9 +38,9 @@ export function StreakStatusBar() {
             !
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-red-300">Streak putus, debuff aktif 24 jam</p>
+            <p className="text-sm font-bold text-red-300">Streak putus, task berikutnya kena penalti</p>
             <p className="text-xs text-red-300/70">
-              EXP dari task berkurang 20%. Selesaikan task hari ini untuk pulihkan streak.
+              EXP task pertama yang kamu selesaikan berkurang 20%, lalu streak mulai lagi dari 1.
             </p>
           </div>
           <div className="shrink-0 text-right">
@@ -62,7 +62,7 @@ export function StreakStatusBar() {
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-purple-300">Streak Shield aktif</p>
             <p className="text-xs text-purple-300/70">
-              Streak kamu terlindungi sampai{" "}
+              Shield menutup 1 hari yang terlewat, berlaku sampai{" "}
               {status.shieldExpiry
                 ? new Date(status.shieldExpiry).toLocaleString("id-ID", {
                     hour: "2-digit",

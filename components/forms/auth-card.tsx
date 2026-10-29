@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff, LockKeyhole, Swords, User, UserPlus } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, Play, Swords, User, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -54,8 +54,6 @@ export function AuthCard({ mode }: AuthCardProps) {
     redirectParam?.startsWith("/") && !redirectParam.startsWith("//")
       ? redirectParam
       : "/dashboard";
-  const googleHref = `/api/auth/google?redirect=${encodeURIComponent(redirectTo)}`;
-  const oauthError = getOauthErrorMessage(searchParams?.get("error"));
 
   const [formData, setFormData] = useState({
     email: "",
@@ -63,12 +61,36 @@ export function AuthCard({ mode }: AuthCardProps) {
     username: "",
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string | null>(oauthError);
+  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const labels = copy[mode];
   const isLogin = mode === "login";
+
+  function handleDemo() {
+    setError(null);
+    setSuccess(null);
+
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/auth/demo", { method: "POST" });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          setError(data.error ?? "Demo belum tersedia. Coba lagi nanti.");
+          return;
+        }
+
+        setSuccess("Demo siap. Masuk...");
+        router.push(redirectTo);
+        router.refresh();
+      } catch (err) {
+        console.error("Demo login failed", err);
+        setError("Unable to start the demo. Please try again.");
+      }
+    });
+  }
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -145,14 +167,14 @@ export function AuthCard({ mode }: AuthCardProps) {
         </div>
 
         <Button
-          asChild
+          type="button"
           variant="secondary"
-          className="relative !mt-3 h-10 w-full rounded-2xl border border-[#6829de] bg-[#070d22]/82 !px-12 text-[15px] font-bold text-white shadow-none hover:border-[#9b4cff] hover:bg-[#0a1028] hover:text-white"
+          onClick={handleDemo}
+          disabled={pending}
+          className="relative !mt-3 h-10 w-full gap-2 rounded-2xl border border-[#6829de] bg-[#070d22]/82 !px-6 text-[15px] font-bold text-white shadow-none hover:border-[#9b4cff] hover:bg-[#0a1028] hover:text-white"
         >
-          <Link href={googleHref} className="justify-center">
-            <GoogleMark />
-            <span className="truncate">Continue with Google</span>
-          </Link>
+          <Play className="h-4 w-4 text-[#10e4df]" />
+          <span className="truncate">{pending ? "Menyiapkan demo..." : "Coba Demo (tanpa daftar)"}</span>
         </Button>
 
         <div className="!my-3 flex items-center gap-4 text-xs font-bold uppercase tracking-[0.22em] text-white/43">
@@ -309,29 +331,4 @@ function AuthField({
       </span>
     </label>
   );
-}
-
-function GoogleMark() {
-  return (
-    <span className="absolute left-5 grid h-6 w-6 place-items-center text-xl font-black leading-none">
-      <span className="bg-gradient-to-br from-[#4285f4] via-[#34a853] to-[#fbbc05] bg-clip-text text-transparent">
-        G
-      </span>
-    </span>
-  );
-}
-
-function getOauthErrorMessage(error: string | null | undefined) {
-  switch (error) {
-    case "google_oauth_not_configured":
-      return "Google login belum dikonfigurasi. Isi GOOGLE_CLIENT_ID dan GOOGLE_CLIENT_SECRET.";
-    case "google_oauth_denied":
-      return "Google login dibatalkan.";
-    case "google_oauth_invalid":
-      return "Sesi Google login kedaluwarsa. Coba lagi dari tombol Google.";
-    case "google_oauth_failed":
-      return "Google login gagal. Pastikan redirect URI Google OAuth cocok dengan URL app ini.";
-    default:
-      return null;
-  }
 }

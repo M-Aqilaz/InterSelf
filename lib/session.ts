@@ -13,6 +13,9 @@ function getSecretKey() {
   if (!secret) {
     throw new Error("AUTH_SECRET is not set. Please configure it in your environment.");
   }
+  if (process.env.NODE_ENV === "production" && (secret.length < 32 || secret === "change-me")) {
+    throw new Error("AUTH_SECRET must be a random string of at least 32 characters in production.");
+  }
   return encoder.encode(secret);
 }
 

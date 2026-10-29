@@ -5,6 +5,10 @@ import { getCurrentUser } from "@/lib/auth";
 import { startOfToday } from "@/lib/time";
 import { resolveTaskRewards } from "@/lib/task-rewards";
 
+const MAX_TITLE_LENGTH = 80;
+const MAX_DESCRIPTION_LENGTH = 300;
+const MAX_DURATION_MINUTES = 480;
+
 const isTaskCategory = (value: unknown): value is TaskCategory =>
   typeof value === "string" && Object.values(TaskCategory).includes(value as TaskCategory);
 
@@ -97,13 +101,27 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!title.trim() || title.trim().length > MAX_TITLE_LENGTH) {
+      return NextResponse.json(
+        { error: `Title must be 1-${MAX_TITLE_LENGTH} characters` },
+        { status: 400 }
+      );
+    }
+
+    if (!description.trim() || description.trim().length > MAX_DESCRIPTION_LENGTH) {
+      return NextResponse.json(
+        { error: `Description must be 1-${MAX_DESCRIPTION_LENGTH} characters` },
+        { status: 400 }
+      );
+    }
+
     const resolvedCategory = isTaskCategory(category)
       ? category
       : TaskCategory.CUSTOM;
     const resolvedDifficulty = isTaskDifficulty(difficulty)
       ? difficulty
       : TaskDifficulty.EASY;
-    const resolvedDuration = toIntegerOrDefault(durationMinutes, 0);
+    const resolvedDuration = Math.min(toIntegerOrDefault(durationMinutes, 0), MAX_DURATION_MINUTES);
     const rewards = resolveTaskRewards(resolvedCategory, resolvedDifficulty);
 
     const task = await prisma.task.create({

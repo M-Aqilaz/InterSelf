@@ -1,3 +1,4 @@
+import { parseId } from "@/lib/api";
 import { Prisma, TaskCategory, TaskDifficulty } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -37,9 +38,9 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
   }
 
   const { id: idParam } = await params;
-  const id = Number(idParam);
+  const id = parseId(idParam);
 
-  if (Number.isNaN(id)) {
+  if (id === null) {
     return NextResponse.json({ error: "Invalid task id" }, { status: 400 });
   }
 
@@ -54,11 +55,11 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     } = body ?? {};
     const data: Prisma.TaskUpdateInput = {};
 
-    if (typeof title === "string") {
+    if (typeof title === "string" && title.trim() && title.trim().length <= 80) {
       data.title = title.trim();
     }
 
-    if (typeof description === "string") {
+    if (typeof description === "string" && description.trim() && description.trim().length <= 300) {
       data.description = description.trim();
     }
 
@@ -72,7 +73,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
 
     const resolvedDuration = toInteger(durationMinutes);
     if (resolvedDuration !== null) {
-      data.durationMinutes = resolvedDuration > 0 ? resolvedDuration : null;
+      data.durationMinutes = resolvedDuration > 0 ? Math.min(resolvedDuration, 480) : null;
     }
 
     if (Object.keys(data).length === 0) {
@@ -125,9 +126,9 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
   }
 
   const { id: idParam } = await params;
-  const id = Number(idParam);
+  const id = parseId(idParam);
 
-  if (Number.isNaN(id)) {
+  if (id === null) {
     return NextResponse.json({ error: "Invalid task id" }, { status: 400 });
   }
 

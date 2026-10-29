@@ -1,3 +1,4 @@
+import { parseId } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -11,8 +12,8 @@ export async function POST(
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id: idParam } = await params;
-  const achievementId = Number(idParam);
-  if (isNaN(achievementId)) {
+  const achievementId = parseId(idParam);
+  if (achievementId === null) {
     return NextResponse.json({ error: "Invalid achievement id" }, { status: 400 });
   }
 

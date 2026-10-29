@@ -2,6 +2,9 @@ import { Achievement, ActivityType, Prisma, Stat, UserAchievement } from "@prism
 import { prisma } from "@/lib/prisma";
 import { calculateLevelFromTotalExp } from "@/lib/level";
 import type { ProfileWithBoss } from "@/lib/boss";
+import { GameError } from "@/lib/errors";
+import { gemsForAchievement } from "@/lib/gems";
+import { grantRewards } from "@/lib/rewards";
 
 export type AchievementUnlock = {
   id: number;
@@ -158,38 +161,28 @@ export async function claimAchievementReward(userId: string, achievementId: numb
     })) as UserAchievementWithAchievement | null;
 
     if (!record || !record.achievement) {
-      throw new Error("Achievement not found");
+      throw new GameError("Achievement not found", 404);
     }
 
-    if (record.claimedAt) {
-      throw new Error("Reward already claimed");
-    }
-
-    const profile = await tx.profile.findUnique({
-      where: { userId },
-      include: { currentBoss: { include: { rewardItem: true } } },
-    });
-
-    if (!profile) {
-      throw new Error("Profile not found");
-    }
-
-    const totalExp = profile.exp + record.achievement.rewardExp;
-    const levelProgress = calculateLevelFromTotalExp(totalExp);
-
-    const updatedProfile = await tx.profile.update({
-      where: { userId },
-      data: {
-        exp: totalExp,
-        level: levelProgress.level,
-        coins: { increment: record.achievement.rewardCoins },
-      },
-      include: { currentBoss: { include: { rewardItem: true } } },
-    });
-
-    await tx.userAchievement.update({
-      where: { id: record.id },
+    // The unclaimed check is part of the update, so two simultaneous requests cannot both pay out.
+    const claimed = await tx.userAchievement.updateMany({
+      where: { id: record.id, claimedAt: null },
       data: { claimedAt: new Date() },
+    });
+    if (claimed.count === 0) {
+      throw new GameError("Reward already claimed", 409);
+    }
+
+    const gems = gemsForAchievement(record.achievement.rarity);
+    await grantRewards(tx, userId, {
+      exp: record.achievement.rewardExp,
+      coins: record.achievement.rewardCoins,
+      gems,
+    });
+
+    const updatedProfile = await tx.profile.findUniqueOrThrow({
+      where: { userId },
+      include: { currentBoss: { include: { rewardItem: true } } },
     });
 
     await tx.activityLog.create({
@@ -201,16 +194,18 @@ export async function claimAchievementReward(userId: string, achievementId: numb
           achievementId: record.achievementId,
           rewardExp: record.achievement.rewardExp,
           rewardCoins: record.achievement.rewardCoins,
+          rewardGems: gems,
         },
       },
     });
 
     return {
       profile: updatedProfile,
-      levelProgress,
+      levelProgress: calculateLevelFromTotalExp(updatedProfile.exp),
       reward: {
         exp: record.achievement.rewardExp,
         coins: record.achievement.rewardCoins,
+        gems,
       },
     };
   });

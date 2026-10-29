@@ -99,6 +99,9 @@ model Profile {
   dailyChestStreak    Int       @default(0)
   streakShieldActive  Boolean   @default(false)
   streakShieldExpiry  DateTime?
+  lastStreakDate      DateTime?
+  xpBoostUntil        DateTime?
+  coinBoostUntil      DateTime?
   characterClass      CharacterClass?
   classChosenAt       DateTime?
   createdAt           DateTime  @default(now())
@@ -155,9 +158,12 @@ model TaskCompletion {
   completedAt   DateTime                @default(now())
   createdAt     DateTime                @default(now())
   statIncreases Json?
+  completedDay  String?                 // YYYY-MM-DD (app timezone); unique per user+task => once per day
 
   task          Task                    @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user          User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, taskId, completedDay])
 }
 
 // -------------------------------------------------------
@@ -425,7 +431,7 @@ enum ItemRarity {
 enum BossStatus {
   ACTIVE
   RESTING
-  DEFATED
+  DEFEATED
 }
 
 enum BossProgressStatus {

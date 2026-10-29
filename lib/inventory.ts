@@ -1,7 +1,10 @@
 import { ActivityType, ItemRarity, Prisma, TaskCategory } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { calculateLevelFromTotalExp } from "@/lib/level";
-import type { ProfileWithBoss } from "@/lib/boss";
+import { applyFlatBossDamage, type ProfileWithBoss } from "@/lib/boss";
+import { GameError } from "@/lib/errors";
+import { grantRewards } from "@/lib/rewards";
+import { SHIELD_DURATION_MS } from "@/lib/streak";
 
 export type InventoryEntry = Prisma.UserInventoryGetPayload<{ include: { item: true } }>;
 export type InventoryViewModel = InventoryEntry & {
@@ -152,68 +155,63 @@ export async function consumeInventoryItem(userId: string, userInventoryId: numb
     });
 
     if (!entry || entry.userId !== userId) {
-      throw new Error("Item not found");
+      throw new GameError("Item not found", 404);
     }
 
     if (!entry.item) {
-      throw new Error("Item metadata missing");
-    }
-
-    if (entry.quantity <= 0) {
-      throw new Error("No quantity remaining");
+      throw new GameError("Item metadata missing", 500);
     }
 
     const effect = CONSUMABLE_EFFECTS[entry.item.name];
     if (!effect) {
-      throw new Error("Item is not consumable");
+      throw new GameError("Item is not consumable");
     }
 
-    const profile = await tx.profile.findUnique({ where: { userId } });
-    if (!profile) {
-      throw new Error("Profile not found");
+    // Spend one unit first. The quantity check is part of the same statement, so two
+    // simultaneous requests can never consume the same unit twice.
+    const spent = await tx.userInventory.updateMany({
+      where: { id: entry.id, userId, quantity: { gt: 0 } },
+      data: { quantity: { decrement: 1 } },
+    });
+    if (spent.count === 0) {
+      throw new GameError("No quantity remaining");
     }
 
-    const totalExp = profile.exp + (effect.expGain ?? 0);
-    const levelProgress = calculateLevelFromTotalExp(totalExp);
-
-    const updatedProfile = await tx.profile.update({
-      where: { userId },
-      data: {
-        exp: totalExp,
-        level: levelProgress.level,
-        coins: { increment: effect.coinGain ?? 0 },
-      },
-      include: { currentBoss: { include: { rewardItem: true } } },
-    });
-
-    await tx.userInventory.update({
-      where: { id: entry.id },
-      data: {
-        quantity: entry.quantity - 1,
-      },
-    });
-
-    // Apply special item effects
     const specialEffect = effect.special
       ? await applySpecialItemEffect(tx, userId, entry.item.name)
-      : { message: `Consumed ${entry.item.name}`, applied: false };
+      : { message: `Consumed ${entry.item.name}`, applied: true };
+
+    // Throwing rolls the transaction back, so an item that could not do anything is not wasted.
+    if (!specialEffect.applied) {
+      throw new GameError(specialEffect.message);
+    }
+
+    await grantRewards(tx, userId, {
+      exp: effect.expGain ?? 0,
+      coins: effect.coinGain ?? 0,
+    });
+
+    const updatedProfile = await tx.profile.findUniqueOrThrow({
+      where: { userId },
+      include: { currentBoss: { include: { rewardItem: true } } },
+    });
 
     await tx.activityLog.create({
       data: {
         userId,
         type: ActivityType.ITEM_EARNED,
-        description: specialEffect.applied ? specialEffect.message : `Consumed ${entry.item.name}`,
+        description: effect.special ? specialEffect.message : `Consumed ${entry.item.name}`,
         metadata: {
           itemId: entry.itemId,
           expGain: effect.expGain ?? 0,
-          specialEffect: specialEffect.applied ? specialEffect.message : undefined,
+          specialEffect: effect.special ? specialEffect.message : undefined,
         },
       },
     });
 
     return {
       profile: updatedProfile as ProfileWithBoss,
-      levelProgress,
+      levelProgress: calculateLevelFromTotalExp(updatedProfile.exp),
       effectMessage: specialEffect.message,
     };
   });
@@ -282,6 +280,10 @@ export function summarizeInventory(inventory: InventoryViewModel[]) {
   };
 }
 
+const XP_SURGE_DURATION_MS = 2 * 60 * 60 * 1000;
+const COIN_MAGNET_DURATION_MS = 60 * 60 * 1000;
+const BOSS_ORB_DAMAGE = 500;
+
 export async function applySpecialItemEffect(
   tx: Prisma.TransactionClient,
   userId: string,
@@ -289,39 +291,33 @@ export async function applySpecialItemEffect(
 ): Promise<{ message: string; applied: boolean }> {
   switch (itemName) {
     case "Streak Freeze": {
-      const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
       await tx.profile.update({
         where: { userId },
         data: {
           streakShieldActive: true,
-          streakShieldExpiry: expiry,
+          streakShieldExpiry: new Date(Date.now() + SHIELD_DURATION_MS),
         },
       });
-      return { message: "Streak Shield aktif selama 24 jam", applied: true };
+      return { message: "Streak Shield aktif selama 3 hari (menutup 1 hari yang terlewat)", applied: true };
     }
 
-    case "Boss Orb": {
-      const progress = await tx.userBossProgress.findFirst({
-        where: { userId, status: "ACTIVE" },
-        orderBy: { id: "desc" },
-      });
-      if (!progress) return { message: "Tidak ada boss aktif", applied: false };
+    case "Boss Orb":
+      return applyFlatBossDamage(tx, userId, BOSS_ORB_DAMAGE);
 
-      const newHp = Math.max(0, progress.currentHp - 500);
-      await tx.userBossProgress.update({
-        where: { id: progress.id },
-        data: {
-          currentHp: newHp,
-          lastDamagedAt: new Date(),
-          status: newHp === 0 ? "VICTORIOUS" : "ACTIVE",
-        },
+    case "XP Surge": {
+      await tx.profile.update({
+        where: { userId },
+        data: { xpBoostUntil: new Date(Date.now() + XP_SURGE_DURATION_MS) },
       });
-      return { message: `Boss terkena -500 DMG! HP tersisa: ${newHp}`, applied: true };
+      return { message: "XP Surge aktif 2 jam: EXP +50%", applied: true };
     }
 
-    case "XP Surge":
     case "Coin Magnet": {
-      return { message: `${itemName} aktif selama 2 jam`, applied: true };
+      await tx.profile.update({
+        where: { userId },
+        data: { coinBoostUntil: new Date(Date.now() + COIN_MAGNET_DURATION_MS) },
+      });
+      return { message: "Coin Magnet aktif 1 jam: coins +50%", applied: true };
     }
 
     default:

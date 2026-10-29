@@ -1,3 +1,4 @@
+import { parseId } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { completeTaskForUser, TaskProgressionError } from "@/lib/progression";
@@ -16,9 +17,9 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   }
 
   const { id } = await params;
-  const taskId = Number(id);
+  const taskId = parseId(id);
 
-  if (Number.isNaN(taskId)) {
+  if (taskId === null) {
     return NextResponse.json({ error: "Invalid task id" }, { status: 400 });
   }
 

@@ -6,9 +6,15 @@ import { applyPassiveEffects, summarizeInventory } from "@/lib/inventory";
 import { evaluateAchievements, type AchievementUnlock } from "@/lib/achievements";
 import { recordWeeklyChallengeProgress } from "@/lib/challenges";
 import type { BossBattleSummary } from "@/types/boss";
-import { startOfToday } from "@/lib/time";
+import { dayKey, startOfToday } from "@/lib/time";
 import { getClassPassiveMultipliers } from "@/lib/classes";
-import type { CharacterClass } from "@prisma/client";
+import { GameError } from "@/lib/errors";
+import { GEMS_REWARDS } from "@/lib/gems";
+import { grantRewards } from "@/lib/rewards";
+import { advanceStreak, STREAK_DEBUFF_MULTIPLIER } from "@/lib/streak";
+
+/** Multiplier applied to exp / coins while an XP Surge / Coin Magnet is active. */
+const ITEM_BOOST_MULTIPLIER = 1.5;
 
 export type TaskCompletionResult = {
   completion: Prisma.TaskCompletionGetPayload<{ include: { task: true } }>;
@@ -20,11 +26,7 @@ export type TaskCompletionResult = {
   passiveLogs?: string[];
 };
 
-export class TaskProgressionError extends Error {
-  constructor(message: string, public status: number = 400) {
-    super(message);
-  }
-}
+export class TaskProgressionError extends GameError {}
 
 export async function completeTaskForUser({
   userId,
@@ -33,245 +35,198 @@ export async function completeTaskForUser({
   userId: string;
   taskId: number;
 }): Promise<TaskCompletionResult> {
-  return prisma.$transaction(async (tx) => {
-    const task = await tx.task.findUnique({
-      where: { id: taskId },
-      include: { statRewards: true },
-    });
-
-    if (!task) {
-      throw new TaskProgressionError("Task not found", 404);
+  try {
+    return await prisma.$transaction((tx) => runTaskCompletion(tx, userId, taskId));
+  } catch (error) {
+    // The (userId, taskId, completedDay) unique index is the final guard against
+    // two simultaneous requests both completing the same task today.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new TaskProgressionError("Task already completed today", 409);
     }
-
-    if (!task.isSystem && task.createdById !== userId) {
-      throw new TaskProgressionError("You do not have access to this task", 403);
-    }
-
-    if (task.isSystem) {
-      const today = startOfToday();
-      const alreadyCompleted = await tx.taskCompletion.findFirst({
-        where: {
-          userId,
-          taskId,
-          completedAt: { gte: today },
-        },
-      });
-
-      if (alreadyCompleted) {
-        throw new TaskProgressionError("System tasks can only be completed once per day", 409);
-      }
-    }
-
-    const profile = await tx.profile.findUnique({
-      where: { userId },
-      include: { currentBoss: { include: { rewardItem: true } } },
-    });
-
-    if (!profile) {
-      throw new TaskProgressionError("Profile not found", 404);
-    }
-
-    await applyStreakProtection(tx, userId, profile);
-
-    const baseExpReward = Math.max(task.expReward, 0);
-    const baseCoinReward = Math.max(task.coinReward, 0);
-    const streakGain = Math.max(task.streakImpact, 0);
-
-    // === CLASS PASSIVE BONUS ===
-    const characterClass = (profile as ProfileWithBoss & { characterClass?: CharacterClass | null }).characterClass;
-    const classMultipliers = characterClass
-      ? getClassPassiveMultipliers(
-          characterClass,
-          task.category,
-          task.difficulty
-        )
-      : { expMultiplier: 1, coinMultiplier: 1 };
-
-    const baseExpRewardWithClass = Math.round(baseExpReward * classMultipliers.expMultiplier);
-    const baseCoinRewardWithClass = Math.round(baseCoinReward * classMultipliers.coinMultiplier);
-
-    const statIncreases: Record<string, number> = {};
-
-    await Promise.all(
-      task.statRewards.map((reward) => {
-        if (reward.amount === 0) {
-          return Promise.resolve();
-        }
-
-        statIncreases[reward.stat] = (statIncreases[reward.stat] ?? 0) + reward.amount;
-
-        return tx.stat.upsert({
-          where: {
-            userId_type: {
-              userId,
-              type: reward.stat,
-            },
-          },
-          create: {
-            userId,
-            type: reward.stat,
-            value: reward.amount,
-          },
-          update: {
-            value: {
-              increment: reward.amount,
-            },
-          },
-        });
-      })
-    );
-
-    const passiveResult = await applyPassiveEffects(tx, userId, {
-      expReward: baseExpRewardWithClass,
-      coinReward: baseCoinRewardWithClass,
-      taskCategory: task.category,
-    });
-
-    // Cek streak debuff
-    const streakDebuffActive = await checkStreakDebuff(tx, userId, profile);
-    const expReward = streakDebuffActive
-      ? Math.round(passiveResult.expReward * 0.8)
-      : passiveResult.expReward;
-    const coinReward = passiveResult.coinReward;
-
-    const nextTotalExp = profile.exp + expReward;
-    const streak = profile.streak + streakGain;
-    const bestStreak = Math.max(profile.bestStreak, streak);
-    const totalCompletedTasks = profile.totalCompletedTasks + 1;
-
-    const levelProgress = calculateLevelFromTotalExp(nextTotalExp);
-
-    await tx.profile.update({
-      where: { userId },
-      data: {
-        exp: nextTotalExp,
-        level: levelProgress.level,
-        coins: { increment: coinReward },
-        streak,
-        bestStreak,
-        totalCompletedTasks,
-      },
-    });
-
-    const completion = await tx.taskCompletion.create({
-      data: {
-        taskId: task.id,
-        userId,
-        status: TaskCompletionStatus.COMPLETED,
-        expEarned: expReward,
-        coinsEarned: coinReward,
-        streakCount: streak,
-        statIncreases: statIncreases as Prisma.JsonObject,
-      },
-      include: { task: true },
-    });
-
-    const stats = await tx.stat.findMany({
-      where: { userId },
-      orderBy: { type: "asc" },
-    });
-
-    let bossBattle: BossBattleSummary | null = null;
-    let profileWithBoss: ProfileWithBoss | null = null;
-
-    const bossResult = await applyBossDamage({
-      tx,
-      userId,
-      profile,
-      expReward,
-      statIncreases,
-      streak,
-      level: levelProgress.level,
-      taskCategory: task.category,
-      taskDifficulty: task.difficulty,
-      source: task.title,
-    });
-
-    if (bossResult) {
-      bossBattle = bossResult.summary;
-      profileWithBoss = bossResult.profile;
-    } else {
-      profileWithBoss = await tx.profile.findUnique({
-        where: { userId },
-        include: { currentBoss: { include: { rewardItem: true } } },
-      });
-    }
-
-    if (!profileWithBoss) {
-      throw new TaskProgressionError("Unable to load profile after task completion", 500);
-    }
-
-    const achievementResult = await evaluateAchievements({
-      tx,
-      userId,
-      profile: profileWithBoss,
-      stats,
-      inventorySummary: summarizeInventory(passiveResult.inventory),
-      bossVictory: bossBattle?.defeated,
-    });
-
-    let achievements: AchievementUnlock[] | null = null;
-
-    if (achievementResult) {
-      achievements = achievementResult;
-    }
-
-    await recordWeeklyChallengeProgress(tx, userId, task.title);
-
-    return {
-      completion,
-      profile: profileWithBoss,
-      stats,
-      levelProgress,
-      bossBattle,
-      achievements,
-      passiveLogs: passiveResult.passiveLogs,
-    };
-  });
+    throw error;
+  }
 }
 
-async function checkStreakDebuff(
+async function runTaskCompletion(
   tx: Prisma.TransactionClient,
   userId: string,
-  profile: ProfileWithBoss
-): Promise<boolean> {
-  if (profile.streak > 0) return false;
+  taskId: number
+): Promise<TaskCompletionResult> {
+  const task = await tx.task.findUnique({
+    where: { id: taskId },
+    include: { statRewards: true },
+  });
+
+  if (!task) {
+    throw new TaskProgressionError("Task not found", 404);
+  }
+
+  if (!task.isSystem && task.createdById !== userId) {
+    throw new TaskProgressionError("You do not have access to this task", 403);
+  }
 
   const now = new Date();
-  const profileWithShield = profile as ProfileWithBoss & { streakShieldExpiry?: Date | null; streakShieldActive?: boolean };
-  const shieldExpiry = profileWithShield.streakShieldExpiry ?? null;
-  const shieldActive = profileWithShield.streakShieldActive ?? false;
+  const today = startOfToday(now);
+  const todayKey = dayKey(now);
 
-  if (shieldActive && shieldExpiry && shieldExpiry > now) return false;
-
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  yesterday.setHours(0, 0, 0, 0);
-
-  const completedYesterday = await tx.taskCompletion.count({
+  const alreadyCompleted = await tx.taskCompletion.findFirst({
     where: {
       userId,
-      completedAt: { gte: yesterday },
+      taskId,
+      OR: [{ completedDay: todayKey }, { completedAt: { gte: today } }],
+    },
+    select: { id: true },
+  });
+
+  if (alreadyCompleted) {
+    throw new TaskProgressionError("Task already completed today", 409);
+  }
+
+  const profile = await tx.profile.findUnique({
+    where: { userId },
+    include: { currentBoss: { include: { rewardItem: true } } },
+  });
+
+  if (!profile) {
+    throw new TaskProgressionError("Profile not found", 404);
+  }
+
+  // === STREAK (consecutive days with at least one completed task) ===
+  const streakOutcome = advanceStreak(profile, now);
+
+  // === CLASS PASSIVE BONUS ===
+  const classMultipliers = profile.characterClass
+    ? getClassPassiveMultipliers(profile.characterClass, task.category, task.difficulty)
+    : { expMultiplier: 1, coinMultiplier: 1 };
+
+  const baseExp = Math.round(Math.max(task.expReward, 0) * classMultipliers.expMultiplier);
+  const baseCoins = Math.round(Math.max(task.coinReward, 0) * classMultipliers.coinMultiplier);
+
+  const statIncreases: Record<string, number> = {};
+  for (const reward of task.statRewards) {
+    if (reward.amount === 0) continue;
+
+    statIncreases[reward.stat] = (statIncreases[reward.stat] ?? 0) + reward.amount;
+
+    await tx.stat.upsert({
+      where: { userId_type: { userId, type: reward.stat } },
+      create: { userId, type: reward.stat, value: reward.amount },
+      update: { value: { increment: reward.amount } },
+    });
+  }
+
+  const passiveResult = await applyPassiveEffects(tx, userId, {
+    expReward: baseExp,
+    coinReward: baseCoins,
+    taskCategory: task.category,
+  });
+
+  const xpBoosted = profile.xpBoostUntil !== null && profile.xpBoostUntil > now;
+  const coinBoosted = profile.coinBoostUntil !== null && profile.coinBoostUntil > now;
+
+  let expReward = passiveResult.expReward;
+  let coinReward = passiveResult.coinReward;
+  const passiveLogs = [...passiveResult.passiveLogs];
+
+  if (xpBoosted) {
+    expReward = Math.round(expReward * ITEM_BOOST_MULTIPLIER);
+    passiveLogs.push("XP Surge boosted EXP by 50%");
+  }
+  if (coinBoosted) {
+    coinReward = Math.round(coinReward * ITEM_BOOST_MULTIPLIER);
+    passiveLogs.push("Coin Magnet boosted coins by 50%");
+  }
+  if (streakOutcome.broke) {
+    expReward = Math.round(expReward * STREAK_DEBUFF_MULTIPLIER);
+    passiveLogs.push("Streak was broken: EXP reduced by 20% on this task");
+  }
+  if (streakOutcome.shieldConsumed) {
+    passiveLogs.push("Streak Shield absorbed a missed day");
+  }
+
+  const { levelProgress: rewardLevelProgress } = await grantRewards(tx, userId, {
+    exp: expReward,
+    coins: coinReward,
+    gems: streakOutcome.milestone ? GEMS_REWARDS.STREAK_MILESTONE : 0,
+    data: {
+      streak: streakOutcome.streak,
+      bestStreak: streakOutcome.bestStreak,
+      lastStreakDate: streakOutcome.lastStreakDate,
+      totalCompletedTasks: { increment: 1 },
+      ...(streakOutcome.shieldConsumed
+        ? { streakShieldActive: false, streakShieldExpiry: null }
+        : {}),
     },
   });
 
-  return completedYesterday === 0;
-}
-
-async function applyStreakProtection(
-  tx: Prisma.TransactionClient,
-  userId: string,
-  profile: { streak: number; bestStreak: number; characterClass?: CharacterClass | null }
-): Promise<void> {
-  if (profile.characterClass !== "PHANTOM") return;
-  if (profile.streak > 0) return;
-  if (profile.bestStreak <= 0) return;
-
-  const protectedStreak = Math.floor(profile.bestStreak * 0.5);
-  if (protectedStreak <= 0) return;
-
-  await tx.profile.update({
-    where: { userId },
-    data: { streak: protectedStreak },
+  const completion = await tx.taskCompletion.create({
+    data: {
+      taskId: task.id,
+      userId,
+      status: TaskCompletionStatus.COMPLETED,
+      expEarned: expReward,
+      coinsEarned: coinReward,
+      streakCount: streakOutcome.streak,
+      completedDay: todayKey,
+      statIncreases: statIncreases as Prisma.JsonObject,
+    },
+    include: { task: true },
   });
+
+  const stats = await tx.stat.findMany({
+    where: { userId },
+    orderBy: { type: "asc" },
+  });
+
+  let bossBattle: BossBattleSummary | null = null;
+  let profileWithBoss: ProfileWithBoss | null = null;
+
+  const bossResult = await applyBossDamage({
+    tx,
+    userId,
+    profile,
+    expReward,
+    statIncreases,
+    streak: streakOutcome.streak,
+    level: rewardLevelProgress.level,
+    taskCategory: task.category,
+    taskDifficulty: task.difficulty,
+    source: task.title,
+  });
+
+  if (bossResult) {
+    bossBattle = bossResult.summary;
+    profileWithBoss = bossResult.profile;
+  } else {
+    profileWithBoss = await tx.profile.findUnique({
+      where: { userId },
+      include: { currentBoss: { include: { rewardItem: true } } },
+    });
+  }
+
+  if (!profileWithBoss) {
+    throw new TaskProgressionError("Unable to load profile after task completion", 500);
+  }
+
+  const achievements = await evaluateAchievements({
+    tx,
+    userId,
+    profile: profileWithBoss,
+    stats,
+    inventorySummary: summarizeInventory(passiveResult.inventory),
+    bossVictory: bossBattle?.defeated,
+  });
+
+  await recordWeeklyChallengeProgress(tx, userId, task.title);
+
+  return {
+    completion,
+    profile: profileWithBoss,
+    stats,
+    // Boss rewards may have added exp after the task reward was granted.
+    levelProgress: calculateLevelFromTotalExp(profileWithBoss.exp),
+    bossBattle,
+    achievements,
+    passiveLogs,
+  };
 }

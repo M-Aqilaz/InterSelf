@@ -1,3 +1,4 @@
+import { parseId } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { claimAchievementReward } from "@/lib/achievements";
@@ -10,9 +11,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const { id } = await params;
-  const achievementId = Number(id);
+  const achievementId = parseId(id);
 
-  if (Number.isNaN(achievementId)) {
+  if (achievementId === null) {
     return NextResponse.json({ error: "Invalid achievement id" }, { status: 400 });
   }
 

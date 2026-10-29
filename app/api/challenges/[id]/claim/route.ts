@@ -1,3 +1,4 @@
+import { parseId } from "@/lib/api";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { claimWeeklyChallengeReward } from "@/lib/challenges";
@@ -12,9 +13,9 @@ export async function POST(request: NextRequest, { params }: { params: Params })
   }
 
   const { id } = await params;
-  const challengeId = Number(id);
+  const challengeId = parseId(id);
 
-  if (Number.isNaN(challengeId)) {
+  if (challengeId === null) {
     return NextResponse.json({ error: "Invalid challenge id" }, { status: 400 });
   }
 

@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { calculateLevelFromTotalExp } from "@/lib/level";
 import { startOfToday } from "@/lib/time";
+import { getEffectiveStreak } from "@/lib/streak";
+import { computeEnergy } from "@/lib/energy-rules";
 import { getBossBattleState } from "@/lib/boss";
 import { listAchievementsForUser } from "@/lib/achievements";
 import { getInventoryForUser, summarizeInventory } from "@/lib/inventory";
@@ -130,12 +132,14 @@ export default async function DashboardPage() {
   const profileExp = profileRecord?.exp ?? 0;
   const levelProgress = calculateLevelFromTotalExp(profileExp);
   const heroLevel = profileRecord?.level ?? levelProgress.level;
-  const streakValue = profileRecord?.streak ?? 0;
+  // Show what is true right now (a lapsed streak reads 0 before the next task is completed).
+  const streakValue = profileRecord ? getEffectiveStreak(profileRecord).streak : 0;
   const bestStreakValue = profileRecord?.bestStreak ?? 0;
   const heroCoins = profileRecord?.coins ?? 0;
   const heroGems = profileRecord?.gems ?? 500;
-  const heroEnergy = profileRecord?.energy ?? 5;
-  const heroEnergyMax = profileRecord?.energyMax ?? 5;
+  const energySnapshot = profileRecord ? computeEnergy(profileRecord) : null;
+  const heroEnergy = energySnapshot?.energy ?? 5;
+  const heroEnergyMax = energySnapshot?.energyMax ?? 5;
   const heroRank = user.profile?.rank ?? "BRONZE";
   const characterClass = profileRecord?.characterClass ?? null;
 

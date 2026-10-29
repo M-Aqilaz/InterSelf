@@ -6,7 +6,9 @@ import {
   WeeklyChallenge,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { calculateLevelFromTotalExp } from "@/lib/level";
+import { GameError } from "@/lib/errors";
+import { GEMS_REWARDS } from "@/lib/gems";
+import { grantRewards } from "@/lib/rewards";
 import { ensureInventoryCapacity } from "@/lib/inventory";
 
 const now = () => new Date();
@@ -192,47 +194,33 @@ export async function claimWeeklyChallengeReward(
     })) as ProgressWithChallenge | null;
 
     if (!progress) {
-      throw new Error("Challenge progress not found");
+      throw new GameError("Challenge progress not found", 404);
     }
 
     if (progress.status !== ChallengeStatus.COMPLETED || !progress.completedAt) {
-      throw new Error("Challenge not completed");
+      throw new GameError("Challenge not completed");
     }
 
-    if (progress.claimedAt) {
-      throw new Error("Reward already claimed");
+    // The unclaimed check is part of the update, so two simultaneous requests cannot both pay out.
+    const claimed = await tx.userChallengeProgress.updateMany({
+      where: { id: progress.id, claimedAt: null },
+      data: { claimedAt: now() },
+    });
+    if (claimed.count === 0) {
+      throw new GameError("Reward already claimed", 409);
     }
 
     const challenge = progress.challenge;
-    const profile = await tx.profile.findUnique({
-      where: { userId },
-      include: { currentBoss: { include: { rewardItem: true } } },
-    });
 
-    if (!profile) {
-      throw new Error("Profile not found");
-    }
-
-    const totalExp = profile.exp + challenge.rewardExp;
-    const levelProgress = calculateLevelFromTotalExp(totalExp);
-
-    await tx.profile.update({
-      where: { userId },
-      data: {
-        exp: totalExp,
-        level: levelProgress.level,
-        coins: { increment: challenge.rewardCoins },
-      },
+    const { levelProgress } = await grantRewards(tx, userId, {
+      exp: challenge.rewardExp,
+      coins: challenge.rewardCoins,
+      gems: GEMS_REWARDS.WEEKLY_CHALLENGE,
     });
 
     if (challenge.rewardItemId) {
       await ensureInventoryCapacity(tx, userId, challenge.rewardItemId, 1);
     }
-
-    await tx.userChallengeProgress.update({
-      where: { id: progress.id },
-      data: { claimedAt: now() } as Prisma.UserChallengeProgressUpdateInput,
-    });
 
     await tx.activityLog.create({
       data: {
@@ -243,6 +231,7 @@ export async function claimWeeklyChallengeReward(
           challengeId,
           rewardExp: challenge.rewardExp,
           rewardCoins: challenge.rewardCoins,
+          rewardGems: GEMS_REWARDS.WEEKLY_CHALLENGE,
         },
       },
     });
@@ -251,6 +240,7 @@ export async function claimWeeklyChallengeReward(
       reward: {
         exp: challenge.rewardExp,
         coins: challenge.rewardCoins,
+        gems: GEMS_REWARDS.WEEKLY_CHALLENGE,
         item: challenge.rewardItem?.name ?? null,
       },
       levelProgress,

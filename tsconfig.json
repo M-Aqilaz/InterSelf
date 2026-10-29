@@ -30,5 +30,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "lifequest-rebuild", "components copy"]
+  "exclude": ["node_modules"]
 }

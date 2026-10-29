@@ -1,13 +1,14 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { hashPassword, issueSessionCookie, fetchSafeUserById } from "@/lib/auth";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 import { createUserGameRecords } from "@/lib/user-provisioning";
 
 const registerSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters").max(72, "Password must be at most 72 characters"),
   username: z
     .string()
     .trim()
@@ -18,6 +19,14 @@ const registerSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const limit = rateLimit(`register:${clientIp(request)}`, 5, 60 * 60 * 1000);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: "Too many sign-ups from this address. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } }
+    );
+  }
+
   try {
     const json = await request.json();
     const parsed = registerSchema.safeParse(json);

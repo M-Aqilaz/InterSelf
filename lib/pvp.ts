@@ -1,35 +1,31 @@
 import { prisma } from "@/lib/prisma";
 import { PvpChallengeMode, PvpChallengeStatus } from "@prisma/client";
+import { grantRewards } from "@/lib/rewards";
 
 export const CHALLENGE_DURATION_DAYS = 7;
 export const CHALLENGE_REWARD_COINS = 150;
 export const CHALLENGE_REWARD_EXP = 200;
 
-// Hitung score user untuk periode challenge tertentu
+// Hitung score user untuk periode challenge tertentu (aggregated in the database)
 export async function calculateChallengeScore(
   userId: string,
   mode: PvpChallengeMode,
   startsAt: Date,
   endsAt: Date
 ): Promise<number> {
-  const completions = await prisma.taskCompletion.findMany({
-    where: {
-      userId,
-      completedAt: { gte: startsAt, lte: endsAt },
-    },
-    select: {
-      expEarned: true,
-      streakCount: true,
-    },
-  });
+  const where = { userId, completedAt: { gte: startsAt, lte: endsAt } };
 
   switch (mode) {
     case PvpChallengeMode.TASK_COUNT:
-      return completions.length;
-    case PvpChallengeMode.EXP_RACE:
-      return completions.reduce((sum, c) => sum + c.expEarned, 0);
-    case PvpChallengeMode.STREAK_HOLD:
-      return Math.max(...completions.map((c) => c.streakCount), 0);
+      return prisma.taskCompletion.count({ where });
+    case PvpChallengeMode.EXP_RACE: {
+      const result = await prisma.taskCompletion.aggregate({ where, _sum: { expEarned: true } });
+      return result._sum.expEarned ?? 0;
+    }
+    case PvpChallengeMode.STREAK_HOLD: {
+      const result = await prisma.taskCompletion.aggregate({ where, _max: { streakCount: true } });
+      return result._max.streakCount ?? 0;
+    }
     default:
       return 0;
   }
@@ -63,8 +59,9 @@ export async function resolveExpiredChallenges(userId: string) {
         : null; // draw
 
     await prisma.$transaction(async (tx) => {
-      await tx.pvpChallenge.update({
-        where: { id: challenge.id },
+      // Only the request that flips ACTIVE -> COMPLETED pays the reward (no double payout).
+      const resolved = await tx.pvpChallenge.updateMany({
+        where: { id: challenge.id, status: PvpChallengeStatus.ACTIVE },
         data: {
           status: PvpChallengeStatus.COMPLETED,
           challengerScore,
@@ -72,26 +69,21 @@ export async function resolveExpiredChallenges(userId: string) {
           winnerId,
         },
       });
+      if (resolved.count === 0 || !winnerId) return;
 
-      // Kasih reward ke pemenang
-      if (winnerId) {
-        await tx.profile.update({
-          where: { userId: winnerId },
-          data: {
-            coins: { increment: challenge.rewardCoins },
-            exp: { increment: challenge.rewardExp },
-          },
-        });
+      await grantRewards(tx, winnerId, {
+        exp: challenge.rewardExp,
+        coins: challenge.rewardCoins,
+      });
 
-        await tx.activityLog.create({
-          data: {
-            userId: winnerId,
-            type: "ITEM_EARNED",
-            description: `Menang PvP Challenge! +${challenge.rewardCoins} coins +${challenge.rewardExp} EXP`,
-            metadata: { challengeId: challenge.id, mode: challenge.mode },
-          },
-        });
-      }
+      await tx.activityLog.create({
+        data: {
+          userId: winnerId,
+          type: "ITEM_EARNED",
+          description: `Menang PvP Challenge! +${challenge.rewardCoins} coins +${challenge.rewardExp} EXP`,
+          metadata: { challengeId: challenge.id, mode: challenge.mode },
+        },
+      });
     });
   }
 }
